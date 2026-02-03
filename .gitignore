@@ -1,0 +1,58 @@
+dist
+.wrangler
+.output
+.vercel
+.netlify
+.vinxi
+app.config.timestamp_*.js
+.vite
+.solid
+storybook-static
+coverage
+
+# Environment
+.env
+.env*.local
+
+# dependencies
+/node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+*.log
+
+# IDEs and editors
+/.idea
+.vscode/
+.project
+.classpath
+*.launch
+.settings/
+
+# Temp
+*.swp
+*.swo
+*.tmp
+*.temp
+.cache
+.eslintcache
+.stylelintcache
+
+# System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
