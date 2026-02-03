@@ -7,7 +7,7 @@
 // 4) GraphRuntime: a tiny wiring/scheduling substrate (no “boss logic”, just a switchboard)
 //
 // deps: solid-js, rxjs
-import {createMemo, createSignal, onCleanup, Component, For, JSX} from "solid-js";
+import {createMemo, createSignal, onCleanup, Component, For, JSX, Show} from "solid-js";
 import {BehaviorSubject, Observable, Subscription, combineLatest, map, distinctUntilChanged, startWith} from "rxjs";
 
 /** ---------------------------------------------
@@ -1296,6 +1296,86 @@ const BoundTextField: Component<{ spec: FieldSpec; field: FieldHandle }> = (p) =
 };
 
 /** ---------------------------------------------
+ * FieldSlot: stable field rendering boundary for hidden$
+ * --------------------------------------------- */
+
+type FieldSlotProps = {
+  f: FieldSpec;
+  handle: FieldHandle;
+};
+
+const FieldSlot: Component<FieldSlotProps> = (p) => {
+  const hidden = fromObservable(p.handle.hidden$, false);
+
+  return (
+    <Show when={!hidden()} fallback={null}>
+      {(() => {
+        const f = p.f;
+        const handle = p.handle;
+
+        switch (f.kind) {
+          case FieldKind.textArea:
+            return <TextAreaField spec={f} field={handle} />;
+
+          case FieldKind.phone:
+            return (
+              <PhoneField
+                id={f.id}
+                label={f.label}
+                placeholder={f.placeholder}
+                helperText={f.helperText}
+                inputMask={f.inputMask}
+                inputBlocker={f.inputBlocker}
+                field={handle}
+              />
+            );
+
+          case FieldKind.number:
+            return (
+              <NumberField
+                id={f.id}
+                label={f.label}
+                placeholder={f.placeholder}
+                helperText={f.helperText}
+                maxDigits={f.maxDigits}
+                field={handle}
+              />
+            );
+
+          case FieldKind.select:
+            return <SelectField spec={f} field={handle} />;
+
+          case FieldKind.checkbox:
+            return <CheckboxField spec={f} field={handle} />;
+
+          case FieldKind.inlineCheckbox:
+            return <InlineCheckboxField spec={f} field={handle} />;
+
+          case FieldKind.radio:
+            return <RadioField spec={f} field={handle} />;
+
+          case FieldKind.inlineRadio:
+            return <InlineRadioField spec={f} field={handle} />;
+
+          case FieldKind.ssn:
+            return <SsnField spec={f} field={handle} />;
+
+          case FieldKind.zip:
+            return <ZipField spec={f} field={handle} />;
+
+          case FieldKind.password:
+            return <PasswordField spec={f} field={handle} />;
+
+          case FieldKind.text:
+          default:
+            return <BoundTextField spec={f} field={handle} />;
+        }
+      })()}
+    </Show>
+  );
+};
+
+/** ---------------------------------------------
  * 6) Spec-driven renderer (UI layer)
  * --------------------------------------------- */
 
@@ -1311,66 +1391,7 @@ const FormRenderer: Component<FormRendererProps> = (p) => {
         {(f) => {
           const handle = p.handlesById.get(f.id);
           if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
-          const hidden = fromObservable(handle.hidden$, false);
-          if (hidden()) return null;
-
-          switch (f.kind) {
-            case FieldKind.textArea:
-              return <TextAreaField spec={f} field={handle} />;
-
-            case FieldKind.phone:
-              return (
-                <PhoneField
-                  id={f.id}
-                  label={f.label}
-                  placeholder={f.placeholder}
-                  helperText={f.helperText}
-                  inputMask={f.inputMask}
-                  inputBlocker={f.inputBlocker}
-                  field={handle}
-                />
-              );
-
-            case FieldKind.number:
-              return (
-                <NumberField
-                  id={f.id}
-                  label={f.label}
-                  placeholder={f.placeholder}
-                  helperText={f.helperText}
-                  maxDigits={f.maxDigits}
-                  field={handle}
-                />
-              );
-
-            case FieldKind.select:
-              return <SelectField spec={f} field={handle} />;
-
-            case FieldKind.checkbox:
-              return <CheckboxField spec={f} field={handle} />;
-
-            case FieldKind.inlineCheckbox:
-              return <InlineCheckboxField spec={f} field={handle} />;
-
-            case FieldKind.radio:
-              return <RadioField spec={f} field={handle} />;
-
-            case FieldKind.inlineRadio:
-              return <InlineRadioField spec={f} field={handle} />;
-
-            case FieldKind.ssn:
-              return <SsnField spec={f} field={handle} />;
-
-            case FieldKind.zip:
-              return <ZipField spec={f} field={handle} />;
-
-            case FieldKind.password:
-              return <PasswordField spec={f} field={handle} />;
-
-            case FieldKind.text:
-            default:
-              return <BoundTextField spec={f} field={handle} />;
-          }
+          return <FieldSlot f={f} handle={handle} />;
         }}
       </For>
     </div>
@@ -1398,37 +1419,56 @@ export const TelepathicFormDemo: Component = () => {
           {label: "Mail", value: "mail"},
         ],
         triggers: [
-          // PHONE: show phone, hide others; enable phone + hasExtension
+          // INITIAL: nothing selected -> hide everything except the selectors
+          {
+            when: WhenOperators.isEmpty,
+            operations: [
+              {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "notes", "password"], operator: TriggerOperators.setHidden, value: true},
+              // keep these disabled/cleared as a safety baseline
+              {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["hasExtension"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["ext"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["ext"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["zip"], operator: TriggerOperators.setValue, value: ""},
+            ],
+          },
+
+          // PHONE: show phone-related fields; hide email/mail fields; show common fields
           {
             when: {operator: WhenOperators.equals, value: "phone"},
             operations: [
-              {fieldIds: ["phone"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "hasExtension", "preferredTime", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["email", "zip"], operator: TriggerOperators.setHidden, value: true},
+              // ext is controlled by its own triggers; default hidden until its triggers show it
+              {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
               {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: false},
               {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: false},
             ],
           },
 
-          // EMAIL: show email, hide others
+          // EMAIL: show email; hide phone/mail fields; show common fields
           {
             when: {operator: WhenOperators.equals, value: "email"},
             operations: [
-              {fieldIds: ["email"], operator: TriggerOperators.setHidden, value: false},
-              {fieldIds: ["phone", "zip"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["email", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "hasExtension", "ext", "zip", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
 
-          // MAIL: show zip, hide others; enable zip
+          // MAIL: show zip; hide phone/email fields; show common fields
           {
             when: {operator: WhenOperators.equals, value: "mail"},
             operations: [
-              {fieldIds: ["zip"], operator: TriggerOperators.setHidden, value: false},
-              {fieldIds: ["phone", "email"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["zip", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
               {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: false},
             ],
           },
 
-          // NOT PHONE: disable + clear phone and hasExtension
+          // NOT PHONE: disable + clear phone and extension controls
           {
             when: {operator: WhenOperators.notEquals, value: "phone"},
             operations: [
@@ -1436,6 +1476,9 @@ export const TelepathicFormDemo: Component = () => {
               {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
               {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: true},
               {fieldIds: ["hasExtension"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["ext"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["ext"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
 
@@ -1552,25 +1595,17 @@ export const TelepathicFormDemo: Component = () => {
         triggers: [
           {
             when: {operator: WhenOperators.equals, value: "true"},
-            operation: {
-              fieldIds: ["ssn"],
-              operator: TriggerOperators.setDisabled,
-              value: false,
-            },
+            operations: [
+              {fieldIds: ["ssn"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["ssn"], operator: TriggerOperators.setDisabled, value: false},
+            ],
           },
           {
             when: {operator: WhenOperators.notEquals, value: "true"},
             operations: [
-              {
-                fieldIds: ["ssn"],
-                operator: TriggerOperators.setDisabled,
-                value: true,
-              },
-              {
-                fieldIds: ["ssn"],
-                operator: TriggerOperators.setValue,
-                value: "",
-              },
+              {fieldIds: ["ssn"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["ssn"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["ssn"], operator: TriggerOperators.setValue, value: ""},
             ],
           },
         ],
