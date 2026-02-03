@@ -328,6 +328,7 @@ type Normalizer = (raw: string) => string;
 type NodePatch<T> = {
   value?: T;
   disabledOverride?: boolean | null;
+  hiddenOverride?: boolean | null;
 };
 
 export class FieldRuntimeNode<T> {
@@ -345,12 +346,16 @@ export class FieldRuntimeNode<T> {
   // "computed but can be overridden by graph wiring"
   private readonly disabledOverride$ = new BehaviorSubject<boolean | null>(null);
   readonly disabled$: Observable<boolean>;
+  // "computed but can be overridden by graph wiring"
+  private readonly hiddenOverride$ = new BehaviorSubject<boolean | null>(null);
+  readonly hidden$: Observable<boolean>;
 
   constructor(args: {
     id: string;
     initialValue: T;
     validate?: Validator<T>;
     disabled$?: Observable<boolean>; // external wiring optional
+    hidden$?: Observable<boolean>; // external wiring optional
   }) {
     this.id = args.id;
     this.value$ = new BehaviorSubject<T>(args.initialValue);
@@ -373,6 +378,13 @@ export class FieldRuntimeNode<T> {
       map(([base, override]) => (override === null ? base : override)),
       distinctUntilChanged()
     );
+
+    // hidden = (override ?? wiredExternal ?? false)
+    const hiddenBase$ = args.hidden$ ?? new BehaviorSubject(false);
+    this.hidden$ = combineLatest([hiddenBase$, this.hiddenOverride$]).pipe(
+      map(([base, override]) => (override === null ? base : override)),
+      distinctUntilChanged()
+    );
   }
 
   setValue(next: T) {
@@ -392,6 +404,11 @@ export class FieldRuntimeNode<T> {
     this.disabledOverride$.next(next);
   }
 
+  /** Rare escape hatch: imperative override. Use sparingly. */
+  setHiddenOverride(next: boolean | null) {
+    this.hiddenOverride$.next(next);
+  }
+
   /** Apply multiple writes in a deterministic order (used by GraphRuntime batching). */
   applyPatch(patch: NodePatch<T>) {
     if (Object.prototype.hasOwnProperty.call(patch, "value")) {
@@ -399,6 +416,9 @@ export class FieldRuntimeNode<T> {
     }
     if (Object.prototype.hasOwnProperty.call(patch, "disabledOverride")) {
       this.setDisabledOverride(patch.disabledOverride as boolean | null);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, "hiddenOverride")) {
+      this.setHiddenOverride(patch.hiddenOverride as boolean | null);
     }
   }
 }
@@ -455,6 +475,15 @@ export class GraphRuntime {
     this.subs.add(
       pred$.pipe(distinctUntilChanged()).subscribe((pred) => {
         if (pred) this.enqueuePatch(targetId, {disabledOverride: disabled});
+      })
+    );
+  }
+
+  /** conditional write: when pred is true -> set hidden override (batched) */
+  wireHiddenWhen(targetId: NodeId, pred$: Observable<boolean>, hidden: boolean) {
+    this.subs.add(
+      pred$.pipe(distinctUntilChanged()).subscribe((pred) => {
+        if (pred) this.enqueuePatch(targetId, {hiddenOverride: hidden});
       })
     );
   }
@@ -535,25 +564,27 @@ enum WhenOperators {
 enum TriggerOperators {
   setDisabled = "setDisabled",
   setValue = "setValue",
+  setHidden = "setHidden",
 }
 
 type WhenPredicate =
   | {
-      fieldIds: string[];
+      fieldIds?: string[];
       operator: WhenOperators.isValid | WhenOperators.isInvalid | WhenOperators.isEmpty;
     }
   | {
-      fieldIds: string[];
+      fieldIds?: string[];
       operator: WhenOperators.equals | WhenOperators.notEquals;
       value: string;
     };
 
 type WhenClause =
   | WhenOperators
+  | WhenPredicate
   | {
-  [OperatorMaths.all]?: WhenPredicate | WhenPredicate[];
-  [OperatorMaths.any]?: WhenPredicate | WhenPredicate[];
-};
+      [OperatorMaths.all]?: WhenPredicate | WhenPredicate[];
+      [OperatorMaths.any]?: WhenPredicate | WhenPredicate[];
+    };
 
 type TriggerOperation =
   | {
@@ -565,6 +596,11 @@ type TriggerOperation =
   fieldIds: string[];
   operator: TriggerOperators.setValue;
   value: string;
+}
+  | {
+  fieldIds: string[];
+  operator: TriggerOperators.setHidden;
+  value: boolean;
 };
 
 type TriggerSpec =
@@ -696,6 +732,19 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
     // Simple self-referential case (default)
     if (typeof when === "string") return predStreamFor(sourceId, when);
 
+    // Direct predicate form (single predicate)
+    if ("operator" in when) {
+      const pred = when as WhenPredicate;
+      const ids = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
+      const streams = ids.map((id) =>
+        predStreamFor(id, pred.operator, "value" in pred ? pred.value : undefined)
+      );
+      return combineLatest(streams).pipe(
+        map((vals) => vals.every(Boolean)),
+        distinctUntilChanged()
+      );
+    }
+
     const allPred = when[OperatorMaths.all];
     const anyPred = when[OperatorMaths.any];
 
@@ -706,11 +755,12 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
 
     const predicates = Array.isArray(clause) ? clause : [clause];
 
-    const streams = predicates.flatMap((pred) =>
-      pred.fieldIds.map((id) =>
+    const streams = predicates.flatMap((pred) => {
+      const ids = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
+      return ids.map((id) =>
         predStreamFor(id, pred.operator, "value" in pred ? pred.value : undefined)
-      )
-    );
+      );
+    });
 
     if (streams.length === 0) return predStreamFor(sourceId, WhenOperators.isValid);
 
@@ -734,6 +784,10 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
 
         case TriggerOperators.setValue:
           op.fieldIds.forEach((targetId) => graph.wireValueWhen(targetId, pred$, op.value));
+          break;
+
+        case TriggerOperators.setHidden:
+          op.fieldIds.forEach((targetId) => graph.wireHiddenWhen(targetId, pred$, op.value));
           break;
       }
     });
@@ -759,6 +813,7 @@ function buildGraphFromFormSpec(form: FormSpec) {
     handlesById.set(id, {
       value$: node.value$,
       disabled$: node.disabled$,
+      hidden$: node.hidden$,
       errors$: node.errors$,
       setValue: (v) => node.setValue(v),
       markTouched: () => node.markTouched(),
@@ -863,6 +918,7 @@ const makeZipValidator = (required: boolean): Validator<string> => (digits) => {
 type FieldHandle = {
   value$: BehaviorSubject<string>;
   disabled$: Observable<boolean>;
+  hidden$: Observable<boolean>;
   errors$: Observable<string[]>;
   setValue: (next: string) => void;
   markTouched: () => void;
@@ -1255,6 +1311,8 @@ const FormRenderer: Component<FormRendererProps> = (p) => {
         {(f) => {
           const handle = p.handlesById.get(f.id);
           if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
+          const hidden = fromObservable(handle.hidden$, false);
+          if (hidden()) return null;
 
           switch (f.kind) {
             case FieldKind.textArea:
@@ -1340,109 +1398,53 @@ export const TelepathicFormDemo: Component = () => {
           {label: "Mail", value: "mail"},
         ],
         triggers: [
+          // PHONE: show phone, hide others; enable phone + hasExtension
           {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.equals,
-                value: "phone",
-              },
-            },
-            operation: {
-              fieldIds: ["phone"],
-              operator: TriggerOperators.setDisabled,
-              value: false,
-            },
-          },
-          {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.notEquals,
-                value: "phone",
-              },
-            },
+            when: {operator: WhenOperators.equals, value: "phone"},
             operations: [
-              {
-                fieldIds: ["phone"],
-                operator: TriggerOperators.setDisabled,
-                value: true,
-              },
-              {
-                fieldIds: ["phone"],
-                operator: TriggerOperators.setValue,
-                value: "",
-              },
+              {fieldIds: ["phone"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["email", "zip"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: false},
+              {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: false},
             ],
           },
+
+          // EMAIL: show email, hide others
           {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.equals,
-                value: "mail",
-              },
-            },
-            operation: {
-              fieldIds: ["zip"],
-              operator: TriggerOperators.setDisabled,
-              value: false,
-            },
-          },
-          {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.notEquals,
-                value: "mail",
-              },
-            },
+            when: {operator: WhenOperators.equals, value: "email"},
             operations: [
-              {
-                fieldIds: ["zip"],
-                operator: TriggerOperators.setDisabled,
-                value: true,
-              },
-              {
-                fieldIds: ["zip"],
-                operator: TriggerOperators.setValue,
-                value: "",
-              },
+              {fieldIds: ["email"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "zip"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
+
+          // MAIL: show zip, hide others; enable zip
           {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.equals,
-                value: "phone",
-              },
-            },
-            operation: {
-              fieldIds: ["hasExtension"],
-              operator: TriggerOperators.setDisabled,
-              value: false,
-            },
-          },
-          {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["contactMethod"],
-                operator: WhenOperators.notEquals,
-                value: "phone",
-              },
-            },
+            when: {operator: WhenOperators.equals, value: "mail"},
             operations: [
-              {
-                fieldIds: ["hasExtension"],
-                operator: TriggerOperators.setDisabled,
-                value: true,
-              },
-              {
-                fieldIds: ["hasExtension"],
-                operator: TriggerOperators.setValue,
-                value: "",
-              },
+              {fieldIds: ["zip"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "email"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: false},
+            ],
+          },
+
+          // NOT PHONE: disable + clear phone and hasExtension
+          {
+            when: {operator: WhenOperators.notEquals, value: "phone"},
+            operations: [
+              {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["hasExtension"], operator: TriggerOperators.setValue, value: ""},
+            ],
+          },
+
+          // NOT MAIL: disable + clear zip
+          {
+            when: {operator: WhenOperators.notEquals, value: "mail"},
+            operations: [
+              {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["zip"], operator: TriggerOperators.setValue, value: ""},
             ],
           },
         ],
@@ -1549,13 +1551,7 @@ export const TelepathicFormDemo: Component = () => {
         helperText: "Employee-only SSN field will unlock.",
         triggers: [
           {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["isEmployee"],
-                operator: WhenOperators.equals,
-                value: "true",
-              },
-            },
+            when: {operator: WhenOperators.equals, value: "true"},
             operation: {
               fieldIds: ["ssn"],
               operator: TriggerOperators.setDisabled,
@@ -1563,13 +1559,7 @@ export const TelepathicFormDemo: Component = () => {
             },
           },
           {
-            when: {
-              [OperatorMaths.all]: {
-                fieldIds: ["isEmployee"],
-                operator: WhenOperators.notEquals,
-                value: "true",
-              },
-            },
+            when: {operator: WhenOperators.notEquals, value: "true"},
             operations: [
               {
                 fieldIds: ["ssn"],
