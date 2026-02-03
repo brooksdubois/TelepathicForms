@@ -7,7 +7,7 @@
 // 4) GraphRuntime: a tiny wiring/scheduling substrate (no “boss logic”, just a switchboard)
 //
 // deps: solid-js, rxjs
-import {createMemo, createSignal, onCleanup, Component, For} from "solid-js";
+import {createMemo, createSignal, onCleanup, Component, For, JSX} from "solid-js";
 import {BehaviorSubject, Observable, Subscription, combineLatest, map, distinctUntilChanged, startWith} from "rxjs";
 
 /** ---------------------------------------------
@@ -26,11 +26,14 @@ function fromObservable<T>(obs$: Observable<T>, initial: T): () => T {
 type TextFieldPrimitiveProps = {
   id?: string;
   label?: string;
+  type?: string;
+  inputMode?: JSX.InputHTMLAttributes<HTMLInputElement>["inputMode"];
   value: string;
   placeholder?: string;
   disabled?: boolean;
   errorText?: string;
   helperText?: string;
+  rightSlot?: JSX.Element;
   onInput: (next: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -44,17 +47,79 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
     <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
       {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
 
-      <input
+      <div style={{display: "flex", gap: "6px", "align-items": "center", width: "360px"}}>
+        <input
+          id={p.id}
+          type={p.type ?? "text"}
+          inputMode={p.inputMode}
+          value={p.value}
+          placeholder={p.placeholder}
+          disabled={p.disabled}
+          aria-invalid={!!p.errorText}
+          aria-describedby={describedBy()}
+          onInput={(e) => p.onInput((e.currentTarget as HTMLInputElement).value)}
+          onBlur={() => p.onBlur?.()}
+          onFocus={() => p.onFocus?.()}
+          onKeyDown={(e) => p.onKeyDown?.(e as KeyboardEvent)}
+          style={{
+            width: p.rightSlot ? "100%" : "360px",
+            padding: "10px 12px",
+            "border-radius": "10px",
+            border: p.errorText ? "1px solid #c62828" : "1px solid rgba(0,0,0,0.25)",
+            outline: "none",
+            "font-size": "14px",
+            opacity: p.disabled ? 0.6 : 1,
+          }}
+        />
+        {p.rightSlot}
+      </div>
+
+      <div
+        id={describedBy()}
+        style={{
+          "margin-top": "6px",
+          "font-size": "12px",
+          color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+        }}
+      >
+        {p.errorText || p.helperText || " "}
+      </div>
+    </label>
+  );
+};
+
+type TextAreaFieldPrimitiveProps = {
+  id?: string;
+  label?: string;
+  value: string;
+  placeholder?: string;
+  disabled?: boolean;
+  errorText?: string;
+  helperText?: string;
+  rows?: number;
+  onInput: (next: string) => void;
+  onBlur?: () => void;
+  onFocus?: () => void;
+};
+
+export const TextAreaFieldPrimitive: Component<TextAreaFieldPrimitiveProps> = (p) => {
+  const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+
+  return (
+    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+      {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
+
+      <textarea
         id={p.id}
         value={p.value}
+        rows={p.rows ?? 4}
         placeholder={p.placeholder}
         disabled={p.disabled}
         aria-invalid={!!p.errorText}
         aria-describedby={describedBy()}
-        onInput={(e) => p.onInput((e.currentTarget as HTMLInputElement).value)}
+        onInput={(e) => p.onInput((e.currentTarget as HTMLTextAreaElement).value)}
         onBlur={() => p.onBlur?.()}
         onFocus={() => p.onFocus?.()}
-        onKeyDown={(e) => p.onKeyDown?.(e as KeyboardEvent)}
         style={{
           width: "360px",
           padding: "10px 12px",
@@ -63,6 +128,8 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
           outline: "none",
           "font-size": "14px",
           opacity: p.disabled ? 0.6 : 1,
+          "min-height": "96px",
+          resize: "vertical",
         }}
       />
 
@@ -77,6 +144,177 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
         {p.errorText || p.helperText || " "}
       </div>
     </label>
+  );
+};
+
+type SelectOption = {label: string; value: string};
+
+type SelectFieldPrimitiveProps = {
+  id?: string;
+  label?: string;
+  value: string;
+  options: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  errorText?: string;
+  helperText?: string;
+  onChange: (next: string) => void;
+};
+
+export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) => {
+  const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+
+  return (
+    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+      {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
+
+      <select
+        id={p.id}
+        value={p.value}
+        disabled={p.disabled}
+        aria-invalid={!!p.errorText}
+        aria-describedby={describedBy()}
+        onChange={(e) => p.onChange((e.currentTarget as HTMLSelectElement).value)}
+        style={{
+          width: "360px",
+          padding: "10px 12px",
+          "border-radius": "10px",
+          border: p.errorText ? "1px solid #c62828" : "1px solid rgba(0,0,0,0.25)",
+          outline: "none",
+          "font-size": "14px",
+          opacity: p.disabled ? 0.6 : 1,
+          "background-color": "white",
+        }}
+      >
+        {p.placeholder && <option value="">{p.placeholder}</option>}
+        <For each={p.options}>
+          {(opt) => <option value={opt.value}>{opt.label}</option>}
+        </For>
+      </select>
+
+      <div
+        id={describedBy()}
+        style={{
+          "margin-top": "6px",
+          "font-size": "12px",
+          color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+        }}
+      >
+        {p.errorText || p.helperText || " "}
+      </div>
+    </label>
+  );
+};
+
+type CheckboxFieldPrimitiveProps = {
+  id?: string;
+  label?: string;
+  checked: boolean;
+  disabled?: boolean;
+  errorText?: string;
+  helperText?: string;
+  inline?: boolean;
+  onChange: (next: boolean) => void;
+};
+
+export const CheckboxFieldPrimitive: Component<CheckboxFieldPrimitiveProps> = (p) => {
+  const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+
+  return (
+    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+      <div
+        style={{
+          display: "flex",
+          "align-items": "center",
+          gap: "8px",
+          "flex-wrap": p.inline ? "wrap" : "nowrap",
+        }}
+      >
+        <input
+          id={p.id}
+          type="checkbox"
+          checked={p.checked}
+          disabled={p.disabled}
+          aria-invalid={!!p.errorText}
+          aria-describedby={describedBy()}
+          onChange={(e) => p.onChange((e.currentTarget as HTMLInputElement).checked)}
+        />
+        {p.label && <div style={{"font-size": "14px"}}>{p.label}</div>}
+      </div>
+
+      <div
+        id={describedBy()}
+        style={{
+          "margin-top": "6px",
+          "font-size": "12px",
+          color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+        }}
+      >
+        {p.errorText || p.helperText || " "}
+      </div>
+    </label>
+  );
+};
+
+type RadioGroupFieldPrimitiveProps = {
+  id?: string;
+  label?: string;
+  name: string;
+  value: string;
+  options: SelectOption[];
+  disabled?: boolean;
+  errorText?: string;
+  helperText?: string;
+  inline?: boolean;
+  onChange: (next: string) => void;
+};
+
+export const RadioGroupFieldPrimitive: Component<RadioGroupFieldPrimitiveProps> = (p) => {
+  const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+
+  return (
+    <div style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+      {p.label && <div style={{"font-size": "12px", "margin-bottom": "6px", opacity: 0.8}}>{p.label}</div>}
+
+      <div
+        role="radiogroup"
+        aria-describedby={describedBy()}
+        style={{
+          display: p.inline ? "flex" : "grid",
+          gap: p.inline ? "12px" : "6px",
+          "align-items": "center",
+          "flex-wrap": p.inline ? "wrap" : "nowrap",
+        }}
+      >
+        <For each={p.options}>
+          {(opt) => (
+            <label style={{display: "flex", "align-items": "center", gap: "6px"}}>
+              <input
+                type="radio"
+                name={p.name}
+                value={opt.value}
+                checked={p.value === opt.value}
+                disabled={p.disabled}
+                aria-invalid={!!p.errorText}
+                onChange={(e) => p.onChange((e.currentTarget as HTMLInputElement).value)}
+              />
+              <div style={{"font-size": "14px"}}>{opt.label}</div>
+            </label>
+          )}
+        </For>
+      </div>
+
+      <div
+        id={describedBy()}
+        style={{
+          "margin-top": "6px",
+          "font-size": "12px",
+          color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+        }}
+      >
+        {p.errorText || p.helperText || " "}
+      </div>
+    </div>
   );
 };
 
@@ -249,9 +487,18 @@ export class GraphRuntime {
  * --------------------------------------------- */
 
 enum FieldKind {
+  textArea = "textArea",
   phone = "phone",
   text = "text",
   number = "number",
+  select = "select",
+  checkbox = "checkbox",
+  inlineCheckbox = "inlineCheckbox",
+  radio = "radio",
+  inlineRadio = "inlineRadio",
+  ssn = "ssn",
+  zip = "zip",
+  password = "password",
 }
 
 type FieldSpec = {
@@ -260,6 +507,9 @@ type FieldSpec = {
   label: string;
   placeholder?: string;
   helperText?: string;
+  options?: {label: string; value: string}[];
+  maxDigits?: number;
+  required?: boolean;
   /** optional initial value (stored/raw) */
   initialValue?: string;
   /** optional validator override (receives stored/raw value) */
@@ -278,6 +528,8 @@ enum WhenOperators {
   isValid = "isValid",
   isInvalid = "isInvalid",
   isEmpty = "isEmpty",
+  equals = "equals",
+  notEquals = "notEquals",
 }
 
 enum TriggerOperators {
@@ -285,16 +537,22 @@ enum TriggerOperators {
   setValue = "setValue",
 }
 
-type WhenPredicate = {
-  fieldIds: string[];
-  operator: WhenOperators;
-};
+type WhenPredicate =
+  | {
+      fieldIds: string[];
+      operator: WhenOperators.isValid | WhenOperators.isInvalid | WhenOperators.isEmpty;
+    }
+  | {
+      fieldIds: string[];
+      operator: WhenOperators.equals | WhenOperators.notEquals;
+      value: string;
+    };
 
 type WhenClause =
   | WhenOperators
   | {
-  [OperatorMaths.all]?: WhenPredicate;
-  [OperatorMaths.any]?: WhenPredicate;
+  [OperatorMaths.all]?: WhenPredicate | WhenPredicate[];
+  [OperatorMaths.any]?: WhenPredicate | WhenPredicate[];
 };
 
 type TriggerOperation =
@@ -336,7 +594,8 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
       });
 
     case FieldKind.number: {
-      const digits = initial.replace(/\D/g, "").slice(0, 6);
+      const maxDigits = spec.maxDigits ?? 6;
+      const digits = initial.replace(/\D/g, "").slice(0, maxDigits);
       return new FieldRuntimeNode<string>({
         id: spec.id,
         initialValue: digits,
@@ -344,6 +603,53 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
       });
     }
 
+    case FieldKind.ssn: {
+      const maxDigits = spec.maxDigits ?? 9;
+      const digits = initial.replace(/\D/g, "").slice(0, maxDigits);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: digits,
+        validate: spec.validate ?? makeSsnValidator(!!spec.required),
+      });
+    }
+
+    case FieldKind.zip: {
+      const maxDigits = spec.maxDigits ?? 9;
+      const digits = initial.replace(/\D/g, "").slice(0, maxDigits);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: digits,
+        validate: spec.validate ?? makeZipValidator(!!spec.required),
+      });
+    }
+
+    case FieldKind.select:
+    case FieldKind.radio:
+    case FieldKind.inlineRadio: {
+      const validate =
+        spec.validate ??
+        (spec.required
+          ? (v) => (v ? [] : ["Selection is required."])
+          : () => []);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: initial,
+        validate,
+      });
+    }
+
+    case FieldKind.checkbox:
+    case FieldKind.inlineCheckbox: {
+      const next = initial === "true" ? "true" : "";
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: next,
+        validate: spec.validate ?? (() => []),
+      });
+    }
+
+    case FieldKind.textArea:
+    case FieldKind.password:
     case FieldKind.text:
     default:
       return new FieldRuntimeNode<string>({
@@ -358,7 +664,7 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
   const sourceId = field.id;
   const triggers = field.triggers ?? [];
 
-  const predStreamFor = (id: string, op: WhenOperators) => {
+  const predStreamFor = (id: string, op: WhenOperators, value?: string) => {
     const n = graph.get<any>(id);
 
     if (op === WhenOperators.isEmpty) {
@@ -367,6 +673,17 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
           if (v == null) return true;
           if (typeof v !== "string") return false;
           return v.length === 0;
+        }),
+        distinctUntilChanged()
+      );
+    }
+
+    if (op === WhenOperators.equals || op === WhenOperators.notEquals) {
+      return n.value$.pipe(
+        map((v) => {
+          const curr = v == null ? "" : String(v);
+          const target = value ?? "";
+          return op === WhenOperators.equals ? curr === target : curr !== target;
         }),
         distinctUntilChanged()
       );
@@ -387,7 +704,15 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
 
     if (!clause) return predStreamFor(sourceId, WhenOperators.isValid);
 
-    const streams = clause.fieldIds.map((id) => predStreamFor(id, clause.operator));
+    const predicates = Array.isArray(clause) ? clause : [clause];
+
+    const streams = predicates.flatMap((pred) =>
+      pred.fieldIds.map((id) =>
+        predStreamFor(id, pred.operator, "value" in pred ? pred.value : undefined)
+      )
+    );
+
+    if (streams.length === 0) return predStreamFor(sourceId, WhenOperators.isValid);
 
     return combineLatest(streams).pipe(
       map((vals) => (mode === OperatorMaths.all ? vals.every(Boolean) : vals.some(Boolean))),
@@ -458,6 +783,25 @@ const normalizePhone: Normalizer = (raw) => {
 
 const phoneDigitsBlocker = /^\d{0,10}$/;
 
+const normalizeDigits = (raw: string, maxDigits: number) =>
+  raw.replace(/\D/g, "").slice(0, maxDigits);
+
+const formatSSN: Formatter = (rawDigits) => {
+  const d = rawDigits.replace(/\D/g, "");
+  const a = d.slice(0, 3);
+  const b = d.slice(3, 5);
+  const c = d.slice(5, 9);
+  if (d.length <= 3) return a;
+  if (d.length <= 5) return `${a}-${b}`;
+  return `${a}-${b}-${c}`;
+};
+
+const formatZip: Formatter = (rawDigits) => {
+  const d = rawDigits.replace(/\D/g, "");
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5, 9)}`;
+};
+
 function isControlKey(e: KeyboardEvent): boolean {
   if (e.ctrlKey || e.metaKey || e.altKey) return true;
   return (
@@ -504,6 +848,18 @@ const validatePhone: Validator<string> = (digits) => {
   return [];
 };
 
+const makeSsnValidator = (required: boolean): Validator<string> => (digits) => {
+  if (!digits) return required ? ["SSN is required."] : [];
+  if (!/^\d{9}$/.test(digits)) return ["SSN must be 9 digits."];
+  return [];
+};
+
+const makeZipValidator = (required: boolean): Validator<string> => (digits) => {
+  if (!digits) return required ? ["ZIP is required."] : [];
+  if (!/^\d{5}(\d{4})?$/.test(digits)) return ["ZIP must be 5 or 9 digits."];
+  return [];
+};
+
 type FieldHandle = {
   value$: BehaviorSubject<string>;
   disabled$: Observable<boolean>;
@@ -530,7 +886,7 @@ export const PhoneField: Component<PhoneFieldProps> = (p) => {
   const rawDigits = fromObservable(p.field.value$, ""); // stored value = digits
 
   const displayValue = createMemo(() => formatPhone(rawDigits()));
-  const errorText = createMemo(() => errors()[0] ?? "");
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
   const mask = p.inputMask ?? "(___) ___-____";
   const blocker = new RegExp(p.inputBlocker ?? "^\\d{0,10}$");
 
@@ -560,6 +916,223 @@ export const PhoneField: Component<PhoneFieldProps> = (p) => {
   );
 };
 
+type TextAreaFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+};
+
+export const TextAreaField: Component<TextAreaFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const value = fromObservable(p.field.value$, "");
+
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+
+  return (
+    <TextAreaFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      value={value()}
+      placeholder={p.spec.placeholder}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      onInput={(v) => p.field.setValue(v)}
+      onBlur={() => p.field.markTouched()}
+    />
+  );
+};
+
+type SelectFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+};
+
+export const SelectField: Component<SelectFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const value = fromObservable(p.field.value$, "");
+
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const options = p.spec.options ?? [];
+
+  return (
+    <SelectFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      value={value()}
+      placeholder={p.spec.placeholder}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      options={options}
+      onChange={(next) => p.field.setValue(next)}
+    />
+  );
+};
+
+type CheckboxFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+  inline?: boolean;
+};
+
+export const CheckboxField: Component<CheckboxFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const value = fromObservable(p.field.value$, "");
+
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const checked = createMemo(() => value() === "true");
+
+  return (
+    <CheckboxFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      checked={checked()}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      inline={p.inline}
+      onChange={(next) => p.field.setValue(next ? "true" : "")}
+    />
+  );
+};
+
+export const InlineCheckboxField: Component<Omit<CheckboxFieldProps, "inline">> = (p) => {
+  return <CheckboxField {...p} inline={true} />;
+};
+
+type RadioFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+  inline?: boolean;
+};
+
+export const RadioField: Component<RadioFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const value = fromObservable(p.field.value$, "");
+
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const options = p.spec.options ?? [];
+
+  return (
+    <RadioGroupFieldPrimitive
+      id={p.spec.id}
+      name={p.spec.id}
+      label={p.spec.label}
+      value={value()}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      options={options}
+      inline={p.inline}
+      onChange={(next) => p.field.setValue(next)}
+    />
+  );
+};
+
+export const InlineRadioField: Component<Omit<RadioFieldProps, "inline">> = (p) => {
+  return <RadioField {...p} inline={true} />;
+};
+
+type SsnFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+};
+
+export const SsnField: Component<SsnFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const rawDigits = fromObservable(p.field.value$, "");
+  const [show, setShow] = createSignal(false);
+
+  const displayValue = createMemo(() => formatSSN(rawDigits()));
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const mask = p.spec.inputMask ?? "___-__-____";
+  const maxDigits = p.spec.maxDigits ?? 9;
+  const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,9}$");
+
+  return (
+    <TextFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      type={show() ? "text" : "password"}
+      inputMode="numeric"
+      value={displayValue()}
+      placeholder={p.spec.placeholder ?? mask}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      rightSlot={
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          disabled={disabled()}
+          style={{
+            padding: "8px 10px",
+            "border-radius": "8px",
+            border: "1px solid rgba(0,0,0,0.25)",
+            "background-color": "white",
+            "font-size": "12px",
+            cursor: "pointer",
+            opacity: disabled() ? 0.6 : 1,
+          }}
+        >
+          {show() ? "Hide" : "Show"}
+        </button>
+      }
+      onKeyDown={(e) => blockNonDigitsAndMaxLen(e, rawDigits(), maxDigits)}
+      onInput={(nextDisplay) => {
+        if (/[^0-9-]/.test(nextDisplay)) return;
+        const digits = normalizeDigits(nextDisplay, maxDigits);
+        if (!blocker.test(digits)) return;
+        p.field.setValue(digits);
+      }}
+      onBlur={() => p.field.markTouched()}
+    />
+  );
+};
+
+type ZipFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+};
+
+export const ZipField: Component<ZipFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const rawDigits = fromObservable(p.field.value$, "");
+
+  const displayValue = createMemo(() => formatZip(rawDigits()));
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const mask = p.spec.inputMask ?? "00000[-0000]";
+  const maxDigits = p.spec.maxDigits ?? 9;
+  const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,9}$");
+
+  return (
+    <TextFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      inputMode="numeric"
+      value={displayValue()}
+      placeholder={p.spec.placeholder ?? mask}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      onKeyDown={(e) => blockNonDigitsAndMaxLen(e, rawDigits(), maxDigits)}
+      onInput={(nextDisplay) => {
+        if (/[^0-9-]/.test(nextDisplay)) return;
+        const digits = normalizeDigits(nextDisplay, maxDigits);
+        if (!blocker.test(digits)) return;
+        p.field.setValue(digits);
+      }}
+      onBlur={() => p.field.markTouched()}
+    />
+  );
+};
+
 type NumberFieldProps = {
   id?: string;
   label?: string;
@@ -574,7 +1147,7 @@ export const NumberField: Component<NumberFieldProps> = (p) => {
   const errors = fromObservable(p.field.errors$, []);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => errors()[0] ?? "");
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
   const maxDigits = p.maxDigits ?? 6;
 
   return (
@@ -597,12 +1170,59 @@ export const NumberField: Component<NumberFieldProps> = (p) => {
   );
 };
 
+type PasswordFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+};
+
+export const PasswordField: Component<PasswordFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const value = fromObservable(p.field.value$, "");
+  const [show, setShow] = createSignal(false);
+
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+
+  return (
+    <TextFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      type={show() ? "text" : "password"}
+      value={value()}
+      placeholder={p.spec.placeholder}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      rightSlot={
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          disabled={disabled()}
+          style={{
+            padding: "8px 10px",
+            "border-radius": "8px",
+            border: "1px solid rgba(0,0,0,0.25)",
+            "background-color": "white",
+            "font-size": "12px",
+            cursor: "pointer",
+            opacity: disabled() ? 0.6 : 1,
+          }}
+        >
+          {show() ? "Hide" : "Show"}
+        </button>
+      }
+      onInput={(next) => p.field.setValue(next)}
+      onBlur={() => p.field.markTouched()}
+    />
+  );
+};
+
 const BoundTextField: Component<{ spec: FieldSpec; field: FieldHandle }> = (p) => {
   const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
 
-  const errorText = createMemo(() => errors()[0] ?? "");
+  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
 
   return (
     <TextFieldPrimitive
@@ -637,6 +1257,9 @@ const FormRenderer: Component<FormRendererProps> = (p) => {
           if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
 
           switch (f.kind) {
+            case FieldKind.textArea:
+              return <TextAreaField spec={f} field={handle} />;
+
             case FieldKind.phone:
               return (
                 <PhoneField
@@ -657,9 +1280,34 @@ const FormRenderer: Component<FormRendererProps> = (p) => {
                   label={f.label}
                   placeholder={f.placeholder}
                   helperText={f.helperText}
+                  maxDigits={f.maxDigits}
                   field={handle}
                 />
               );
+
+            case FieldKind.select:
+              return <SelectField spec={f} field={handle} />;
+
+            case FieldKind.checkbox:
+              return <CheckboxField spec={f} field={handle} />;
+
+            case FieldKind.inlineCheckbox:
+              return <InlineCheckboxField spec={f} field={handle} />;
+
+            case FieldKind.radio:
+              return <RadioField spec={f} field={handle} />;
+
+            case FieldKind.inlineRadio:
+              return <InlineRadioField spec={f} field={handle} />;
+
+            case FieldKind.ssn:
+              return <SsnField spec={f} field={handle} />;
+
+            case FieldKind.zip:
+              return <ZipField spec={f} field={handle} />;
+
+            case FieldKind.password:
+              return <PasswordField spec={f} field={handle} />;
 
             case FieldKind.text:
             default:
@@ -681,16 +1329,158 @@ export const TelepathicFormDemo: Component = () => {
     id: "demo",
     fields: [
       {
+        id: "contactMethod",
+        kind: FieldKind.select,
+        label: "Preferred Contact Method",
+        placeholder: "Select one...",
+        required: true,
+        options: [
+          {label: "Phone", value: "phone"},
+          {label: "Email", value: "email"},
+          {label: "Mail", value: "mail"},
+        ],
+        triggers: [
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.equals,
+                value: "phone",
+              },
+            },
+            operation: {
+              fieldIds: ["phone"],
+              operator: TriggerOperators.setDisabled,
+              value: false,
+            },
+          },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.notEquals,
+                value: "phone",
+              },
+            },
+            operations: [
+              {
+                fieldIds: ["phone"],
+                operator: TriggerOperators.setDisabled,
+                value: true,
+              },
+              {
+                fieldIds: ["phone"],
+                operator: TriggerOperators.setValue,
+                value: "",
+              },
+            ],
+          },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.equals,
+                value: "mail",
+              },
+            },
+            operation: {
+              fieldIds: ["zip"],
+              operator: TriggerOperators.setDisabled,
+              value: false,
+            },
+          },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.notEquals,
+                value: "mail",
+              },
+            },
+            operations: [
+              {
+                fieldIds: ["zip"],
+                operator: TriggerOperators.setDisabled,
+                value: true,
+              },
+              {
+                fieldIds: ["zip"],
+                operator: TriggerOperators.setValue,
+                value: "",
+              },
+            ],
+          },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.equals,
+                value: "phone",
+              },
+            },
+            operation: {
+              fieldIds: ["hasExtension"],
+              operator: TriggerOperators.setDisabled,
+              value: false,
+            },
+          },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["contactMethod"],
+                operator: WhenOperators.notEquals,
+                value: "phone",
+              },
+            },
+            operations: [
+              {
+                fieldIds: ["hasExtension"],
+                operator: TriggerOperators.setDisabled,
+                value: true,
+              },
+              {
+                fieldIds: ["hasExtension"],
+                operator: TriggerOperators.setValue,
+                value: "",
+              },
+            ],
+          },
+        ],
+      },
+      {
         id: "phone",
         kind: FieldKind.phone,
-        label: "Phone (required)",
+        label: "Phone (required for phone contact)",
         placeholder: "(___) ___-____",
         inputMask: "(___) ___-____",
         inputBlocker: "^\\d{0,10}$",
         helperText: "Digits are stored; formatting is view-only.",
+      },
+      {
+        id: "hasExtension",
+        kind: FieldKind.inlineCheckbox,
+        label: "Has extension",
+        helperText: "Enable the extension field.",
+      },
+      {
+        id: "ext",
+        kind: FieldKind.number,
+        label: "Extension",
+        helperText: "Optional. Digits only, max 6.",
+        maxDigits: 6,
+        validate: (v) => {
+          if (!v) return []; // optional
+          if (!/^\d{1,6}$/.test(v)) return ["Ext must be 1–6 digits."];
+          return [];
+        },
         triggers: [
           {
-            when: WhenOperators.isValid,
+            when: {
+              [OperatorMaths.all]: [
+                {fieldIds: ["phone"], operator: WhenOperators.isValid},
+                {fieldIds: ["hasExtension"], operator: WhenOperators.equals, value: "true"},
+              ],
+            },
             operation: {
               fieldIds: ["ext"],
               operator: TriggerOperators.setDisabled,
@@ -698,7 +1488,12 @@ export const TelepathicFormDemo: Component = () => {
             },
           },
           {
-            when: WhenOperators.isInvalid,
+            when: {
+              [OperatorMaths.any]: [
+                {fieldIds: ["phone"], operator: WhenOperators.isInvalid},
+                {fieldIds: ["hasExtension"], operator: WhenOperators.notEquals, value: "true"},
+              ],
+            },
             operations: [
               {
                 fieldIds: ["ext"],
@@ -715,32 +1510,103 @@ export const TelepathicFormDemo: Component = () => {
         ],
       },
       {
-        id: "ext",
-        kind: FieldKind.number,
-        label: "Extension (disabled until phone valid)",
-        helperText: "Optional. Digits only, max 6.",
+        id: "email",
+        kind: FieldKind.text,
+        label: "Email",
+        placeholder: "you@example.com",
+        helperText: "Used when contact method is email.",
         validate: (v) => {
-          if (!v) return []; // optional
-          if (!/^\d{1,6}$/.test(v)) return ["Ext must be 1–6 digits."];
+          if (!v) return [];
+          if (!/^[^@]+@[^@]+\.[^@]+$/.test(v)) return ["Enter a valid email."];
           return [];
         },
+      },
+      {
+        id: "preferredTime",
+        kind: FieldKind.inlineRadio,
+        label: "Preferred Time",
+        required: true,
+        options: [
+          {label: "Morning", value: "morning"},
+          {label: "Afternoon", value: "afternoon"},
+          {label: "Evening", value: "evening"},
+        ],
+        helperText: "Used for phone follow-ups.",
+      },
+      {
+        id: "zip",
+        kind: FieldKind.zip,
+        label: "ZIP Code",
+        inputMask: "00000[-0000]",
+        inputBlocker: "^\\d{0,9}$",
+        required: true,
+        helperText: "Required only for mail contact.",
+      },
+      {
+        id: "isEmployee",
+        kind: FieldKind.checkbox,
+        label: "I am an employee",
+        helperText: "Employee-only SSN field will unlock.",
         triggers: [
           {
-            when: WhenOperators.isValid,
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["isEmployee"],
+                operator: WhenOperators.equals,
+                value: "true",
+              },
+            },
             operation: {
-              fieldIds: ["notes"],
+              fieldIds: ["ssn"],
               operator: TriggerOperators.setDisabled,
               value: false,
             },
           },
+          {
+            when: {
+              [OperatorMaths.all]: {
+                fieldIds: ["isEmployee"],
+                operator: WhenOperators.notEquals,
+                value: "true",
+              },
+            },
+            operations: [
+              {
+                fieldIds: ["ssn"],
+                operator: TriggerOperators.setDisabled,
+                value: true,
+              },
+              {
+                fieldIds: ["ssn"],
+                operator: TriggerOperators.setValue,
+                value: "",
+              },
+            ],
+          },
         ],
       },
       {
+        id: "ssn",
+        kind: FieldKind.ssn,
+        label: "SSN (optional)",
+        inputMask: "___-__-____",
+        inputBlocker: "^\\d{0,9}$",
+        helperText: "Digits only. Stored as raw digits.",
+      },
+      {
         id: "notes",
-        kind: FieldKind.text,
-        label: "Notes (disabled until phone & ext valid)",
-        helperText: "Up to 140 chars.",
-        validate: (v) => (v.length > 140 ? ["Max 140 chars."] : []),
+        kind: FieldKind.textArea,
+        label: "Notes",
+        placeholder: "Anything else we should know?",
+        helperText: "Up to 240 chars.",
+        validate: (v) => (v.length > 240 ? ["Max 240 chars."] : []),
+      },
+      {
+        id: "password",
+        kind: FieldKind.password,
+        label: "Account Password",
+        placeholder: "••••••••",
+        helperText: "Toggle show/hide (no masking rules enforced).",
       },
     ],
   };
@@ -749,8 +1615,10 @@ export const TelepathicFormDemo: Component = () => {
   onCleanup(() => graph.destroy());
 
   // debug readouts
+  const contactMethod = fromObservable(nodesById.get("contactMethod")!.value$, "");
   const phoneValid = fromObservable(nodesById.get("phone")!.valid$, false);
   const extDisabled = fromObservable(nodesById.get("ext")!.disabled$, false);
+  const zipDisabled = fromObservable(nodesById.get("zip")!.disabled$, false);
 
   return (
     <div style={{padding: "18px"}}>
@@ -769,6 +1637,8 @@ export const TelepathicFormDemo: Component = () => {
       >
         <div>phone.valid = {String(phoneValid())}</div>
         <div>ext.disabled (wired) = {String(extDisabled())}</div>
+        <div>zip.disabled (wired) = {String(zipDisabled())}</div>
+        <div>contactMethod = {contactMethod() || "(empty)"}</div>
       </div>
     </div>
   );
