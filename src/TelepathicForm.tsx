@@ -666,6 +666,8 @@ enum FieldKind {
   phone = "phone",
   text = "text",
   number = "number",
+  currency = "currency",
+  percent = "percent",
   select = "select",
   checkbox = "checkbox",
   inlineCheckbox = "inlineCheckbox",
@@ -782,6 +784,30 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: digits,
         validate: spec.validate ?? (() => []),
+      });
+    }
+
+    case FieldKind.currency: {
+      const maxIntDigits = spec.maxDigits ?? 9;
+      const normalized = normalizeDecimalInput(initial, maxIntDigits, 2);
+      const validate =
+        spec.validate ?? (spec.required ? (v) => (v ? [] : ["Required."]) : () => []);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: normalized,
+        validate,
+      });
+    }
+
+    case FieldKind.percent: {
+      const maxIntDigits = spec.maxDigits ?? 1000;
+      const normalized = normalizeDecimalInput(initial, maxIntDigits, null);
+      const validate =
+        spec.validate ?? (spec.required ? (v) => (v ? [] : ["Required."]) : () => []);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: normalized,
+        validate,
       });
     }
 
@@ -990,6 +1016,146 @@ const phoneDigitsBlocker = /^\d{0,10}$/;
 const normalizeDigits = (raw: string, maxDigits: number) =>
   raw.replace(/\D/g, "").slice(0, maxDigits);
 
+function normalizeDecimalInput(
+  raw: string,
+  maxIntDigits: number,
+  maxFracDigits: number | null
+): string {
+  const cleaned = raw.replace(/[^0-9.]/g, "");
+  if (!cleaned) return "";
+
+  let out = "";
+  let seenDot = false;
+  for (const ch of cleaned) {
+    if (ch === ".") {
+      if (seenDot) continue;
+      seenDot = true;
+      out += ".";
+      continue;
+    }
+    out += ch;
+  }
+
+  let intPart = out;
+  let fracPart = "";
+  if (seenDot) {
+    const idx = out.indexOf(".");
+    intPart = out.slice(0, idx);
+    fracPart = out.slice(idx + 1);
+  }
+
+  intPart = intPart.replace(/^0+(?=\d)/, "");
+  if (intPart.length > maxIntDigits) intPart = intPart.slice(0, maxIntDigits);
+  if (maxFracDigits !== null) fracPart = fracPart.slice(0, maxFracDigits);
+
+  if (intPart === "" && fracPart === "") return "";
+  if (intPart === "" && fracPart !== "") intPart = "0";
+
+  return fracPart ? `${intPart}.${fracPart}` : intPart;
+}
+
+const addCommas = (intPart: string) =>
+  intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+const formatCurrencyDisplay = (n: string): string => {
+  if (!n) return "";
+  const [intRaw, fracRaw = ""] = n.split(".");
+  const intWithCommas = addCommas(intRaw || "0");
+  const frac2 = (fracRaw + "00").slice(0, 2);
+  return `$${intWithCommas}.${frac2}`;
+};
+
+
+const padCurrencyTo2 = (n: string): string => {
+  if (!n) return "";
+  const [intRaw, fracRaw = ""] = n.split(".");
+  const intPart = intRaw || "0";
+  const frac2 = (fracRaw + "00").slice(0, 2);
+  return `${intPart}.${frac2}`;
+};
+
+const roundDecimalHalfEven = (raw: string, scale: number): string => {
+  if (!raw) return "";
+
+  const cleaned = raw.replace(/[^0-9.]/g, "");
+  if (!cleaned) return "";
+
+  // keep only first dot
+  let out = "";
+  let seenDot = false;
+  for (const ch of cleaned) {
+    if (ch === ".") {
+      if (seenDot) continue;
+      seenDot = true;
+      out += ".";
+      continue;
+    }
+    out += ch;
+  }
+
+  let [intPart, fracPart = ""] = out.split(".");
+  intPart = (intPart || "0").replace(/^0+(?=\d)/, "");
+
+  // Need next digit + rest to decide
+  const frac = fracPart.padEnd(scale + 2, "0");
+  const keep = frac.slice(0, scale);
+  const next = frac.charCodeAt(scale) - 48; // digit after kept
+  const rest = frac.slice(scale + 1);
+
+  let roundUp = false;
+  if (next > 5) roundUp = true;
+  else if (next < 5) roundUp = false;
+  else {
+    // next == 5
+    const hasNonZeroAfter = /[1-9]/.test(rest);
+    if (hasNonZeroAfter) {
+      roundUp = true;
+    } else {
+      // tie -> to even
+      const lastDigit = scale === 0
+        ? intPart.charCodeAt(intPart.length - 1) - 48
+        : keep.charCodeAt(keep.length - 1) - 48;
+      roundUp = (lastDigit % 2) === 1;
+    }
+  }
+
+  const baseDigits = (intPart + keep.padEnd(scale, "0")) || "0";
+
+  if (!roundUp) {
+    if (scale === 0) return intPart;
+    return `${intPart}.${keep.padEnd(scale, "0")}`;
+  }
+
+  // add 1 at rounding position with carry (string-safe)
+  const arr = baseDigits.split("").map((c) => c.charCodeAt(0) - 48);
+  let i = arr.length - 1;
+  arr[i] += 1;
+  while (i > 0 && arr[i] === 10) {
+    arr[i] = 0;
+    i -= 1;
+    arr[i] += 1;
+  }
+  if (arr[0] === 10) {
+    arr[0] = 0;
+    arr.unshift(1);
+  }
+
+  const rounded = arr.join("");
+  const intLen = rounded.length - scale;
+  const intOut = rounded.slice(0, intLen) || "0";
+  if (scale === 0) return intOut;
+  const fracOut = rounded.slice(intLen).padStart(scale, "0");
+  return `${intOut}.${fracOut}`;
+};
+
+const formatPercentDisplay = (n: string): string => {
+  if (!n) return "";
+  const [intRaw, fracRaw = ""] = n.split(".");
+  const intWithCommas = addCommas(intRaw || "0");
+  if (fracRaw) return `${intWithCommas}.${fracRaw}%`;
+  return `${intWithCommas}%`;
+};
+
 const formatSSN: Formatter = (rawDigits) => {
   const d = rawDigits.replace(/\D/g, "");
   const a = d.slice(0, 3);
@@ -1032,6 +1198,13 @@ function blockNonDigitsAndMaxLen(e: KeyboardEvent, currentDigits: string, maxLen
   if (currentDigits.length >= maxLen) {
     e.preventDefault();
   }
+}
+
+function blockNonDecimalInput(e: KeyboardEvent, currentValue: string) {
+  if (isControlKey(e)) return;
+  if (/^\d$/.test(e.key)) return;
+  if (e.key === "." && !currentValue.includes(".")) return;
+  e.preventDefault();
 }
 
 // display formatting: (123) 456-7890 as you type
@@ -1436,6 +1609,114 @@ export const NumberField: Component<NumberFieldProps> = (p) => {
   );
 };
 
+type CurrencyFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+  inline?: boolean;
+};
+
+export const CurrencyField: Component<CurrencyFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
+  const raw = fromObservable(p.field.value$, "");
+
+  const [isEditing, setIsEditing] = createSignal(false);
+
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
+  const editValue = createMemo(() => raw());
+  const displayValue = createMemo(() => formatCurrencyDisplay(raw()));
+  const maxIntDigits = p.spec.maxDigits ?? 9;
+
+  return (
+    <TextFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      inputMode="decimal"
+      value={isEditing() ? editValue() : displayValue()}
+      placeholder={p.spec.placeholder}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
+      inline={p.inline}
+      onKeyDown={(e) => blockNonDecimalInput(e, raw())}
+      onInput={(nextDisplay) => {
+        const normalized = normalizeDecimalInput(nextDisplay, maxIntDigits, null);
+        p.field.setValue(normalized);
+      }}
+      onFocus={() => {
+        setIsEditing(true);
+        p.field.setFocused(true);
+      }}
+      onBlur={() => {
+        setIsEditing(false);
+        p.field.markTouched();
+        const normalized = normalizeDecimalInput(raw(), maxIntDigits, null);
+        const rounded = roundDecimalHalfEven(normalized, 2);
+        p.field.setValue(rounded);
+        p.field.setFocused(false);
+      }}
+    />
+  );
+};
+type PercentFieldProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+  inline?: boolean;
+};
+
+export const PercentField: Component<PercentFieldProps> = (p) => {
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
+  const raw = fromObservable(p.field.value$, "");
+
+  const [isEditing, setIsEditing] = createSignal(false);
+
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
+  const editValue = createMemo(() => raw());
+  const displayValue = createMemo(() => formatPercentDisplay(raw()));
+  const maxIntDigits = p.spec.maxDigits ?? 1000;
+
+  return (
+    <TextFieldPrimitive
+      id={p.spec.id}
+      label={p.spec.label}
+      inputMode="decimal"
+      value={isEditing() ? editValue() : displayValue()}
+      placeholder={p.spec.placeholder}
+      disabled={disabled()}
+      errorText={errorText()}
+      helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
+      inline={p.inline}
+      onKeyDown={(e) => blockNonDecimalInput(e, raw())}
+      onInput={(nextDisplay) => {
+        const normalized = normalizeDecimalInput(nextDisplay, maxIntDigits, null);
+        p.field.setValue(normalized);
+      }}
+      onFocus={() => {
+        setIsEditing(true);
+        p.field.setFocused(true);
+      }}
+      onBlur={() => {
+        setIsEditing(false);
+        p.field.markTouched();
+        p.field.setFocused(false);
+      }}
+    />
+  );
+};
+
 type PasswordFieldProps = {
   spec: FieldSpec;
   field: FieldHandle;
@@ -1567,6 +1848,12 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
                 field={handle}
               />
             );
+
+          case FieldKind.currency:
+            return <CurrencyField spec={f} field={handle} />;
+
+          case FieldKind.percent:
+            return <PercentField spec={f} field={handle} />;
 
           case FieldKind.select:
             return <SelectField spec={f} field={handle} />;
@@ -1856,16 +2143,16 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "true"},
             operations: [
-              {fieldIds: ["ssn"], operator: TriggerOperators.setHidden, value: false},
-              {fieldIds: ["ssn"], operator: TriggerOperators.setDisabled, value: false},
+              {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setDisabled, value: false},
             ],
           },
           {
             when: {operator: WhenOperators.notEquals, value: "true"},
             operations: [
-              {fieldIds: ["ssn"], operator: TriggerOperators.setHidden, value: true},
-              {fieldIds: ["ssn"], operator: TriggerOperators.setDisabled, value: true},
-              {fieldIds: ["ssn"], operator: TriggerOperators.setValue, value: ""},
+              {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setDisabled, value: true},
+              {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setValue, value: ""},
             ],
           },
         ],
@@ -1877,6 +2164,22 @@ export const TelepathicFormDemo: Component = () => {
         inputMask: "___-__-____",
         inputBlocker: "^\\d{0,9}$",
         helperText: "Digits only. Stored as raw digits.",
+      },
+      {
+        id: "salary",
+        kind: FieldKind.currency,
+        label: "Desired Salary",
+       // inputMask: "$______.__",
+       // inputBlocker: "^\\d{0,6}\.\\d{0,2}$",
+        helperText: "Six figures max",
+      },
+      {
+        id: "taxPercent",
+        kind: FieldKind.percent,
+        label: "Estimated taxation",
+        //inputMask: "%__.____",
+        //inputBlocker: "^\\d{0,2}\.\\d{0,4}$",
+        helperText: "How much you will expect to be taxed",
       },
       {
         id: "notes",
@@ -1915,14 +2218,13 @@ export const TelepathicFormDemo: Component = () => {
       </div>
 
       <FormRenderer form={formSpec} handlesById={handlesById}/>
-
-      <div style={{"margin-top": "18px", "font-family": "system-ui", "font-size": "12px", opacity: 0.7}}>
-        InlineRow demo (duplicates below)
-      </div>
-      <InlineRow>
-        <ZipField spec={zipSpec} field={handlesById.get("zip")!} inline={true} />
-        <PasswordField spec={passwordSpec} field={handlesById.get("password")!} inline={true} />
-      </InlineRow>
+      {/*<div style={{"margin-top": "18px", "font-family": "system-ui", "font-size": "12px", opacity: 0.7}}>*/}
+      {/*  InlineRow demo (duplicates below)*/}
+      {/*</div>*/}
+      {/*<InlineRow>*/}
+      {/*  <ZipField spec={zipSpec} field={handlesById.get("zip")!} inline={true} />*/}
+      {/*  <PasswordField spec={passwordSpec} field={handlesById.get("password")!} inline={true} />*/}
+      {/*</InlineRow>*/}
 
       <div
         style={{
