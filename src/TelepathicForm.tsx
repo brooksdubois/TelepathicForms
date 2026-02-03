@@ -35,6 +35,7 @@ type TextFieldPrimitiveProps = {
   helperText?: string;
   rightSlot?: JSX.Element;
   requiredDot?: boolean;
+  inline?: boolean;
   onInput: (next: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -43,11 +44,36 @@ type TextFieldPrimitiveProps = {
 
 export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
   const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+  const isInline = !!p.inline;
+  const labelWidth = "180px";
+  const helperIndent = "192px";
 
   return (
-    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+    <label
+      style={
+        isInline
+          ? {
+              display: "flex",
+              "align-items": "center",
+              gap: "12px",
+              "flex-wrap": "wrap",
+              "font-family": "system-ui",
+              "margin-bottom": "12px",
+            }
+          : {display: "block", "font-family": "system-ui", "margin-bottom": "12px"}
+      }
+    >
       {p.label && (
-        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+        <div
+          style={{
+            "font-size": "12px",
+            "margin-bottom": isInline ? "0" : "4px",
+            opacity: 0.8,
+            "font-weight": 600,
+            width: isInline ? labelWidth : undefined,
+            "flex-shrink": isInline ? 0 : undefined,
+          }}
+        >
           {p.label}
           {p.requiredDot && (
             <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
@@ -55,7 +81,15 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
         </div>
       )}
 
-      <div style={{display: "flex", gap: "6px", "align-items": "center", width: "360px"}}>
+      <div
+        style={{
+          display: "flex",
+          gap: "6px",
+          "align-items": "center",
+          width: "360px",
+          flex: isInline ? "1 1 360px" : undefined,
+        }}
+      >
         <input
           id={p.id}
           type={p.type ?? "text"}
@@ -85,9 +119,10 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
       <div
         id={describedBy()}
         style={{
-          "margin-top": "6px",
+          "margin-top": isInline ? "4px" : "6px",
           "font-size": "12px",
           color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+          ...(isInline ? {"flex-basis": "100%", "margin-left": helperIndent} : {}),
         }}
       >
         {p.errorText || p.helperText || " "}
@@ -106,6 +141,7 @@ type TextAreaFieldPrimitiveProps = {
   helperText?: string;
   rows?: number;
   requiredDot?: boolean;
+  inline?: boolean;
   onInput: (next: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -113,11 +149,36 @@ type TextAreaFieldPrimitiveProps = {
 
 export const TextAreaFieldPrimitive: Component<TextAreaFieldPrimitiveProps> = (p) => {
   const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+  const isInline = !!p.inline;
+  const labelWidth = "180px";
+  const helperIndent = "192px";
 
   return (
-    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+    <label
+      style={
+        isInline
+          ? {
+              display: "flex",
+              "align-items": "center",
+              gap: "12px",
+              "flex-wrap": "wrap",
+              "font-family": "system-ui",
+              "margin-bottom": "12px",
+            }
+          : {display: "block", "font-family": "system-ui", "margin-bottom": "12px"}
+      }
+    >
       {p.label && (
-        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+        <div
+          style={{
+            "font-size": "12px",
+            "margin-bottom": isInline ? "0" : "4px",
+            opacity: 0.8,
+            "font-weight": 600,
+            width: isInline ? labelWidth : undefined,
+            "flex-shrink": isInline ? 0 : undefined,
+          }}
+        >
           {p.label}
           {p.requiredDot && (
             <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
@@ -146,15 +207,17 @@ export const TextAreaFieldPrimitive: Component<TextAreaFieldPrimitiveProps> = (p
           opacity: p.disabled ? 0.6 : 1,
           "min-height": "96px",
           resize: "vertical",
+          flex: isInline ? "1 1 360px" : undefined,
         }}
       />
 
       <div
         id={describedBy()}
         style={{
-          "margin-top": "6px",
+          "margin-top": isInline ? "4px" : "6px",
           "font-size": "12px",
           color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+          ...(isInline ? {"flex-basis": "100%", "margin-left": helperIndent} : {}),
         }}
       >
         {p.errorText || p.helperText || " "}
@@ -175,17 +238,43 @@ type SelectFieldPrimitiveProps = {
   errorText?: string;
   helperText?: string;
   requiredDot?: boolean;
+  inline?: boolean;
   onChange: (next: string) => void;
   onBlur?: () => void;
 };
 
 export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) => {
   const describedBy = createMemo(() => (p.id ? `${p.id}__help` : undefined));
+  const isInline = !!p.inline;
+  const labelWidth = "180px";
+  const helperIndent = "192px";
 
   return (
-    <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
+    <label
+      style={
+        isInline
+          ? {
+              display: "flex",
+              "align-items": "center",
+              gap: "12px",
+              "flex-wrap": "wrap",
+              "font-family": "system-ui",
+              "margin-bottom": "12px",
+            }
+          : {display: "block", "font-family": "system-ui", "margin-bottom": "12px"}
+      }
+    >
       {p.label && (
-        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+        <div
+          style={{
+            "font-size": "12px",
+            "margin-bottom": isInline ? "0" : "4px",
+            opacity: 0.8,
+            "font-weight": 600,
+            width: isInline ? labelWidth : undefined,
+            "flex-shrink": isInline ? 0 : undefined,
+          }}
+        >
           {p.label}
           {p.requiredDot && (
             <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
@@ -210,6 +299,7 @@ export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) =>
           "font-size": "14px",
           opacity: p.disabled ? 0.6 : 1,
           "background-color": "white",
+          flex: isInline ? "1 1 360px" : undefined,
         }}
       >
         {p.placeholder && <option value="">{p.placeholder}</option>}
@@ -221,9 +311,10 @@ export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) =>
       <div
         id={describedBy()}
         style={{
-          "margin-top": "6px",
+          "margin-top": isInline ? "4px" : "6px",
           "font-size": "12px",
           color: p.errorText ? "#c62828" : "rgba(0,0,0,0.6)",
+          ...(isInline ? {"flex-basis": "100%", "margin-left": helperIndent} : {}),
         }}
       >
         {p.errorText || p.helperText || " "}
@@ -348,6 +439,27 @@ export const RadioGroupFieldPrimitive: Component<RadioGroupFieldPrimitiveProps> 
       >
         {p.errorText || p.helperText || " "}
       </div>
+    </div>
+  );
+};
+
+type InlineRowProps = {
+  children: JSX.Element;
+  gap?: string;
+  align?: string;
+};
+
+export const InlineRow: Component<InlineRowProps> = (p) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        "align-items": p.align ?? "center",
+        gap: p.gap ?? "12px",
+        "flex-wrap": "wrap",
+      }}
+    >
+      {p.children}
     </div>
   );
 };
@@ -1171,6 +1283,7 @@ export const InlineRadioField: Component<Omit<RadioFieldProps, "inline">> = (p) 
 type SsnFieldProps = {
   spec: FieldSpec;
   field: FieldHandle;
+  inline?: boolean;
 };
 
 export const SsnField: Component<SsnFieldProps> = (p) => {
@@ -1202,6 +1315,7 @@ export const SsnField: Component<SsnFieldProps> = (p) => {
       errorText={errorText()}
       helperText={p.spec.helperText}
       requiredDot={showRequiredDot()}
+      inline={p.inline}
       rightSlot={
         <button
           type="button"
@@ -1235,6 +1349,7 @@ export const SsnField: Component<SsnFieldProps> = (p) => {
 type ZipFieldProps = {
   spec: FieldSpec;
   field: FieldHandle;
+  inline?: boolean;
 };
 
 export const ZipField: Component<ZipFieldProps> = (p) => {
@@ -1264,6 +1379,7 @@ export const ZipField: Component<ZipFieldProps> = (p) => {
       errorText={errorText()}
       helperText={p.spec.helperText}
       requiredDot={showRequiredDot()}
+      inline={p.inline}
       onKeyDown={(e) => blockNonDigitsAndMaxLen(e, rawDigits(), maxDigits)}
       onInput={(nextDisplay) => {
         if (/[^0-9-]/.test(nextDisplay)) return;
@@ -1323,6 +1439,7 @@ export const NumberField: Component<NumberFieldProps> = (p) => {
 type PasswordFieldProps = {
   spec: FieldSpec;
   field: FieldHandle;
+  inline?: boolean;
 };
 
 export const PasswordField: Component<PasswordFieldProps> = (p) => {
@@ -1349,6 +1466,7 @@ export const PasswordField: Component<PasswordFieldProps> = (p) => {
       errorText={errorText()}
       helperText={p.spec.helperText}
       requiredDot={showRequiredDot()}
+      inline={p.inline}
       rightSlot={
         <button
           type="button"
@@ -1781,6 +1899,9 @@ export const TelepathicFormDemo: Component = () => {
   const {graph, nodesById, handlesById} = buildGraphFromFormSpec(formSpec);
   onCleanup(() => graph.destroy());
 
+  const zipSpec = formSpec.fields.find((f) => f.id === "zip")!;
+  const passwordSpec = formSpec.fields.find((f) => f.id === "password")!;
+
   // debug readouts
   const contactMethod = fromObservable(nodesById.get("contactMethod")!.value$, "");
   const phoneValid = fromObservable(nodesById.get("phone")!.valid$, false);
@@ -1794,6 +1915,14 @@ export const TelepathicFormDemo: Component = () => {
       </div>
 
       <FormRenderer form={formSpec} handlesById={handlesById}/>
+
+      <div style={{"margin-top": "18px", "font-family": "system-ui", "font-size": "12px", opacity: 0.7}}>
+        InlineRow demo (duplicates below)
+      </div>
+      <InlineRow>
+        <ZipField spec={zipSpec} field={handlesById.get("zip")!} inline={true} />
+        <PasswordField spec={passwordSpec} field={handlesById.get("password")!} inline={true} />
+      </InlineRow>
 
       <div
         style={{
