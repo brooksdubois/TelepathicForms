@@ -34,6 +34,7 @@ type TextFieldPrimitiveProps = {
   errorText?: string;
   helperText?: string;
   rightSlot?: JSX.Element;
+  requiredDot?: boolean;
   onInput: (next: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -45,7 +46,14 @@ export const TextFieldPrimitive: Component<TextFieldPrimitiveProps> = (p) => {
 
   return (
     <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
-      {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
+      {p.label && (
+        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+          {p.label}
+          {p.requiredDot && (
+            <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
+          )}
+        </div>
+      )}
 
       <div style={{display: "flex", gap: "6px", "align-items": "center", width: "360px"}}>
         <input
@@ -97,6 +105,7 @@ type TextAreaFieldPrimitiveProps = {
   errorText?: string;
   helperText?: string;
   rows?: number;
+  requiredDot?: boolean;
   onInput: (next: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -107,7 +116,14 @@ export const TextAreaFieldPrimitive: Component<TextAreaFieldPrimitiveProps> = (p
 
   return (
     <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
-      {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
+      {p.label && (
+        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+          {p.label}
+          {p.requiredDot && (
+            <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
+          )}
+        </div>
+      )}
 
       <textarea
         id={p.id}
@@ -158,7 +174,9 @@ type SelectFieldPrimitiveProps = {
   disabled?: boolean;
   errorText?: string;
   helperText?: string;
+  requiredDot?: boolean;
   onChange: (next: string) => void;
+  onBlur?: () => void;
 };
 
 export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) => {
@@ -166,7 +184,14 @@ export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) =>
 
   return (
     <label style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
-      {p.label && <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8}}>{p.label}</div>}
+      {p.label && (
+        <div style={{"font-size": "12px", "margin-bottom": "4px", opacity: 0.8, "font-weight": 600}}>
+          {p.label}
+          {p.requiredDot && (
+            <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
+          )}
+        </div>
+      )}
 
       <select
         id={p.id}
@@ -175,6 +200,7 @@ export const SelectFieldPrimitive: Component<SelectFieldPrimitiveProps> = (p) =>
         aria-invalid={!!p.errorText}
         aria-describedby={describedBy()}
         onChange={(e) => p.onChange((e.currentTarget as HTMLSelectElement).value)}
+        onBlur={() => p.onBlur?.()}
         style={{
           width: "360px",
           padding: "10px 12px",
@@ -266,6 +292,7 @@ type RadioGroupFieldPrimitiveProps = {
   errorText?: string;
   helperText?: string;
   inline?: boolean;
+  requiredDot?: boolean;
   onChange: (next: string) => void;
 };
 
@@ -274,7 +301,14 @@ export const RadioGroupFieldPrimitive: Component<RadioGroupFieldPrimitiveProps> 
 
   return (
     <div style={{display: "block", "font-family": "system-ui", "margin-bottom": "12px"}}>
-      {p.label && <div style={{"font-size": "12px", "margin-bottom": "6px", opacity: 0.8}}>{p.label}</div>}
+      {p.label && (
+        <div style={{"font-size": "12px", "margin-bottom": "6px", opacity: 0.8, "font-weight": 600}}>
+          {p.label}
+          {p.requiredDot && (
+            <span style={{color: "#c62828", "margin-left": "6px", "font-size": "6px"}}>●</span>
+          )}
+        </div>
+      )}
 
       <div
         role="radiogroup"
@@ -815,6 +849,9 @@ function buildGraphFromFormSpec(form: FormSpec) {
       disabled$: node.disabled$,
       hidden$: node.hidden$,
       errors$: node.errors$,
+      touched$: node.touched$,
+      focused$: node.focused$,
+      valid$: node.valid$,
       setValue: (v) => node.setValue(v),
       markTouched: () => node.markTouched(),
       setFocused: (f) => node.setFocused(f),
@@ -920,6 +957,9 @@ type FieldHandle = {
   disabled$: Observable<boolean>;
   hidden$: Observable<boolean>;
   errors$: Observable<string[]>;
+  touched$: Observable<boolean>;
+  focused$: Observable<boolean>;
+  valid$: Observable<boolean>;
   setValue: (next: string) => void;
   markTouched: () => void;
   setFocused: (f: boolean) => void;
@@ -932,6 +972,7 @@ type PhoneFieldProps = {
   label?: string;
   placeholder?: string;
   helperText?: string;
+  required?: boolean;
   field: FieldHandle; // engine handle
 };
 
@@ -939,10 +980,15 @@ export const PhoneField: Component<PhoneFieldProps> = (p) => {
   // pull reactive ports into Solid
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const rawDigits = fromObservable(p.field.value$, ""); // stored value = digits
 
   const displayValue = createMemo(() => formatPhone(rawDigits()));
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.required && !valid());
   const mask = p.inputMask ?? "(___) ___-____";
   const blocker = new RegExp(p.inputBlocker ?? "^\\d{0,10}$");
 
@@ -957,6 +1003,7 @@ export const PhoneField: Component<PhoneFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.helperText}
+      requiredDot={showRequiredDot()}
       onKeyDown={(e) => {
         blockNonDigitsAndMaxLen(e, rawDigits(), 10);
       }}
@@ -980,9 +1027,14 @@ type TextAreaFieldProps = {
 export const TextAreaField: Component<TextAreaFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
 
   return (
     <TextAreaFieldPrimitive
@@ -993,6 +1045,7 @@ export const TextAreaField: Component<TextAreaFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       onInput={(v) => p.field.setValue(v)}
       onBlur={() => p.field.markTouched()}
     />
@@ -1007,9 +1060,14 @@ type SelectFieldProps = {
 export const SelectField: Component<SelectFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
   const options = p.spec.options ?? [];
 
   return (
@@ -1021,8 +1079,10 @@ export const SelectField: Component<SelectFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       options={options}
       onChange={(next) => p.field.setValue(next)}
+      onBlur={() => p.field.markTouched()}
     />
   );
 };
@@ -1036,9 +1096,12 @@ type CheckboxFieldProps = {
 export const CheckboxField: Component<CheckboxFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
   const checked = createMemo(() => value() === "true");
 
   return (
@@ -1050,7 +1113,10 @@ export const CheckboxField: Component<CheckboxFieldProps> = (p) => {
       errorText={errorText()}
       helperText={p.spec.helperText}
       inline={p.inline}
-      onChange={(next) => p.field.setValue(next ? "true" : "")}
+      onChange={(next) => {
+        p.field.setValue(next ? "true" : "");
+        p.field.markTouched();
+      }}
     />
   );
 };
@@ -1068,9 +1134,14 @@ type RadioFieldProps = {
 export const RadioField: Component<RadioFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
   const options = p.spec.options ?? [];
 
   return (
@@ -1084,7 +1155,11 @@ export const RadioField: Component<RadioFieldProps> = (p) => {
       helperText={p.spec.helperText}
       options={options}
       inline={p.inline}
-      onChange={(next) => p.field.setValue(next)}
+      requiredDot={showRequiredDot()}
+      onChange={(next) => {
+        p.field.setValue(next);
+        p.field.markTouched();
+      }}
     />
   );
 };
@@ -1101,11 +1176,16 @@ type SsnFieldProps = {
 export const SsnField: Component<SsnFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const rawDigits = fromObservable(p.field.value$, "");
   const [show, setShow] = createSignal(false);
 
   const displayValue = createMemo(() => formatSSN(rawDigits()));
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
   const mask = p.spec.inputMask ?? "___-__-____";
   const maxDigits = p.spec.maxDigits ?? 9;
   const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,9}$");
@@ -1121,6 +1201,7 @@ export const SsnField: Component<SsnFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       rightSlot={
         <button
           type="button"
@@ -1159,10 +1240,15 @@ type ZipFieldProps = {
 export const ZipField: Component<ZipFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const rawDigits = fromObservable(p.field.value$, "");
 
   const displayValue = createMemo(() => formatZip(rawDigits()));
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
   const mask = p.spec.inputMask ?? "00000[-0000]";
   const maxDigits = p.spec.maxDigits ?? 9;
   const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,9}$");
@@ -1177,6 +1263,7 @@ export const ZipField: Component<ZipFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       onKeyDown={(e) => blockNonDigitsAndMaxLen(e, rawDigits(), maxDigits)}
       onInput={(nextDisplay) => {
         if (/[^0-9-]/.test(nextDisplay)) return;
@@ -1195,15 +1282,21 @@ type NumberFieldProps = {
   placeholder?: string;
   helperText?: string;
   maxDigits?: number; // default 6
+  required?: boolean;
   field: FieldHandle;
 };
 
 export const NumberField: Component<NumberFieldProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
   const value = fromObservable(p.field.value$, "");
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.required && !valid());
   const maxDigits = p.maxDigits ?? 6;
 
   return (
@@ -1215,6 +1308,7 @@ export const NumberField: Component<NumberFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.helperText}
+      requiredDot={showRequiredDot()}
       onKeyDown={(e) => blockNonDigitsAndMaxLen(e, value(), maxDigits)}
       onInput={(next) => {
         const digits = next.replace(/\D/g, "");
@@ -1236,8 +1330,13 @@ export const PasswordField: Component<PasswordFieldProps> = (p) => {
   const errors = fromObservable(p.field.errors$, []);
   const value = fromObservable(p.field.value$, "");
   const [show, setShow] = createSignal(false);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
 
   return (
     <TextFieldPrimitive
@@ -1249,6 +1348,7 @@ export const PasswordField: Component<PasswordFieldProps> = (p) => {
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       rightSlot={
         <button
           type="button"
@@ -1277,8 +1377,13 @@ const BoundTextField: Component<{ spec: FieldSpec; field: FieldHandle }> = (p) =
   const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
+  const valid = fromObservable(p.field.valid$, true);
 
-  const errorText = createMemo(() => (disabled() ? "" : errors()[0] ?? ""));
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : ""
+  );
+  const showRequiredDot = createMemo(() => !!p.spec.required && !valid());
 
   return (
     <TextFieldPrimitive
@@ -1289,6 +1394,7 @@ const BoundTextField: Component<{ spec: FieldSpec; field: FieldHandle }> = (p) =
       disabled={disabled()}
       errorText={errorText()}
       helperText={p.spec.helperText}
+      requiredDot={showRequiredDot()}
       onInput={(v) => p.field.setValue(v)}
       onBlur={() => p.field.markTouched()}
     />
@@ -1326,6 +1432,7 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
                 helperText={f.helperText}
                 inputMask={f.inputMask}
                 inputBlocker={f.inputBlocker}
+                required={f.required}
                 field={handle}
               />
             );
@@ -1338,6 +1445,7 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
                 placeholder={f.placeholder}
                 helperText={f.helperText}
                 maxDigits={f.maxDigits}
+                required={f.required}
                 field={handle}
               />
             );
@@ -1499,6 +1607,7 @@ export const TelepathicFormDemo: Component = () => {
         placeholder: "(___) ___-____",
         inputMask: "(___) ___-____",
         inputBlocker: "^\\d{0,10}$",
+        required: true,
         helperText: "Digits are stored; formatting is view-only.",
       },
       {
