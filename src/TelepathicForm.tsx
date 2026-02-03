@@ -1519,6 +1519,37 @@ export const TelepathicFormDemo: Component = () => {
           return [];
         },
         triggers: [
+          // Show/hide purely based on the checkbox
+          {
+            when: {fieldIds: ["hasExtension"], operator: WhenOperators.equals, value: "true"},
+            operation: {
+              fieldIds: ["ext"],
+              operator: TriggerOperators.setHidden,
+              value: false,
+            },
+          },
+          {
+            when: {fieldIds: ["hasExtension"], operator: WhenOperators.notEquals, value: "true"},
+            operations: [
+              {
+                fieldIds: ["ext"],
+                operator: TriggerOperators.setHidden,
+                value: true,
+              },
+              {
+                fieldIds: ["ext"],
+                operator: TriggerOperators.setDisabled,
+                value: true,
+              },
+              {
+                fieldIds: ["ext"],
+                operator: TriggerOperators.setValue,
+                value: "",
+              },
+            ],
+          },
+
+          // Enable only when phone is valid AND the checkbox is on
           {
             when: {
               [OperatorMaths.all]: [
@@ -1532,11 +1563,13 @@ export const TelepathicFormDemo: Component = () => {
               value: false,
             },
           },
+
+          // If phone becomes invalid while shown, disable + clear (but keep visibility)
           {
             when: {
-              [OperatorMaths.any]: [
+              [OperatorMaths.all]: [
                 {fieldIds: ["phone"], operator: WhenOperators.isInvalid},
-                {fieldIds: ["hasExtension"], operator: WhenOperators.notEquals, value: "true"},
+                {fieldIds: ["hasExtension"], operator: WhenOperators.equals, value: "true"},
               ],
             },
             operations: [
