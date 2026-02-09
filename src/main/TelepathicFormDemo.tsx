@@ -8,7 +8,7 @@ import {
   type FieldHandle,
   type FieldSpec,
   type FormSpec,
-} from "../engine/formEngine";
+} from "../engine/generators";
 import {
   BoundTextField,
   CheckboxField,
@@ -24,89 +24,136 @@ import {
   SsnField,
   TextAreaField,
   ZipField,
-} from "../wrappers/fields";
-import {fromObservable} from "../wrappers/fromObservable";
+} from "../wrappers";
+import {fromObservable} from "../utils/fromObservable";
+
+type RowGroup = {
+  key: string;
+  fields: FieldSpec[];
+  sharedRow: boolean;
+};
+
+function groupFieldsByRow(fields: FieldSpec[]): RowGroup[] {
+  const groups: RowGroup[] = [];
+  const groupsByRow = new Map<number, RowGroup>();
+
+  fields.forEach((field, index) => {
+    if (typeof field.row === "number") {
+      const existing = groupsByRow.get(field.row);
+      if (existing) {
+        existing.fields.push(field);
+        return;
+      }
+
+      const nextGroup: RowGroup = {
+        key: `row-${field.row}`,
+        fields: [field],
+        sharedRow: true,
+      };
+      groupsByRow.set(field.row, nextGroup);
+      groups.push(nextGroup);
+      return;
+    }
+
+    groups.push({
+      key: `field-${field.id}-${index}`,
+      fields: [field],
+      sharedRow: false,
+    });
+  });
+
+  return groups;
+}
 
 type FieldSlotProps = {
   f: FieldSpec;
   handle: FieldHandle;
+  fullWidth?: boolean;
+  wrapInRow?: boolean;
 };
 
 const FieldSlot: Component<FieldSlotProps> = (p) => {
   const hidden = fromObservable(p.handle.hidden$, false);
+  const content = (() => {
+    const f = p.f;
+    const handle = p.handle;
+
+    switch (f.kind) {
+      case FieldKind.textArea:
+        return <TextAreaField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.phone:
+        return (
+          <PhoneField
+            id={f.id}
+            label={f.label}
+            placeholder={f.placeholder}
+            helperText={f.helperText}
+            inputMask={f.inputMask}
+            inputBlocker={f.inputBlocker}
+            required={f.required}
+            fullWidth={p.fullWidth}
+            field={handle}
+          />
+        );
+
+      case FieldKind.number:
+        return (
+          <NumberField
+            id={f.id}
+            label={f.label}
+            placeholder={f.placeholder}
+            helperText={f.helperText}
+            maxDigits={f.maxDigits}
+            required={f.required}
+            fullWidth={p.fullWidth}
+            field={handle}
+          />
+        );
+
+      case FieldKind.currency:
+        return <CurrencyField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.percent:
+        return <PercentField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.select:
+        return <SelectField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.checkbox:
+        return <CheckboxField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.inlineCheckbox:
+        return <InlineCheckboxField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.radio:
+        return <RadioField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.inlineRadio:
+        return <InlineRadioField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.ssn:
+        return <SsnField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.zip:
+        return <ZipField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.password:
+        return <PasswordField spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.text:
+      default:
+        return <BoundTextField spec={f} field={handle} fullWidth={p.fullWidth} />;
+    }
+  })();
 
   return (
     <Show when={!hidden()} fallback={null}>
-      {(() => {
-        const f = p.f;
-        const handle = p.handle;
-
-        switch (f.kind) {
-          case FieldKind.textArea:
-            return <TextAreaField spec={f} field={handle} />;
-
-          case FieldKind.phone:
-            return (
-              <PhoneField
-                id={f.id}
-                label={f.label}
-                placeholder={f.placeholder}
-                helperText={f.helperText}
-                inputMask={f.inputMask}
-                inputBlocker={f.inputBlocker}
-                required={f.required}
-                field={handle}
-              />
-            );
-
-          case FieldKind.number:
-            return (
-              <NumberField
-                id={f.id}
-                label={f.label}
-                placeholder={f.placeholder}
-                helperText={f.helperText}
-                maxDigits={f.maxDigits}
-                required={f.required}
-                field={handle}
-              />
-            );
-
-          case FieldKind.currency:
-            return <CurrencyField spec={f} field={handle} />;
-
-          case FieldKind.percent:
-            return <PercentField spec={f} field={handle} />;
-
-          case FieldKind.select:
-            return <SelectField spec={f} field={handle} />;
-
-          case FieldKind.checkbox:
-            return <CheckboxField spec={f} field={handle} />;
-
-          case FieldKind.inlineCheckbox:
-            return <InlineCheckboxField spec={f} field={handle} />;
-
-          case FieldKind.radio:
-            return <RadioField spec={f} field={handle} />;
-
-          case FieldKind.inlineRadio:
-            return <InlineRadioField spec={f} field={handle} />;
-
-          case FieldKind.ssn:
-            return <SsnField spec={f} field={handle} />;
-
-          case FieldKind.zip:
-            return <ZipField spec={f} field={handle} />;
-
-          case FieldKind.password:
-            return <PasswordField spec={f} field={handle} />;
-
-          case FieldKind.text:
-          default:
-            return <BoundTextField spec={f} field={handle} />;
-        }
-      })()}
+      {p.wrapInRow ? (
+        <div style={{flex: "1 1 0", "min-width": "240px"}}>{content}</div>
+      ) : (
+        content
+      )}
     </Show>
   );
 };
@@ -121,14 +168,39 @@ type FormRendererProps = {
 };
 
 const FormRenderer: Component<FormRendererProps> = (p) => {
+  const groupedRows = groupFieldsByRow(p.form.fields);
+
   return (
     <div>
-      <For each={p.form.fields}>
-        {(f) => {
-          const handle = p.handlesById.get(f.id);
-          if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
-          return <FieldSlot f={f} handle={handle} />;
-        }}
+      <For each={groupedRows}>
+        {(row) =>
+          row.sharedRow ? (
+            <div
+              style={{
+                display: "flex",
+                "align-items": "flex-start",
+                "flex-wrap": "wrap",
+                gap: "12px",
+                width: "100%",
+              }}
+            >
+              <For each={row.fields}>
+                {(f) => {
+                  const handle = p.handlesById.get(f.id);
+                  if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
+                  return <FieldSlot f={f} handle={handle} fullWidth={true} wrapInRow={true} />;
+                }}
+              </For>
+            </div>
+          ) : (
+            (() => {
+              const f = row.fields[0];
+              const handle = p.handlesById.get(f.id);
+              if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
+              return <FieldSlot f={f} handle={handle} />;
+            })()
+          )
+        }
       </For>
     </div>
   );
@@ -146,6 +218,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "contactMethod",
         kind: FieldKind.select,
+        row: 1,
         label: "Preferred Contact Method",
         placeholder: "Select one...",
         required: true,
@@ -231,6 +304,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "phone",
         kind: FieldKind.phone,
+        row: 2,
         label: "Phone (required for phone contact)",
         placeholder: "(___) ___-____",
         inputMask: "(___) ___-____",
@@ -241,12 +315,14 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "hasExtension",
         kind: FieldKind.inlineCheckbox,
+        row: 2,
         label: "Has extension",
         helperText: "Enable the extension field.",
       },
       {
         id: "ext",
         kind: FieldKind.number,
+        row: 2,
         label: "Extension",
         helperText: "Optional. Digits only, max 6.",
         maxDigits: 6,
@@ -339,6 +415,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "preferredTime",
         kind: FieldKind.inlineRadio,
+        row: 1,
         label: "Preferred Time",
         required: true,
         options: [
@@ -360,6 +437,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "isEmployee",
         kind: FieldKind.checkbox,
+        row: 1,
         label: "I am an employee",
         helperText: "Employee-only SSN field will unlock.",
         triggers: [
@@ -391,6 +469,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "salary",
         kind: FieldKind.currency,
+        row: 3,
         label: "Desired Salary",
        // inputMask: "$______.__",
        // inputBlocker: "^\\d{0,6}\.\\d{0,2}$",
@@ -399,6 +478,7 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "taxPercent",
         kind: FieldKind.percent,
+        row: 3,
         label: "Estimated taxation",
         //inputMask: "%__.____",
         //inputBlocker: "^\\d{0,2}\.\\d{0,4}$",
