@@ -10,22 +10,20 @@ import {
   type FormSpec,
 } from "../engine/generators";
 import {
-  CurrencyField,
-  NumberField,
-  PasswordField,
-  PercentField,
-  PhoneField,
-  SsnField,
-  ZipField,
-} from "../wrappers";
-import {
   CheckboxWrapper,
+  CurrencyWrapper,
   MultiSelectWrapper,
+  NumberWrapper,
+  PasswordWrapper,
+  PercentWrapper,
+  PhoneWrapper,
   RadioGroupWrapper,
   SelectWrapper,
+  SsnWrapper,
   SwitchWrapper,
   TextAreaWrapper,
   TextFieldWrapper,
+  ZipWrapper,
 } from "../newWrappers";
 import {fromObservable} from "../utils/fromObservable";
 
@@ -85,39 +83,16 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
         return <TextAreaWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.phone:
-        return (
-          <PhoneField
-            id={f.id}
-            label={f.label}
-            placeholder={f.placeholder}
-            helperText={f.helperText}
-            inputMask={f.inputMask}
-            inputBlocker={f.inputBlocker}
-            required={f.required}
-            fullWidth={p.fullWidth}
-            field={handle}
-          />
-        );
+        return <PhoneWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.number:
-        return (
-          <NumberField
-            id={f.id}
-            label={f.label}
-            placeholder={f.placeholder}
-            helperText={f.helperText}
-            maxDigits={f.maxDigits}
-            required={f.required}
-            fullWidth={p.fullWidth}
-            field={handle}
-          />
-        );
+        return <NumberWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.currency:
-        return <CurrencyField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <CurrencyWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.percent:
-        return <PercentField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <PercentWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.select:
         return <SelectWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
@@ -141,13 +116,13 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
         return <RadioGroupWrapper spec={f} field={handle} fullWidth={p.fullWidth} inline={true} />;
 
       case FieldKind.ssn:
-        return <SsnField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <SsnWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.zip:
-        return <ZipField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <ZipWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.password:
-        return <PasswordField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <PasswordWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.text:
       default:
@@ -322,6 +297,12 @@ export const TelepathicFormDemo: Component = () => {
         placeholder: "(___) ___-____",
         inputMask: "(___) ___-____",
         inputBlocker: "^\\d{0,10}$",
+        size: "md",
+        variant: "outlined",
+        startAdornment: "US",
+        endAdornment: "10 digits",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         required: true,
         helperText: "Digits are stored; formatting is view-only.",
       },
@@ -338,7 +319,12 @@ export const TelepathicFormDemo: Component = () => {
         row: 2,
         label: "Extension",
         helperText: "Optional. Digits only, max 6.",
+        placeholder: "000000",
         maxDigits: 6,
+        size: "sm",
+        variant: "standard",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         validate: (v) => {
           if (!v) return []; // optional
           if (!/^\d{1,6}$/.test(v)) return ["Ext must be 1–6 digits."];
@@ -459,6 +445,11 @@ export const TelepathicFormDemo: Component = () => {
         label: "ZIP Code",
         inputMask: "00000[-0000]",
         inputBlocker: "^\\d{0,9}$",
+        size: "md",
+        variant: "outlined",
+        startAdornment: "US",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         required: true,
         helperText: "Required only for mail contact.",
       },
@@ -527,6 +518,10 @@ export const TelepathicFormDemo: Component = () => {
         label: "SSN (optional)",
         inputMask: "___-__-____",
         inputBlocker: "^\\d{0,9}$",
+        size: "md",
+        variant: "filled",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         helperText: "Digits only. Stored as raw digits.",
       },
       {
@@ -534,8 +529,13 @@ export const TelepathicFormDemo: Component = () => {
         kind: FieldKind.currency,
         row: 3,
         label: "Desired Salary",
-       // inputMask: "$______.__",
-       // inputBlocker: "^\\d{0,6}\.\\d{0,2}$",
+        placeholder: "0.00",
+        size: "lg",
+        variant: "filled",
+        startAdornment: "$",
+        endAdornment: "USD",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         helperText: "Six figures max",
       },
       {
@@ -543,8 +543,12 @@ export const TelepathicFormDemo: Component = () => {
         kind: FieldKind.percent,
         row: 3,
         label: "Estimated taxation",
-        //inputMask: "%__.____",
-        //inputBlocker: "^\\d{0,2}\.\\d{0,4}$",
+        placeholder: "0.00",
+        size: "lg",
+        variant: "outlined",
+        endAdornment: "%",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         helperText: "How much you will expect to be taxed",
       },
       {
@@ -569,6 +573,13 @@ export const TelepathicFormDemo: Component = () => {
         kind: FieldKind.password,
         label: "Account Password",
         placeholder: "••••••••",
+        autoComplete: "new-password",
+        minLength: 8,
+        maxLength: 128,
+        size: "md",
+        variant: "filled",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         helperText: "Toggle show/hide (no masking rules enforced).",
       },
     ],
