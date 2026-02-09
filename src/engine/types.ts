@@ -12,14 +12,24 @@ export enum FieldKind {
   currency = "currency",
   percent = "percent",
   select = "select",
+  multiSelect = "multiSelect",
   checkbox = "checkbox",
   inlineCheckbox = "inlineCheckbox",
+  switch = "switch",
   radio = "radio",
   inlineRadio = "inlineRadio",
   ssn = "ssn",
   zip = "zip",
   password = "password",
 }
+
+export type FieldOption = {
+  label: string;
+  value: string;
+  disabled?: boolean;
+  group?: string;
+  helperText?: string;
+};
 
 export type FieldSpec = {
   id: string;
@@ -28,7 +38,27 @@ export type FieldSpec = {
   row?: number;
   placeholder?: string;
   helperText?: string;
-  options?: {label: string; value: string}[];
+  options?: FieldOption[];
+  type?: string;
+  autoComplete?: string;
+  readOnly?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  size?: "sm" | "md" | "lg";
+  variant?: "outlined" | "filled" | "standard";
+  startAdornment?: string;
+  endAdornment?: string;
+  ringEnabled?: boolean;
+  animateRingOnFocus?: boolean;
+  rows?: number;
+  autosize?: boolean;
+  minRows?: number;
+  maxRows?: number;
+  searchable?: boolean;
+  clearable?: boolean;
+  maxSelected?: number;
+  indeterminate?: boolean;
+  inline?: boolean;
   maxDigits?: number;
   required?: boolean;
   initialValue?: string;

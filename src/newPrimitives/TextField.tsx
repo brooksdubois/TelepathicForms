@@ -4,7 +4,6 @@ import {
   createSignal,
   createUniqueId,
   mergeProps,
-  onCleanup,
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
@@ -73,19 +72,6 @@ export type TextFieldProps = NativeInputProps & {
 
   /** Exposes a small API to manually trigger the ring animation. */
   onRingApi?: (api: {
-    pulse: () => void;
-    focus: () => void;
-    pulseAndFocus: () => void;
-  }) => void;
-
-  /** Enables the lava lamp distortion effect. Defaults to true. */
-  lavaEnabled?: boolean;
-
-  /** If true, triggers lava pulse on focus. Defaults to false. */
-  animateLavaOnFocus?: boolean;
-
-  /** Exposes a small API to manually trigger the lava effect. */
-  onLavaApi?: (api: {
     pulse: () => void;
     focus: () => void;
     pulseAndFocus: () => void;
@@ -218,106 +204,29 @@ const TextField = (props: TextFieldProps) => {
     'ringEnabled',
     'animateRingOnFocus',
     'onRingApi',
-    'lavaEnabled',
-    'animateLavaOnFocus',
-    'onLavaApi',
     'onFocus',
   ]);
 
   let inputEl: HTMLInputElement | undefined;
-  let lavaTimer: number | undefined;
 
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
-  const lavaEnabled = () => local.lavaEnabled ?? true;
-  const animateLavaOnFocus = () => local.animateLavaOnFocus ?? false;
-  const [prefersReducedMotion, setPrefersReducedMotion] = createSignal(false);
 
   const [ringPulseKey, setRingPulseKey] = createSignal(0);
-  const [lavaPulseKey, setLavaPulseKey] = createSignal(0);
-  const [lavaActive, setLavaActive] = createSignal(false);
-  const lavaAnimationEnabled = () => lavaEnabled() && !prefersReducedMotion();
 
   const pulseRing = () => {
     if (!ringEnabled()) return;
     setRingPulseKey((k) => k + 1);
   };
 
-  const pulseLava = () => {
-    if (!lavaAnimationEnabled()) return;
-
-    setLavaPulseKey((k) => k + 1);
-    setLavaActive(false);
-    queueMicrotask(() => setLavaActive(true));
-
-    if (typeof window !== 'undefined') {
-      if (lavaTimer) window.clearTimeout(lavaTimer);
-      lavaTimer = window.setTimeout(() => setLavaActive(false), 650);
-    }
-  };
-
   createEffect(() => {
     const focusInput = () => inputEl?.focus();
-
-    const pulseRing = () => {
-      if (!ringEnabled()) return;
-      setRingPulseKey(k => k + 1);
-    };
-
     const pulseAndFocus = () => {
       focusInput();
       pulseRing();
     };
 
-    createEffect(() => {
-      local.onRingApi?.({ pulse: pulseRing, focus: focusInput, pulseAndFocus });
-    });
-  });
-
-  createEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      setPrefersReducedMotion(false);
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const applyMotionPref = () => setPrefersReducedMotion(mediaQuery.matches);
-    const handleMotionPrefChange = () => applyMotionPref();
-
-    applyMotionPref();
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleMotionPrefChange);
-      onCleanup(() => mediaQuery.removeEventListener('change', handleMotionPrefChange));
-      return;
-    }
-
-    mediaQuery.addListener(handleMotionPrefChange);
-    onCleanup(() => mediaQuery.removeListener(handleMotionPrefChange));
-  });
-
-  createEffect(() => {
-    const pulse = () => {
-      if (!lavaEnabled()) return;
-      pulseLava();
-    };
-
-    const focus = () => {
-      if (!lavaEnabled()) return;
-      inputEl?.focus();
-    };
-
-    const pulseAndFocus = () => {
-      if (!lavaEnabled()) return;
-      inputEl?.focus();
-      pulseLava();
-    };
-
-    local.onLavaApi?.({ pulse, focus, pulseAndFocus });
-  });
-
-  onCleanup(() => {
-    if (lavaTimer) window.clearTimeout(lavaTimer);
+    local.onRingApi?.({ pulse: pulseRing, focus: focusInput, pulseAndFocus });
   });
 
   const required = () => Boolean(local.required);
@@ -349,7 +258,6 @@ const TextField = (props: TextFieldProps) => {
   const hasHelper = () => Boolean(local.renderHelper) || Boolean(helperContent());
 
   const autoId = createUniqueId();
-  const lavaFilterId = `tf-lava-${createUniqueId()}`;
   const inputId = () => local.id ?? `tf-${autoId}`;
   const helperId = () => `${inputId()}-helper`;
 
@@ -455,40 +363,11 @@ const TextField = (props: TextFieldProps) => {
     <div
       class={cx(
         'relative flex flex-col gap-1.5',
-        lavaAnimationEnabled() && lavaActive() ? 'tf-lava-active' : '',
         fullWidth() ? 'w-full' : 'inline-flex',
         local.class,
         local.rootClass,
       )}
-      data-lava-pulse={lavaPulseKey()}
-      style={
-        lavaEnabled()
-          ? ({ '--tf-lava-filter': `url(#${lavaFilterId})` } as JSX.CSSProperties)
-          : undefined
-      }
     >
-      <Show when={lavaEnabled()}>
-        <svg
-          aria-hidden="true"
-          width="0"
-          height="0"
-          style={{ position: 'absolute' }}
-        >
-          <defs>
-            <filter id={lavaFilterId}>
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.012"
-                numOctaves="2"
-                seed="2"
-                result="noise"
-              />
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="14" />
-            </filter>
-          </defs>
-        </svg>
-      </Show>
-
       {local.renderLabel
         ? local.renderLabel({
             label: local.label,
@@ -597,7 +476,6 @@ const TextField = (props: TextFieldProps) => {
           onBlur={handleBlur}
           onFocus={(event) => {
             if (animateRingOnFocus()) pulseRing();
-            if (animateLavaOnFocus()) pulseLava();
             callHandler(local.onFocus, event);
           }}
           value={displayValue()}

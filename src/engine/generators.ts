@@ -87,6 +87,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
     }
 
     case FieldKind.select:
+    case FieldKind.multiSelect:
     case FieldKind.radio:
     case FieldKind.inlineRadio: {
       const validate =
@@ -103,6 +104,15 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
 
     case FieldKind.checkbox:
     case FieldKind.inlineCheckbox: {
+      const next = initial === "true" ? "true" : "";
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: next,
+        validate: spec.validate ?? (() => []),
+      });
+    }
+
+    case FieldKind.switch: {
       const next = initial === "true" ? "true" : "";
       return new FieldRuntimeNode<string>({
         id: spec.id,

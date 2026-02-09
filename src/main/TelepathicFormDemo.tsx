@@ -10,21 +10,23 @@ import {
   type FormSpec,
 } from "../engine/generators";
 import {
-  BoundTextField,
-  CheckboxField,
   CurrencyField,
-  InlineCheckboxField,
-  InlineRadioField,
   NumberField,
   PasswordField,
   PercentField,
   PhoneField,
-  RadioField,
-  SelectField,
   SsnField,
-  TextAreaField,
   ZipField,
 } from "../wrappers";
+import {
+  CheckboxWrapper,
+  MultiSelectWrapper,
+  RadioGroupWrapper,
+  SelectWrapper,
+  SwitchWrapper,
+  TextAreaWrapper,
+  TextFieldWrapper,
+} from "../newWrappers";
 import {fromObservable} from "../utils/fromObservable";
 
 type RowGroup = {
@@ -80,7 +82,7 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
 
     switch (f.kind) {
       case FieldKind.textArea:
-        return <TextAreaField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <TextAreaWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.phone:
         return (
@@ -118,19 +120,25 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
         return <PercentField spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.select:
-        return <SelectField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <SelectWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.multiSelect:
+        return <MultiSelectWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.checkbox:
-        return <CheckboxField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <CheckboxWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.inlineCheckbox:
-        return <InlineCheckboxField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <CheckboxWrapper spec={f} field={handle} fullWidth={p.fullWidth} inline={true} />;
+
+      case FieldKind.switch:
+        return <SwitchWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.radio:
-        return <RadioField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <RadioGroupWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.inlineRadio:
-        return <InlineRadioField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <RadioGroupWrapper spec={f} field={handle} fullWidth={p.fullWidth} inline={true} />;
 
       case FieldKind.ssn:
         return <SsnField spec={f} field={handle} fullWidth={p.fullWidth} />;
@@ -143,7 +151,7 @@ const FieldSlot: Component<FieldSlotProps> = (p) => {
 
       case FieldKind.text:
       default:
-        return <BoundTextField spec={f} field={handle} fullWidth={p.fullWidth} />;
+        return <TextFieldWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
     }
   })();
 
@@ -221,6 +229,11 @@ export const TelepathicFormDemo: Component = () => {
         row: 1,
         label: "Preferred Contact Method",
         placeholder: "Select one...",
+        size: "lg",
+        variant: "outlined",
+        startAdornment: "Method",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         required: true,
         options: [
           {label: "Phone", value: "phone"},
@@ -403,9 +416,20 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "email",
         kind: FieldKind.text,
+        row: 4,
         label: "Email",
         placeholder: "you@example.com",
         helperText: "Used when contact method is email.",
+        type: "email",
+        autoComplete: "email",
+        minLength: 6,
+        maxLength: 120,
+        size: "lg",
+        variant: "filled",
+        startAdornment: "@",
+        endAdornment: "required for email",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         validate: (v) => {
           if (!v) return [];
           if (!/^[^@]+@[^@]+\.[^@]+$/.test(v)) return ["Enter a valid email."];
@@ -418,10 +442,14 @@ export const TelepathicFormDemo: Component = () => {
         row: 1,
         label: "Preferred Time",
         required: true,
+        variant: "filled",
+        size: "md",
+        inline: true,
+        ringEnabled: true,
         options: [
-          {label: "Morning", value: "morning"},
-          {label: "Afternoon", value: "afternoon"},
-          {label: "Evening", value: "evening"},
+          {label: "Morning", value: "morning", helperText: "8am-12pm"},
+          {label: "Afternoon", value: "afternoon", helperText: "12pm-5pm"},
+          {label: "Evening", value: "evening", helperText: "5pm-8pm"},
         ],
         helperText: "Used for phone follow-ups.",
       },
@@ -440,6 +468,10 @@ export const TelepathicFormDemo: Component = () => {
         row: 1,
         label: "I am an employee",
         helperText: "Employee-only SSN field will unlock.",
+        variant: "outlined",
+        size: "md",
+        ringEnabled: true,
+        animateRingOnFocus: true,
         triggers: [
           {
             when: {operator: WhenOperators.equals, value: "true"},
@@ -456,6 +488,37 @@ export const TelepathicFormDemo: Component = () => {
               {fieldIds: ["ssn", "salary", "taxPercent"], operator: TriggerOperators.setValue, value: ""},
             ],
           },
+        ],
+      },
+      {
+        id: "alertsEnabled",
+        kind: FieldKind.switch,
+        row: 5,
+        label: "Enable Product Alerts",
+        helperText: "Demonstrates the Switch primitive wrapper.",
+        variant: "filled",
+        size: "md",
+        ringEnabled: true,
+        animateRingOnFocus: true,
+      },
+      {
+        id: "interests",
+        kind: FieldKind.multiSelect,
+        row: 5,
+        label: "Interest Areas",
+        placeholder: "Pick one or more",
+        helperText: "Demonstrates grouped options, search, clear, and maxSelected.",
+        searchable: true,
+        clearable: true,
+        maxSelected: 3,
+        variant: "outlined",
+        size: "md",
+        options: [
+          {label: "Billing", value: "billing", group: "Support"},
+          {label: "Technical", value: "technical", group: "Support"},
+          {label: "Roadmap", value: "roadmap", group: "Product"},
+          {label: "Integrations", value: "integrations", group: "Product"},
+          {label: "Security", value: "security", group: "Platform"},
         ],
       },
       {
@@ -487,9 +550,18 @@ export const TelepathicFormDemo: Component = () => {
       {
         id: "notes",
         kind: FieldKind.textArea,
+        row: 4,
         label: "Notes",
         placeholder: "Anything else we should know?",
         helperText: "Up to 240 chars.",
+        size: "md",
+        variant: "outlined",
+        rows: 4,
+        autosize: true,
+        minRows: 3,
+        maxRows: 7,
+        ringEnabled: true,
+        animateRingOnFocus: true,
         validate: (v) => (v.length > 240 ? ["Max 240 chars."] : []),
       },
       {
