@@ -11,7 +11,7 @@ export const FormRenderer: Component<FormRendererProps> = (p) => {
   const groupedRows = groupFieldsByRow(p.form.fields);
 
   return (
-    <div>
+    <div style={{display: "flex", "flex-direction": "column", gap: "20px", width: "100%"}}>
       <For each={groupedRows}>
         {(row) =>
           row.sharedRow ? (
