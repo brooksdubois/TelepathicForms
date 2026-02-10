@@ -1,1 +1,1 @@
-export {TelepathicFormDemo} from "./main/TelepathicFormDemo";
+export {TelepathicFormDemo} from "./routes/form-demo/TelepathicFormDemo";

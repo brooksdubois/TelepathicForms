@@ -7,8 +7,8 @@ import {
   TriggerOperators,
   WhenOperators,
   type FormSpec,
-} from "../engine/generators";
-import {fromObservable} from "../utils/fromObservable";
+} from "../../engine/generators";
+import {fromObservable} from "../../utils/fromObservable";
 
 /** ---------------------------------------------
  * Demo App: Spec-driven version
