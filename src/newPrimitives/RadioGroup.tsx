@@ -5,12 +5,12 @@ import {
   createSignal,
   createUniqueId,
   mergeProps,
-  onCleanup,
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
+import { useAntRing } from '../utils/useAntRing';
 
 export type RadioGroupSize = 'sm' | 'md' | 'lg';
 export type RadioGroupVariant = 'outlined' | 'filled' | 'standard';
@@ -151,7 +151,6 @@ const RadioGroup = (props: RadioGroupProps) => {
     'helperClass',
   ]);
 
-  let antTimer: number | undefined;
   const optionInputEls: Array<HTMLInputElement | undefined> = [];
   const [animatingOption, setAnimatingOption] = createSignal<string | undefined>(
     undefined,
@@ -167,6 +166,19 @@ const RadioGroup = (props: RadioGroupProps) => {
 
   const size = () => (local.size ?? 'md') as RadioGroupSize;
   const variant = () => (local.variant ?? 'outlined') as RadioGroupVariant;
+  const {
+    ringBox,
+    ringPathD,
+    ringPulseKey,
+    ringActive,
+    pulseRing,
+    setRingHostEl,
+    setRingMeasureEl,
+    setRingAntSegEl,
+  } = useAntRing({
+    enabled: ringEnabled,
+    radius: () => 8,
+  });
 
   const errorActive = () => Boolean(local.error);
   const value = () => local.value ?? '';
@@ -282,10 +294,8 @@ const RadioGroup = (props: RadioGroupProps) => {
 
   const pulseOption = (optionValue: string | undefined) => {
     if (!ringEnabled() || !optionValue) return;
-    setAnimatingOption(undefined);
-    queueMicrotask(() => setAnimatingOption(optionValue));
-    if (antTimer) window.clearTimeout(antTimer);
-    antTimer = window.setTimeout(() => setAnimatingOption(undefined), 640);
+    setAnimatingOption(optionValue);
+    pulseRing();
   };
 
   const focusSelectedOption = () => {
@@ -358,17 +368,9 @@ const RadioGroup = (props: RadioGroupProps) => {
     });
   };
 
-  onCleanup(() => {
-    if (antTimer) window.clearTimeout(antTimer);
-  });
-
   createEffect(() => {
     if (ringEnabled()) return;
     setAnimatingOption(undefined);
-    if (antTimer) {
-      window.clearTimeout(antTimer);
-      antTimer = undefined;
-    }
   });
 
   const optionsMarkup = () => (
@@ -382,6 +384,7 @@ const RadioGroup = (props: RadioGroupProps) => {
             <label for={optionId(index())} class={optionLabelClass(optionDisabled)}>
               <Show when={ringEnabled() && animatingOption() === option.value}>
                 <span
+                  ref={setRingHostEl}
                   aria-hidden="true"
                   class={cx(
                     'pointer-events-none absolute -inset-1 z-10 opacity-0',
@@ -389,28 +392,44 @@ const RadioGroup = (props: RadioGroupProps) => {
                       ? 'text-rose-500 dark:text-rose-400'
                       : 'text-emerald-500 dark:text-emerald-400',
                   )}
-                  style={{
-                    animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards',
-                  }}
+                  style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
                 >
                   <svg
                     class="block h-full w-full"
-                    viewBox="0 0 100 100"
+                    viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
                     preserveAspectRatio="none"
                   >
-                    <rect
-                      class="tf-focus-ant-ring-stroke"
-                      x="1.5"
-                      y="1.5"
-                      width="97"
-                      height="97"
-                      rx="8"
-                      ry="8"
-                      pathLength="100"
-                      style={{
-                        animation: 'tf-focus-ant-ring-trace 620ms linear forwards',
-                      }}
-                    />
+                    <Show when={ringActive()}>
+                      {() => (
+                        <>
+                          <path
+                            class="tf-focus-ant-ring-outline"
+                            data-pulse={ringPulseKey()}
+                            d={ringPathD()}
+                            fill="none"
+                            vector-effect="non-scaling-stroke"
+                            opacity="0.02"
+                          />
+                          <path
+                            ref={setRingMeasureEl}
+                            d={ringPathD()}
+                            fill="none"
+                            stroke="none"
+                          />
+                          <path
+                            ref={setRingAntSegEl}
+                            class="tf-focus-ant-ring-ant"
+                            data-pulse={ringPulseKey()}
+                            d=""
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.25"
+                            stroke-linecap="round"
+                            vector-effect="non-scaling-stroke"
+                          />
+                        </>
+                      )}
+                    </Show>
                   </svg>
                 </span>
               </Show>

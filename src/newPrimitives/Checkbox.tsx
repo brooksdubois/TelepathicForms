@@ -1,15 +1,14 @@
 import {
   Show,
   createEffect,
-  createSignal,
   createUniqueId,
   mergeProps,
-  onCleanup,
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
+import { useAntRing } from '../utils/useAntRing';
 
 export type CheckboxSize = 'sm' | 'md' | 'lg';
 export type CheckboxVariant = 'outlined' | 'filled' | 'standard';
@@ -157,9 +156,7 @@ const Checkbox = (props: CheckboxProps) => {
   ]);
 
   let inputEl: HTMLInputElement | undefined;
-  let antTimer: number | undefined;
   let prevChecked: boolean | undefined;
-  const [runAntRing, setRunAntRing] = createSignal(false);
 
   const required = () => Boolean(local.required);
   const disabled = () => Boolean(local.disabled);
@@ -174,6 +171,19 @@ const Checkbox = (props: CheckboxProps) => {
   const checked = () => Boolean(local.checked);
   const indeterminate = () => Boolean(local.indeterminate);
   const errorActive = () => Boolean(local.error);
+  const {
+    ringBox,
+    ringPathD,
+    ringPulseKey,
+    ringActive,
+    pulseRing,
+    setRingHostEl,
+    setRingMeasureEl,
+    setRingAntSegEl,
+  } = useAntRing({
+    enabled: ringEnabled,
+    radius: () => 8,
+  });
 
   const helperContent = () => {
     if (errorActive()) {
@@ -256,14 +266,6 @@ const Checkbox = (props: CheckboxProps) => {
 
   const hasLabel = () => Boolean(local.renderLabel) || Boolean(local.label);
 
-  const pulseRing = () => {
-    if (!ringEnabled()) return;
-    setRunAntRing(false);
-    queueMicrotask(() => setRunAntRing(true));
-    if (antTimer) window.clearTimeout(antTimer);
-    antTimer = window.setTimeout(() => setRunAntRing(false), 640);
-  };
-
   createEffect(() => {
     const focus = () => inputEl?.focus();
     const pulse = () => pulseRing();
@@ -336,33 +338,12 @@ const Checkbox = (props: CheckboxProps) => {
       pulseRing();
     }
 
-    if (!nextChecked) {
-      setRunAntRing(false);
-      if (antTimer) {
-        window.clearTimeout(antTimer);
-        antTimer = undefined;
-      }
-    }
-
     prevChecked = nextChecked;
   });
 
   createEffect(() => {
     if (!inputEl) return;
     inputEl.indeterminate = indeterminate();
-  });
-
-  createEffect(() => {
-    if (ringEnabled()) return;
-    setRunAntRing(false);
-    if (antTimer) {
-      window.clearTimeout(antTimer);
-      antTimer = undefined;
-    }
-  });
-
-  onCleanup(() => {
-    if (antTimer) window.clearTimeout(antTimer);
   });
 
   return (
@@ -405,8 +386,9 @@ const Checkbox = (props: CheckboxProps) => {
             disabled() ? 'cursor-not-allowed' : readOnly() ? 'cursor-default' : 'cursor-pointer',
           )}
         >
-          <Show when={ringEnabled() && runAntRing()}>
+          <Show when={ringEnabled()}>
             <span
+              ref={setRingHostEl}
               aria-hidden="true"
               class={cx(
                 'pointer-events-none absolute -inset-1.5 z-10 opacity-0',
@@ -414,28 +396,44 @@ const Checkbox = (props: CheckboxProps) => {
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
-              style={{
-                animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards',
-              }}
+              style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
             >
               <svg
                 class="block h-full w-full"
-                viewBox="0 0 100 100"
+                viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
                 preserveAspectRatio="none"
               >
-                <rect
-                  class="tf-focus-ant-ring-stroke"
-                  x="1.5"
-                  y="1.5"
-                  width="97"
-                  height="97"
-                  rx="8"
-                  ry="8"
-                  pathLength="100"
-                  style={{
-                    animation: 'tf-focus-ant-ring-trace 620ms linear forwards',
-                  }}
-                />
+                <Show when={ringActive()}>
+                  {() => (
+                    <>
+                      <path
+                        class="tf-focus-ant-ring-outline"
+                        data-pulse={ringPulseKey()}
+                        d={ringPathD()}
+                        fill="none"
+                        vector-effect="non-scaling-stroke"
+                        opacity="0.02"
+                      />
+                      <path
+                        ref={setRingMeasureEl}
+                        d={ringPathD()}
+                        fill="none"
+                        stroke="none"
+                      />
+                      <path
+                        ref={setRingAntSegEl}
+                        class="tf-focus-ant-ring-ant"
+                        data-pulse={ringPulseKey()}
+                        d=""
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.25"
+                        stroke-linecap="round"
+                        vector-effect="non-scaling-stroke"
+                      />
+                    </>
+                  )}
+                </Show>
               </svg>
             </span>
           </Show>

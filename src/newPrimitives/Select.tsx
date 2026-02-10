@@ -12,6 +12,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 
 import { cx } from '../utils/cx';
+import { useAntRing } from '../utils/useAntRing';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 export type SelectVariant = 'outlined' | 'filled' | 'standard';
@@ -213,12 +214,19 @@ const Select = (props: SelectProps) => {
   const canInteract = () => !disabled() && !readOnly();
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
-  const [ringPulseKey, setRingPulseKey] = createSignal(0);
-
-  const pulseRing = () => {
-    if (!ringEnabled()) return;
-    setRingPulseKey((k) => k + 1);
-  };
+  const {
+    ringBox,
+    ringPathD,
+    ringPulseKey,
+    ringActive,
+    pulseRing,
+    setRingHostEl,
+    setRingMeasureEl,
+    setRingAntSegEl,
+  } = useAntRing({
+    enabled: ringEnabled,
+    radius: () => (variant() === 'standard' ? 2 : 16),
+  });
 
   createEffect(() => {
     const focus = () => controlEl?.focus();
@@ -424,6 +432,13 @@ const Select = (props: SelectProps) => {
 
   const helperClass = () => cx('text-xs', helperToneClass(), local.helperClass);
 
+  const handleContainerPointerDown: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent> = () => {
+    if (disabled() || readOnly()) return;
+    if (animateRingOnFocus()) {
+      pulseRing();
+    }
+  };
+
   const handleClick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> = (
     event,
   ) => {
@@ -547,7 +562,7 @@ const Select = (props: SelectProps) => {
   const handleFocus: JSX.EventHandlerUnion<HTMLButtonElement, FocusEvent> = (
     event,
   ) => {
-    if (animateRingOnFocus()) {
+    if (animateRingOnFocus() && event.currentTarget.matches(':focus-visible')) {
       pulseRing();
     }
     callHandler(local.onFocus, event);
@@ -632,9 +647,14 @@ const Select = (props: SelectProps) => {
           />
         </Show>
 
-        <div class={containerClass()} onClick={handleContainerClick}>
+        <div
+          class={containerClass()}
+          onPointerDown={handleContainerPointerDown}
+          onClick={handleContainerClick}
+        >
           <Show when={ringEnabled()}>
             <span
+              ref={setRingHostEl}
               aria-hidden="true"
               class={cx(
                 'tf-focus-ant-ring',
@@ -642,40 +662,44 @@ const Select = (props: SelectProps) => {
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
+              style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
             >
               <svg
                 class="tf-focus-ant-ring-svg"
-                viewBox="0 0 100 100"
+                viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
                 preserveAspectRatio="none"
               >
-                <Show
-                  when={ringPulseKey()}
-                  keyed
-                  fallback={
-                    <rect
-                      class="tf-focus-ant-ring-stroke"
-                      x="1.5"
-                      y="1.5"
-                      width="97"
-                      height="97"
-                      rx={variant() === 'standard' ? '0.5' : '17'}
-                      ry={variant() === 'standard' ? '0.5' : '17'}
-                      pathLength="100"
-                    />
-                  }
-                >
-                  {(k) => (
-                    <rect
-                      class="tf-focus-ant-ring-stroke"
-                      data-pulse={k}
-                      x="1.5"
-                      y="1.5"
-                      width="97"
-                      height="97"
-                      rx={variant() === 'standard' ? '0.5' : '17'}
-                      ry={variant() === 'standard' ? '0.5' : '17'}
-                      pathLength="100"
-                    />
+                <Show when={ringActive()}>
+                  {() => (
+                    <>
+                      <path
+                        class="tf-focus-ant-ring-outline"
+                        data-pulse={ringPulseKey()}
+                        d={ringPathD()}
+                        fill="none"
+                        vector-effect="non-scaling-stroke"
+                        opacity="0.02"
+                      />
+
+                      <path
+                        ref={setRingMeasureEl}
+                        d={ringPathD()}
+                        fill="none"
+                        stroke="none"
+                      />
+
+                      <path
+                        ref={setRingAntSegEl}
+                        class="tf-focus-ant-ring-ant"
+                        data-pulse={ringPulseKey()}
+                        d=""
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.25"
+                        stroke-linecap="round"
+                        vector-effect="non-scaling-stroke"
+                      />
+                    </>
                   )}
                 </Show>
               </svg>
