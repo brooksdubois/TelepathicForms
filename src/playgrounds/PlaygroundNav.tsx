@@ -4,6 +4,7 @@ import type { Component } from 'solid-js';
 import { cx } from '../utils/cx';
 
 const labs = [
+  { href: '/form-demo', label: 'Form Demo' },
   { href: '/text-field', label: 'TextField Lab' },
   { href: '/select', label: 'Select Lab' },
   { href: '/multi-select', label: 'MultiSelect Lab' },
