@@ -260,4 +260,8 @@ export function buildGraphFromFormSpec(form: FormSpec) {
 
 export {FieldRuntimeNode} from "./FieldRuntimeNode";
 export {GraphRuntime} from "./GraphRuntime";
+export {FieldSlot, groupFieldsByRow} from "./fieldRendering";
+export type {FieldSlotProps, RowGroup} from "./fieldRendering";
+export {FormRenderer} from "./FormRenderer";
+export type {FormRendererProps} from "./FormRenderer";
 export * from "./types";
