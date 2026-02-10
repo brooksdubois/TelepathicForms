@@ -209,14 +209,146 @@ const TextField = (props: TextFieldProps) => {
 
   let inputEl: HTMLInputElement | undefined;
 
+  let ringHostEl: HTMLSpanElement | undefined;
+  let ringOutlineEl: SVGPathElement | undefined;
+  let ringMeasureEl: SVGPathElement | undefined;
+  let ringAntSegEl: SVGPathElement | undefined;
+  let ringAntRaf: number | undefined;
+
+  const [ringBox, setRingBox] = createSignal<{ w: number; h: number }>({ w: 100, h: 100 });
+
+  createEffect(() => {
+    if (!ringEnabled()) return;
+    const host = ringHostEl;
+    if (!host) return;
+
+    const update = () => {
+      const rect = host.getBoundingClientRect();
+      // Avoid zeros during layout / hidden states
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      setRingBox({ w, h });
+    };
+
+    update();
+
+    const ro = new ResizeObserver(() => update());
+    ro.observe(host);
+
+    return () => ro.disconnect();
+  });
+
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
 
   const [ringPulseKey, setRingPulseKey] = createSignal(0);
+  const [ringActive, setRingActive] = createSignal(false);
+  let ringTimer: number | undefined;
+
+  const ringPathD = () => {
+    const { w, h } = ringBox();
+
+    // Keep stroke fully inside the box
+    const stroke = 2.25;
+    const x = stroke / 2;
+    const y = stroke / 2;
+    const ww = Math.max(1, w - stroke);
+    const hh = Math.max(1, h - stroke);
+
+    // Radius should be constrained by height on very wide fields
+    const desired = variant() === 'standard' ? 2 : 16;
+    const r = Math.max(0, Math.min(desired, Math.min(ww, hh) / 2));
+
+    return [
+      `M ${x + r} ${y}`,
+      `H ${x + ww - r}`,
+      `A ${r} ${r} 0 0 1 ${x + ww} ${y + r}`,
+      `V ${y + hh - r}`,
+      `A ${r} ${r} 0 0 1 ${x + ww - r} ${y + hh}`,
+      `H ${x + r}`,
+      `A ${r} ${r} 0 0 1 ${x} ${y + hh - r}`,
+      `V ${y + r}`,
+      `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
+      'Z',
+    ].join(' ');
+  };
+
+  const ringPathId = () => `${inputId()}-ring-path`;
 
   const pulseRing = () => {
     if (!ringEnabled()) return;
+
+    // Force a remount even if the user triggers pulses quickly
+    setRingActive(false);
+    if (ringAntRaf !== undefined) {
+      cancelAnimationFrame(ringAntRaf);
+      ringAntRaf = undefined;
+    }
     setRingPulseKey((k) => k + 1);
+
+    if (ringTimer) window.clearTimeout(ringTimer);
+
+    // Next frame: mount (restarts SMIL animateMotion cleanly)
+    requestAnimationFrame(() => {
+      setRingActive(true);
+
+      // Next frame: SVG paths are mounted, so we can measure + animate.
+      requestAnimationFrame(() => startRingAntAnimation());
+
+      ringTimer = window.setTimeout(() => setRingActive(false), 660);
+    });
+  };
+
+  const startRingAntAnimation = () => {
+    const path = ringMeasureEl;
+    const seg = ringAntSegEl;
+    if (!path || !seg) return;
+
+    // Stop any prior rAF loop.
+    if (ringAntRaf !== undefined) {
+      cancelAnimationFrame(ringAntRaf);
+      ringAntRaf = undefined;
+    }
+
+    // One lap should always be one lap, regardless of size.
+    const len = Math.max(1, path.getTotalLength());
+    // Start a quarter-lap in so the seam (path start) is not the top-left corner.
+    const phase = len * 0.25;
+
+    // Segment length in SVG units (tie to height so it reads consistently at all widths).
+    const segLen = Math.max(12, Math.min(24, ringBox().h * 0.55));
+
+    // Keep perceived motion smooth by keeping speed roughly constant.
+    // Wider fields => longer perimeter => longer duration, otherwise the ant jumps too far per frame.
+    const PX_PER_MS = 1.0; // tune: higher = faster
+    const MIN_MS = 650;
+    const MAX_MS = 2600;
+    const durationMs = Math.max(MIN_MS, Math.min(MAX_MS, len / PX_PER_MS));
+    const start = performance.now();
+
+    const point = (at: number) => path.getPointAtLength(at);
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const s0 = (phase + len * t) % len;
+      const e0 = s0 + segLen;
+
+      // If we cross the seam, temporarily shorten the ant instead of drawing a second segment.
+      const e = Math.min(e0, len);
+
+      const p0 = point(s0);
+      const p1 = point(s0 + (e - s0) / 3);
+      const p2 = point(s0 + ((e - s0) * 2) / 3);
+      const p3 = point(e);
+
+      // Cubic curve through sampled points hugs corners better than a straight chord.
+      seg.setAttribute('d', `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y} ${p2.x} ${p2.y} ${p3.x} ${p3.y}`);
+      // When we hit the seam, let the next frame wrap naturally via modulo.
+
+      if (t < 1) ringAntRaf = requestAnimationFrame(tick);
+    };
+
+    ringAntRaf = requestAnimationFrame(tick);
   };
 
   createEffect(() => {
@@ -394,6 +526,7 @@ const TextField = (props: TextFieldProps) => {
       <div class={containerClass()}>
         <Show when={ringEnabled()}>
           <span
+            ref={ringHostEl}
             aria-hidden="true"
             class={cx(
               'tf-focus-ant-ring',
@@ -404,37 +537,46 @@ const TextField = (props: TextFieldProps) => {
           >
             <svg
               class="tf-focus-ant-ring-svg"
-              viewBox="0 0 100 100"
+              viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
               preserveAspectRatio="none"
             >
-              <Show
-                when={ringPulseKey()}
-                keyed
-                fallback={
-                  <rect
-                    class="tf-focus-ant-ring-stroke"
-                    x="1.5"
-                    y="1.5"
-                    width="97"
-                    height="97"
-                    rx={variant() === 'standard' ? '0.5' : '17'}
-                    ry={variant() === 'standard' ? '0.5' : '17'}
-                    pathLength="100"
-                  />
-                }
-              >
-                {(k) => (
-                  <rect
-                    class="tf-focus-ant-ring-stroke"
-                    data-pulse={k}
-                    x="1.5"
-                    y="1.5"
-                    width="97"
-                    height="97"
-                    rx={variant() === 'standard' ? '0.5' : '17'}
-                    ry={variant() === 'standard' ? '0.5' : '17'}
-                    pathLength="100"
-                  />
+              <defs>
+                <path id={ringPathId()} d={ringPathD()} />
+              </defs>
+
+              {/* Outline and ant mounted only during the pulse window */}
+              <Show when={ringActive()}>
+                {() => (
+                  <>
+                    <path
+                      ref={ringOutlineEl}
+                      class="tf-focus-ant-ring-outline"
+                      data-pulse={ringPulseKey()}
+                      d={ringPathD()}
+                      fill="none"
+                      vector-effect="non-scaling-stroke"
+                      opacity="0.02"
+                    />
+
+                    <path
+                      ref={ringMeasureEl}
+                      d={ringPathD()}
+                      fill="none"
+                      stroke="none"
+                    />
+
+                    <path
+                      ref={ringAntSegEl}
+                      class="tf-focus-ant-ring-ant"
+                      data-pulse={ringPulseKey()}
+                      d=""
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.25"
+                      stroke-linecap="round"
+                      vector-effect="non-scaling-stroke"
+                    />
+                  </>
                 )}
               </Show>
             </svg>

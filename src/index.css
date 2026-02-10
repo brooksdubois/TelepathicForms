@@ -57,15 +57,6 @@ h3,
     animation: float 8s ease-in-out infinite;
 }
 
-@keyframes tf-focus-ant-ring-trace {
-    0% {
-        stroke-dashoffset: 0;
-    }
-    100% {
-        stroke-dashoffset: -100;
-    }
-}
-
 @keyframes tf-focus-ant-ring-fade {
     0% {
         opacity: 0;
@@ -94,32 +85,23 @@ h3,
     display: block;
 }
 
-.tf-focus-ant-ring-stroke {
+.tf-focus-ant-ring-outline {
     fill: none;
     stroke: currentColor;
     stroke-width: 2.25;
     stroke-linecap: round;
-    stroke-dasharray: 15 85;
+    stroke-linejoin: round;
+    opacity: 0.10; /* was ~0.35 */
+}
+
+.tf-focus-ant-ring-ant {
+    fill: none;
+    shape-rendering: geometricPrecision;
 }
 
 .tf-input-container:focus-within .tf-focus-ant-ring {
     animation: tf-focus-ant-ring-fade 620ms ease-out forwards;
 }
 
-.tf-input-container:focus-within .tf-focus-ant-ring-stroke {
-    animation: tf-focus-ant-ring-trace 620ms linear forwards;
-}
 
-.tf-slot { will-change: opacity, height, width; }
 
-.tf-enter { opacity: 0; }
-.tf-enter.tf-enter-active {
-    opacity: 1;
-    transition: opacity 140ms ease-out;
-}
-
-.tf-exit { opacity: 1; }
-.tf-exit.tf-exit-active {
-    opacity: 0;
-    transition: opacity 120ms ease-in;
-}
