@@ -9,6 +9,7 @@ import {
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
+import { Portal } from 'solid-js/web';
 
 import { cx } from '../utils/cx';
 
@@ -186,6 +187,22 @@ const Select = (props: SelectProps) => {
   let controlEl: HTMLButtonElement | undefined;
   const optionEls: Array<HTMLDivElement | undefined> = [];
 
+  let menuEl: HTMLDivElement | undefined;
+
+  const [menuPos, setMenuPos] = createSignal<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  const updateMenuPos = () => {
+    const anchor = controlEl;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    // 8px gap (matches `mt-2`)
+    setMenuPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+  };
+
   const [open, setOpen] = createSignal(false);
   const [highlightedIndex, setHighlightedIndex] = createSignal(-1);
 
@@ -316,6 +333,7 @@ const Select = (props: SelectProps) => {
   const openMenu = () => {
     if (!canInteract() || open()) return;
     setOpen(true);
+    updateMenuPos();
     syncHighlightToSelection();
   };
 
@@ -418,6 +436,7 @@ const Select = (props: SelectProps) => {
       closeMenu();
     } else {
       setOpen(true);
+      updateMenuPos();
       syncHighlightToSelection();
     }
 
@@ -444,6 +463,7 @@ const Select = (props: SelectProps) => {
       closeMenu();
     } else {
       setOpen(true);
+      updateMenuPos();
       syncHighlightToSelection();
     }
   };
@@ -514,7 +534,9 @@ const Select = (props: SelectProps) => {
     event,
   ) => {
     const nextFocus = event.relatedTarget as Node | null;
-    if (nextFocus && rootEl?.contains(nextFocus)) {
+    const insideRoot = !!nextFocus && !!rootEl && rootEl.contains(nextFocus);
+    const insideMenu = !!nextFocus && !!menuEl && menuEl.contains(nextFocus);
+    if (insideRoot || insideMenu) {
       callHandler(local.onBlur, event);
       return;
     }
@@ -534,18 +556,27 @@ const Select = (props: SelectProps) => {
   createEffect(() => {
     if (!open()) return;
 
+    updateMenuPos();
+
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
-      if (!target || !rootEl?.contains(target)) {
+      const isInsideRoot = !!rootEl && rootEl.contains(target);
+      const isInsideMenu = !!menuEl && menuEl.contains(target);
+      if (!target || (!isInsideRoot && !isInsideMenu)) {
         closeMenu();
       }
     };
 
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('touchstart', onPointerDown);
+    const onReposition = () => updateMenuPos();
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
     onCleanup(() => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('touchstart', onPointerDown);
+      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener('resize', onReposition);
     });
   });
 
@@ -728,78 +759,87 @@ const Select = (props: SelectProps) => {
         </div>
 
         <Show when={open()}>
-          <div
-            id={menuId()}
-            role="listbox"
-            class={cx(
-              'absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
-              local.menuClass,
-            )}
-          >
-            <Show
-              when={local.options.length > 0}
-              fallback={
-                <div class="px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
-                  No options
-                </div>
-              }
+          <Portal>
+            <div
+              ref={menuEl}
+              id={menuId()}
+              role="listbox"
+              style={{
+                position: 'fixed',
+                top: `${menuPos().top}px`,
+                left: `${menuPos().left}px`,
+                width: `${menuPos().width}px`,
+              }}
+              class={cx(
+                'z-[9999] max-h-60 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
+                local.menuClass,
+              )}
             >
-              <For each={local.options}>
-                {(option, index) => {
-                  const selected = () => option.value === (local.value ?? '');
-                  const highlighted = () => index() === highlightedIndex();
-                  const optionDisabled = () => Boolean(option.disabled);
+              <Show
+                when={local.options.length > 0}
+                fallback={
+                  <div class="px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
+                    No options
+                  </div>
+                }
+              >
+                <For each={local.options}>
+                  {(option, index) => {
+                    const selected = () => option.value === (local.value ?? '');
+                    const highlighted = () => index() === highlightedIndex();
+                    const optionDisabled = () => Boolean(option.disabled);
 
-                  return (
-                    <div
-                      id={optionId(index())}
-                      ref={(el) => {
-                        optionEls[index()] = el;
-                      }}
-                      role="option"
-                      aria-selected={selected() ? 'true' : 'false'}
-                      aria-disabled={optionDisabled() ? 'true' : undefined}
-                      class={cx(
-                        'flex items-center justify-between transition',
-                        sizeStyles[size()].option,
-                        sizeStyles[size()].input,
-                        optionDisabled()
-                          ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
-                          : 'cursor-pointer text-slate-800 dark:text-slate-100',
-                        highlighted() && !optionDisabled()
-                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                          : '',
-                        selected() && !optionDisabled() ? 'font-semibold' : '',
-                        local.optionClass,
-                      )}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => {
-                        if (!optionDisabled()) setHighlightedIndex(index());
-                      }}
-                      onClick={() => selectOptionAt(index(), 'click')}
-                    >
-                      <span>{option.label}</span>
-                      <Show when={selected() && !optionDisabled()}>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          class="h-4 w-4 text-emerald-600 dark:text-emerald-300"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M16.704 5.29a1 1 0 010 1.414l-7.41 7.411a1 1 0 01-1.415 0L3.296 9.53A1 1 0 114.71 8.117l3.876 3.876 6.704-6.703a1 1 0 011.414 0z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </Show>
-                    </div>
-                  );
-                }}
-              </For>
-            </Show>
-          </div>
+                    return (
+                      <div
+                        id={optionId(index())}
+                        ref={(el) => {
+                          optionEls[index()] = el;
+                        }}
+                        role="option"
+                        aria-selected={selected() ? 'true' : 'false'}
+                        aria-disabled={optionDisabled() ? 'true' : undefined}
+                        class={cx(
+                          'flex items-center justify-between transition',
+                          sizeStyles[size()].option,
+                          sizeStyles[size()].input,
+                          optionDisabled()
+                            ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
+                            : 'cursor-pointer text-slate-800 dark:text-slate-100',
+                          highlighted() && !optionDisabled()
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                            : '',
+                          selected() && !optionDisabled() ? 'font-semibold' : '',
+                          local.optionClass,
+                        )}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => {
+                          if (!optionDisabled()) setHighlightedIndex(index());
+                        }}
+                        onClick={() => selectOptionAt(index(), 'click')}
+                      >
+                        <span>{option.label}</span>
+                        <Show when={selected() && !optionDisabled()}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            class="h-4 w-4 text-emerald-600 dark:text-emerald-300"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M16.704 5.29a1 1 0 010 1.414l-7.41 7.411a1 1 0 01-1.415 0L3.296 9.53A1 1 0 114.71 8.117l3.876 3.876 6.704-6.703a1 1 0 011.414 0z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                        </Show>
+                      </div>
+                    );
+                  }}
+                </For>
+              </Show>
+            </div>
+          </Portal>
         </Show>
       </div>
 

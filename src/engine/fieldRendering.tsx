@@ -1,4 +1,5 @@
-import {Show, type Component} from "solid-js";
+import { type Component } from "solid-js";
+import { Transition } from "solid-transition-group";
 import {
   CheckboxWrapper,
   CurrencyWrapper,
@@ -122,12 +123,110 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
   })();
 
   return (
-    <Show when={!hidden()} fallback={null}>
-      {p.wrapInRow ? (
-        <div style={{flex: "1 1 0", "min-width": "240px"}}>{content}</div>
-      ) : (
-        content
-      )}
-    </Show>
+    <Transition
+      onEnter={(rawEl, done) => {
+        const el = rawEl as HTMLElement;
+        // Ensure the base class is present (the child div uses tf-slot)
+        // Animate via max-height / max-width + opacity (no transforms) to avoid stacking-context issues.
+        const DURATION_MS = 160;
+
+        // Start collapsed
+        el.style.overflow = "hidden";
+        el.style.opacity = "0";
+        el.style.maxHeight = "0px";
+        el.style.maxWidth = "0px";
+
+        // Force initial layout
+        el.getBoundingClientRect();
+
+        // Measure natural size
+        el.style.maxHeight = "none";
+        el.style.maxWidth = "none";
+        const targetH = el.scrollHeight;
+        const targetW = el.getBoundingClientRect().width; // respect layout (flex/row) rather than scrollWidth
+
+        // Reset to collapsed before animating
+        el.style.maxHeight = "0px";
+        el.style.maxWidth = "0px";
+        el.getBoundingClientRect();
+
+        // Animate to target
+        el.style.transition = `max-height ${DURATION_MS}ms ease-out, max-width ${DURATION_MS}ms ease-out, opacity ${DURATION_MS}ms ease-out`;
+        requestAnimationFrame(() => {
+          el.style.opacity = "1";
+          el.style.maxHeight = `${targetH}px`;
+          el.style.maxWidth = `${Math.max(0, Math.ceil(targetW))}px`;
+        });
+
+        const cleanup = () => {
+          el.style.transition = "";
+          el.style.overflow = "";
+          el.style.opacity = "";
+          el.style.maxHeight = "";
+          el.style.maxWidth = "";
+        };
+
+        // Transitionend can fire multiple times (one per property). Use a timer as the single source of truth.
+        const timer = window.setTimeout(() => {
+          cleanup();
+          done();
+        }, DURATION_MS + 40);
+
+        el.addEventListener(
+          "transitionend",
+          (e) => {
+            if (e.target !== el) return;
+            window.clearTimeout(timer);
+            cleanup();
+            done();
+          },
+          { once: true },
+        );
+      }}
+      onExit={(rawEl, done) => {
+        const el = rawEl as HTMLElement;
+        const DURATION_MS = 140;
+
+        // Lock current size so we can animate collapse
+        const rect = el.getBoundingClientRect();
+        el.style.overflow = "hidden";
+        el.style.opacity = "1";
+        el.style.maxHeight = `${Math.ceil(rect.height)}px`;
+        el.style.maxWidth = `${Math.ceil(rect.width)}px`;
+
+        el.getBoundingClientRect();
+
+        el.style.transition = `max-height ${DURATION_MS}ms ease-in, max-width ${DURATION_MS}ms ease-in, opacity ${DURATION_MS}ms ease-in`;
+        requestAnimationFrame(() => {
+          el.style.opacity = "0";
+          el.style.maxHeight = "0px";
+          el.style.maxWidth = "0px";
+        });
+
+        const timer = window.setTimeout(() => {
+          done();
+        }, DURATION_MS + 40);
+
+        el.addEventListener(
+          "transitionend",
+          (e) => {
+            if (e.target !== el) return;
+            window.clearTimeout(timer);
+            done();
+          },
+          { once: true },
+        );
+      }}
+    >
+      {!hidden() ? (
+        p.wrapInRow ? (
+          <div class="tf-slot" style={{ flex: "1 1 0", "min-width": "240px" }}>
+            {content}
+          </div>
+        ) : (
+          <div class="tf-slot">{content}</div>
+        )
+      ) : null}
+    </Transition>
   );
 };

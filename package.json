@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "rxjs": "^7.8.2",
-    "solid-js": "^1.9.5"
+    "solid-js": "^1.9.5",
+    "solid-transition-group": "^0.3.0"
   }
 }
