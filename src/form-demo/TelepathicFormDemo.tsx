@@ -7,10 +7,10 @@ import {
   TriggerOperators,
   WhenOperators,
   type FormSpec,
-} from "../../engine/generators";
-import PlaygroundNav from "../../playgrounds/PlaygroundNav";
-import {cx} from "../../utils/cx";
-import {fromObservable} from "../../utils/fromObservable";
+} from "../engine/generators";
+import PlaygroundNav from "../playgrounds/PlaygroundNav";
+import {cx} from "../utils/cx";
+import {fromObservable} from "../utils/fromObservable";
 
 /** ---------------------------------------------
  * Demo App: Spec-driven version
