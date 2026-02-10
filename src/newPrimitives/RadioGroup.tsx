@@ -2,6 +2,7 @@ import {
   For,
   Show,
   createEffect,
+  onCleanup,
   createSignal,
   createUniqueId,
   mergeProps,
@@ -155,6 +156,42 @@ const RadioGroup = (props: RadioGroupProps) => {
   const [animatingOption, setAnimatingOption] = createSignal<string | undefined>(
     undefined,
   );
+  let animatingOptionTimer: number | undefined;
+  let interactionArmTimer: number | undefined;
+  let interactionArmed = false;
+
+  const clearAnimatingOptionTimer = () => {
+    if (animatingOptionTimer !== undefined) {
+      window.clearTimeout(animatingOptionTimer);
+      animatingOptionTimer = undefined;
+    }
+  };
+
+  const clearAnimatingOption = () => {
+    clearAnimatingOptionTimer();
+    setAnimatingOption(undefined);
+  };
+
+  const clearInteractionArmTimer = () => {
+    if (interactionArmTimer !== undefined) {
+      window.clearTimeout(interactionArmTimer);
+      interactionArmTimer = undefined;
+    }
+  };
+
+  const armInteraction = () => {
+    interactionArmed = true;
+    clearInteractionArmTimer();
+    interactionArmTimer = window.setTimeout(() => {
+      interactionArmed = false;
+      interactionArmTimer = undefined;
+    }, 500);
+  };
+
+  const disarmInteraction = () => {
+    interactionArmed = false;
+    clearInteractionArmTimer();
+  };
 
   const required = () => Boolean(local.required);
   const disabled = () => Boolean(local.disabled);
@@ -162,7 +199,6 @@ const RadioGroup = (props: RadioGroupProps) => {
   const fullWidth = () => Boolean(local.fullWidth);
   const inline = () => Boolean(local.inline);
   const ringEnabled = () => local.ringEnabled ?? true;
-  const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
 
   const size = () => (local.size ?? 'md') as RadioGroupSize;
   const variant = () => (local.variant ?? 'outlined') as RadioGroupVariant;
@@ -294,8 +330,15 @@ const RadioGroup = (props: RadioGroupProps) => {
 
   const pulseOption = (optionValue: string | undefined) => {
     if (!ringEnabled() || !optionValue) return;
+    clearAnimatingOptionTimer();
     setAnimatingOption(optionValue);
     pulseRing();
+    animatingOptionTimer = window.setTimeout(() => {
+      setAnimatingOption((current) =>
+        current === optionValue ? undefined : current,
+      );
+      animatingOptionTimer = undefined;
+    }, 720);
   };
 
   const focusSelectedOption = () => {
@@ -358,9 +401,15 @@ const RadioGroup = (props: RadioGroupProps) => {
     }
 
     const prev = value();
-    if (nextValue === prev) return;
+    if (nextValue === prev) {
+      disarmInteraction();
+      return;
+    }
 
-    pulseOption(nextValue);
+    if (interactionArmed) {
+      pulseOption(nextValue);
+    }
+    disarmInteraction();
 
     local.onValue?.(nextValue, {
       prev,
@@ -370,7 +419,13 @@ const RadioGroup = (props: RadioGroupProps) => {
 
   createEffect(() => {
     if (ringEnabled()) return;
-    setAnimatingOption(undefined);
+    clearAnimatingOption();
+  });
+
+  onCleanup(() => {
+    clearAnimatingOptionTimer();
+    clearInteractionArmTimer();
+    interactionArmed = false;
   });
 
   const optionsMarkup = () => (
@@ -381,7 +436,11 @@ const RadioGroup = (props: RadioGroupProps) => {
           const checked = () => option.value === value();
 
           return (
-            <label for={optionId(index())} class={optionLabelClass(optionDisabled)}>
+            <label
+              for={optionId(index())}
+              class={optionLabelClass(optionDisabled)}
+              onPointerDown={() => armInteraction()}
+            >
               <Show when={ringEnabled() && animatingOption() === option.value}>
                 <span
                   ref={setRingHostEl}
@@ -447,12 +506,19 @@ const RadioGroup = (props: RadioGroupProps) => {
                 aria-invalid={ariaInvalid()}
                 aria-describedby={describedBy()}
                 class="peer sr-only"
-                onFocus={() => {
-                  if (animateRingOnFocus()) {
-                    pulseOption(option.value);
+                onChange={(event) => handleChange(event, option.value, optionDisabled)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === ' ' ||
+                    event.key === 'Enter' ||
+                    event.key === 'ArrowUp' ||
+                    event.key === 'ArrowDown' ||
+                    event.key === 'ArrowLeft' ||
+                    event.key === 'ArrowRight'
+                  ) {
+                    armInteraction();
                   }
                 }}
-                onChange={(event) => handleChange(event, option.value, optionDisabled)}
               />
 
               <span class={optionControlClass(checked())}>

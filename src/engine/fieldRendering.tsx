@@ -66,7 +66,7 @@ export type FieldSlotProps = {
 
 export const FieldSlot: Component<FieldSlotProps> = (p) => {
   const hidden = fromObservable(p.handle.hidden$, false);
-  const content = (() => {
+  const renderContent = () => {
     const f = p.f;
     const handle = p.handle;
 
@@ -120,7 +120,7 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
       default:
         return <TextFieldWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
     }
-  })();
+  };
 
   return (
     <Transition
@@ -221,10 +221,10 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
       {!hidden() ? (
         p.wrapInRow ? (
           <div class="tf-slot" style={{ flex: "1 1 0", "min-width": "240px" }}>
-            {content}
+            {renderContent()}
           </div>
         ) : (
-          <div class="tf-slot">{content}</div>
+          <div class="tf-slot">{renderContent()}</div>
         )
       ) : null}
     </Transition>
