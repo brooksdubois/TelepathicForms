@@ -1,2 +1,2 @@
-export {default} from "../newPrimitives/RadioGroup";
-export * from "../newPrimitives/RadioGroup";
+export {default} from "../primitives/RadioGroup";
+export * from "../primitives/RadioGroup";

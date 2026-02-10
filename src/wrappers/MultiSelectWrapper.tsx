@@ -1,58 +1,66 @@
 import {createMemo, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import TextField from "../newPrimitives/TextField";
-import {blockNonDigitsAndMaxLen} from "../utils/fieldHelpers";
+import MultiSelect from "../primitives/MultiSelect";
 import {fromObservable} from "../utils/fromObservable";
 
-export type NumberWrapperProps = {
+export type MultiSelectWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
+  inline?: boolean;
 };
 
-export const NumberWrapper: Component<NumberWrapperProps> = (p) => {
+const parseSelected = (raw: string): string[] =>
+  raw
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+
+export const MultiSelectWrapper: Component<MultiSelectWrapperProps> = (p) => {
+  const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
   const touched = fromObservable(p.field.touched$, false);
-  const value = fromObservable(p.field.value$, "");
 
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
+  const selectedValues = createMemo(() => parseSelected(value()));
 
-  const maxDigits = p.spec.maxDigits ?? 6;
+  const options = createMemo(() =>
+    (p.spec.options ?? []).map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      disabled: opt.disabled,
+      group: opt.group,
+    }))
+  );
 
   return (
-    <TextField
-      id={p.spec.id}
+    <MultiSelect
       label={p.spec.label}
-      value={value()}
-      inputMask={p.spec.inputMask}
-      type={p.spec.type ?? "text"}
-      autoComplete={p.spec.autoComplete}
-      minLength={p.spec.minLength}
-      maxLength={p.spec.maxLength}
+      value={selectedValues()}
+      options={options()}
       placeholder={p.spec.placeholder}
       helperText={p.spec.helperText}
       required={!!p.spec.required}
       disabled={disabled()}
       readOnly={!!p.spec.readOnly}
       fullWidth={p.fullWidth}
+      inline={p.inline ?? p.spec.inline}
       size={p.spec.size}
       variant={p.spec.variant}
-      startAdornment={p.spec.startAdornment}
-      endAdornment={p.spec.endAdornment}
+      searchable={p.spec.searchable}
+      clearable={p.spec.clearable}
+      maxSelected={p.spec.maxSelected}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
       error={!!errorText()}
       errorText={errorText()}
-      onKeyDown={(e) => blockNonDigitsAndMaxLen(e as KeyboardEvent, value(), maxDigits)}
       onValue={(next) => {
-        const digits = next.replace(/\D/g, "");
-        if (digits.length > maxDigits) return;
-        p.field.setValue(digits);
+        p.field.setValue(next.join(","));
+        p.field.markTouched();
       }}
-      onBlur={() => p.field.markTouched()}
     />
   );
 };

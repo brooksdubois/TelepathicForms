@@ -1,32 +1,41 @@
 import {createMemo, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import Checkbox from "../newPrimitives/Checkbox";
+import RadioGroup from "../primitives/RadioGroup";
 import {fromObservable} from "../utils/fromObservable";
 
-export type CheckboxWrapperProps = {
+export type RadioGroupWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
   inline?: boolean;
 };
 
-export const CheckboxWrapper: Component<CheckboxWrapperProps> = (p) => {
+export const RadioGroupWrapper: Component<RadioGroupWrapperProps> = (p) => {
   const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
   const touched = fromObservable(p.field.touched$, false);
 
-  const checked = createMemo(() => value() === "true");
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
 
+  const options = createMemo(() =>
+    (p.spec.options ?? []).map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      disabled: opt.disabled,
+      helperText: opt.helperText,
+    }))
+  );
+
   return (
-    <Checkbox
+    <RadioGroup
       id={p.spec.id}
+      name={p.spec.id}
       label={p.spec.label}
-      checked={checked()}
-      indeterminate={p.spec.indeterminate}
+      value={value()}
+      options={options()}
       helperText={p.spec.helperText}
       required={!!p.spec.required}
       disabled={disabled()}
@@ -39,8 +48,8 @@ export const CheckboxWrapper: Component<CheckboxWrapperProps> = (p) => {
       animateRingOnFocus={p.spec.animateRingOnFocus}
       error={!!errorText()}
       errorText={errorText()}
-      onChecked={(next) => {
-        p.field.setValue(next ? "true" : "");
+      onValue={(next) => {
+        p.field.setValue(next);
         p.field.markTouched();
       }}
     />

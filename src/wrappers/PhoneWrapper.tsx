@@ -1,39 +1,39 @@
-import {createMemo, createSignal, type Component} from "solid-js";
+import {createMemo, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import TextField from "../newPrimitives/TextField";
+import TextField from "../primitives/TextField";
 import {
-  blockNonDecimalInput,
-  formatCurrencyDisplay,
-  normalizeDecimalInput,
-  roundDecimalHalfEven,
+  blockNonDigitsAndMaxLen,
+  formatPhone,
+  normalizePhone,
+  phoneDigitsBlocker,
 } from "../utils/fieldHelpers";
 import {fromObservable} from "../utils/fromObservable";
 
-export type CurrencyWrapperProps = {
+export type PhoneWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
 };
 
-export const CurrencyWrapper: Component<CurrencyWrapperProps> = (p) => {
+export const PhoneWrapper: Component<PhoneWrapperProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
   const touched = fromObservable(p.field.touched$, false);
-  const raw = fromObservable(p.field.value$, "");
-  const [isEditing, setIsEditing] = createSignal(false);
+  const rawDigits = fromObservable(p.field.value$, "");
 
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
-  const maxIntDigits = p.spec.maxDigits ?? 9;
+  const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,10}$");
 
   return (
     <TextField
       id={p.spec.id}
       label={p.spec.label}
-      rawValue={raw()}
-      format={(value) => (isEditing() ? value : formatCurrencyDisplay(value))}
-      parse={(display) => normalizeDecimalInput(display, maxIntDigits, null)}
+      rawValue={rawDigits()}
+      format={formatPhone}
+      parse={normalizePhone}
+      inputMask={p.spec.inputMask ?? "(___) ___-____"}
       placeholder={p.spec.placeholder}
       helperText={p.spec.helperText}
       required={!!p.spec.required}
@@ -48,18 +48,16 @@ export const CurrencyWrapper: Component<CurrencyWrapperProps> = (p) => {
       animateRingOnFocus={p.spec.animateRingOnFocus}
       error={!!errorText()}
       errorText={errorText()}
-      onKeyDown={(e) => blockNonDecimalInput(e as KeyboardEvent, raw())}
-      onValue={(nextRaw) => p.field.setValue(nextRaw)}
-      onFocus={() => {
-        setIsEditing(true);
-        p.field.setFocused(true);
+      onKeyDown={(e) => blockNonDigitsAndMaxLen(e as KeyboardEvent, rawDigits(), 10)}
+      onValue={(nextRaw) => {
+        const digits = normalizePhone(nextRaw);
+        if (!blocker.test(digits)) return;
+        if (!phoneDigitsBlocker.test(digits)) return;
+        p.field.setValue(digits);
       }}
+      onFocus={() => p.field.setFocused(true)}
       onBlur={() => {
-        setIsEditing(false);
         p.field.markTouched();
-        const normalized = normalizeDecimalInput(raw(), maxIntDigits, null);
-        const rounded = roundDecimalHalfEven(normalized, 2);
-        p.field.setValue(rounded);
         p.field.setFocused(false);
       }}
     />

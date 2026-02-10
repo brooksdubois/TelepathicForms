@@ -1,2 +1,2 @@
-export {default} from "../newPrimitives/Switch";
-export * from "../newPrimitives/Switch";
+export {default} from "../primitives/Switch";
+export * from "../primitives/Switch";

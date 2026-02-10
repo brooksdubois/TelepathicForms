@@ -1,2 +1,2 @@
-export {default} from "../newPrimitives/TextArea";
-export * from "../newPrimitives/TextArea";
+export {default} from "../primitives/TextArea";
+export * from "../primitives/TextArea";

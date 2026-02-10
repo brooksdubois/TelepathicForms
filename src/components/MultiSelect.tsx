@@ -1,2 +1,2 @@
-export {default} from "../newPrimitives/MultiSelect";
-export * from "../newPrimitives/MultiSelect";
+export {default} from "../primitives/MultiSelect";
+export * from "../primitives/MultiSelect";

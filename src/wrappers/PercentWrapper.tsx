@@ -1,39 +1,38 @@
-import {createMemo, type Component} from "solid-js";
+import {createMemo, createSignal, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import TextField from "../newPrimitives/TextField";
+import TextField from "../primitives/TextField";
 import {
-  blockNonDigitsAndMaxLen,
-  formatPhone,
-  normalizePhone,
-  phoneDigitsBlocker,
+  blockNonDecimalInput,
+  formatPercentDisplay,
+  normalizeDecimalInput,
 } from "../utils/fieldHelpers";
 import {fromObservable} from "../utils/fromObservable";
 
-export type PhoneWrapperProps = {
+export type PercentWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
 };
 
-export const PhoneWrapper: Component<PhoneWrapperProps> = (p) => {
+export const PercentWrapper: Component<PercentWrapperProps> = (p) => {
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
   const touched = fromObservable(p.field.touched$, false);
-  const rawDigits = fromObservable(p.field.value$, "");
+  const raw = fromObservable(p.field.value$, "");
+  const [isEditing, setIsEditing] = createSignal(false);
 
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
-  const blocker = new RegExp(p.spec.inputBlocker ?? "^\\d{0,10}$");
+  const maxIntDigits = p.spec.maxDigits ?? 1000;
 
   return (
     <TextField
       id={p.spec.id}
       label={p.spec.label}
-      rawValue={rawDigits()}
-      format={formatPhone}
-      parse={normalizePhone}
-      inputMask={p.spec.inputMask ?? "(___) ___-____"}
+      rawValue={raw()}
+      format={(value) => (isEditing() ? value : formatPercentDisplay(value))}
+      parse={(display) => normalizeDecimalInput(display, maxIntDigits, null)}
       placeholder={p.spec.placeholder}
       helperText={p.spec.helperText}
       required={!!p.spec.required}
@@ -48,15 +47,14 @@ export const PhoneWrapper: Component<PhoneWrapperProps> = (p) => {
       animateRingOnFocus={p.spec.animateRingOnFocus}
       error={!!errorText()}
       errorText={errorText()}
-      onKeyDown={(e) => blockNonDigitsAndMaxLen(e as KeyboardEvent, rawDigits(), 10)}
-      onValue={(nextRaw) => {
-        const digits = normalizePhone(nextRaw);
-        if (!blocker.test(digits)) return;
-        if (!phoneDigitsBlocker.test(digits)) return;
-        p.field.setValue(digits);
+      onKeyDown={(e) => blockNonDecimalInput(e as KeyboardEvent, raw())}
+      onValue={(nextRaw) => p.field.setValue(nextRaw)}
+      onFocus={() => {
+        setIsEditing(true);
+        p.field.setFocused(true);
       }}
-      onFocus={() => p.field.setFocused(true)}
       onBlur={() => {
+        setIsEditing(false);
         p.field.markTouched();
         p.field.setFocused(false);
       }}

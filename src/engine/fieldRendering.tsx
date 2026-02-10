@@ -15,7 +15,7 @@ import {
   TextAreaWrapper,
   TextFieldWrapper,
   ZipWrapper,
-} from "../newWrappers";
+} from "../wrappers";
 import {fromObservable} from "../utils/fromObservable";
 import {FieldKind, type FieldHandle, type FieldSpec} from "./types";
 

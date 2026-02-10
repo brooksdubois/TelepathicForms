@@ -1,53 +1,46 @@
 import {createMemo, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import TextField from "../newPrimitives/TextField";
+import Switch from "../primitives/Switch";
 import {fromObservable} from "../utils/fromObservable";
 
-export type TextFieldWrapperProps = {
+export type SwitchWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
+  inline?: boolean;
 };
 
-export const TextFieldWrapper: Component<TextFieldWrapperProps> = (p) => {
+export const SwitchWrapper: Component<SwitchWrapperProps> = (p) => {
   const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
   const touched = fromObservable(p.field.touched$, false);
 
+  const checked = createMemo(() => value() === "true");
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
 
   return (
-    <TextField
+    <Switch
       id={p.spec.id}
       label={p.spec.label}
-      value={value()}
-      type={p.spec.type ?? "text"}
-      autoComplete={p.spec.autoComplete}
-      minLength={p.spec.minLength}
-      maxLength={p.spec.maxLength}
-      placeholder={p.spec.placeholder}
+      checked={checked()}
       helperText={p.spec.helperText}
-      error={!!errorText()}
-      errorText={errorText()}
       required={!!p.spec.required}
       disabled={disabled()}
       readOnly={!!p.spec.readOnly}
       fullWidth={p.fullWidth}
+      inline={p.inline ?? p.spec.inline}
       size={p.spec.size}
       variant={p.spec.variant}
-      startAdornment={p.spec.startAdornment}
-      endAdornment={p.spec.endAdornment}
-      inputMask={p.spec.inputMask}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
-      onValue={(next) => p.field.setValue(next)}
-      onFocus={() => p.field.setFocused(true)}
-      onBlur={() => {
+      error={!!errorText()}
+      errorText={errorText()}
+      onChecked={(next) => {
+        p.field.setValue(next ? "true" : "");
         p.field.markTouched();
-        p.field.setFocused(false);
       }}
     />
   );

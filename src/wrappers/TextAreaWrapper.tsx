@@ -1,22 +1,15 @@
 import {createMemo, type Component} from "solid-js";
 import type {FieldHandle, FieldSpec} from "../engine/generators";
-import MultiSelect from "../newPrimitives/MultiSelect";
+import TextArea from "../primitives/TextArea";
 import {fromObservable} from "../utils/fromObservable";
 
-export type MultiSelectWrapperProps = {
+export type TextAreaWrapperProps = {
   spec: FieldSpec;
   field: FieldHandle;
   fullWidth?: boolean;
-  inline?: boolean;
 };
 
-const parseSelected = (raw: string): string[] =>
-  raw
-    .split(",")
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0);
-
-export const MultiSelectWrapper: Component<MultiSelectWrapperProps> = (p) => {
+export const TextAreaWrapper: Component<TextAreaWrapperProps> = (p) => {
   const value = fromObservable(p.field.value$, "");
   const disabled = fromObservable(p.field.disabled$, false);
   const errors = fromObservable(p.field.errors$, []);
@@ -25,41 +18,38 @@ export const MultiSelectWrapper: Component<MultiSelectWrapperProps> = (p) => {
   const errorText = createMemo(() =>
     disabled() ? "" : touched() ? errors()[0] ?? "" : ""
   );
-  const selectedValues = createMemo(() => parseSelected(value()));
-
-  const options = createMemo(() =>
-    (p.spec.options ?? []).map((opt) => ({
-      value: opt.value,
-      label: opt.label,
-      disabled: opt.disabled,
-      group: opt.group,
-    }))
-  );
 
   return (
-    <MultiSelect
+    <TextArea
+      id={p.spec.id}
       label={p.spec.label}
-      value={selectedValues()}
-      options={options()}
+      value={value()}
       placeholder={p.spec.placeholder}
       helperText={p.spec.helperText}
+      autoComplete={p.spec.autoComplete}
+      minLength={p.spec.minLength}
+      maxLength={p.spec.maxLength}
       required={!!p.spec.required}
       disabled={disabled()}
       readOnly={!!p.spec.readOnly}
       fullWidth={p.fullWidth}
-      inline={p.inline ?? p.spec.inline}
       size={p.spec.size}
       variant={p.spec.variant}
-      searchable={p.spec.searchable}
-      clearable={p.spec.clearable}
-      maxSelected={p.spec.maxSelected}
+      startAdornment={p.spec.startAdornment}
+      endAdornment={p.spec.endAdornment}
+      rows={p.spec.rows}
+      autosize={p.spec.autosize}
+      minRows={p.spec.minRows}
+      maxRows={p.spec.maxRows}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
       error={!!errorText()}
       errorText={errorText()}
-      onValue={(next) => {
-        p.field.setValue(next.join(","));
+      onValue={(next) => p.field.setValue(next)}
+      onFocus={() => p.field.setFocused(true)}
+      onBlur={() => {
         p.field.markTouched();
+        p.field.setFocused(false);
       }}
     />
   );
