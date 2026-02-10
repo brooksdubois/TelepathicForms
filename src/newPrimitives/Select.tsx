@@ -10,6 +10,7 @@ import {
 } from 'solid-js';
 import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
+import { Transition } from 'solid-transition-group';
 
 import { cx } from '../utils/cx';
 import { useAntRing } from '../utils/useAntRing';
@@ -206,6 +207,8 @@ const Select = (props: SelectProps) => {
 
   const [open, setOpen] = createSignal(false);
   const [highlightedIndex, setHighlightedIndex] = createSignal(-1);
+  let suppressOpen = false;
+  let closeOnlyFromEdgeClick = false;
 
   const required = () => Boolean(local.required);
   const disabled = () => Boolean(local.disabled);
@@ -334,12 +337,17 @@ const Select = (props: SelectProps) => {
   };
 
   const closeMenu = () => {
+    if (!open()) return;
     setOpen(false);
     setHighlightedIndex(-1);
+    suppressOpen = true;
+    queueMicrotask(() => {
+      suppressOpen = false;
+    });
   };
 
   const openMenu = () => {
-    if (!canInteract() || open()) return;
+    if (!canInteract() || open() || suppressOpen) return;
     setOpen(true);
     updateMenuPos();
     syncHighlightToSelection();
@@ -426,15 +434,20 @@ const Select = (props: SelectProps) => {
         : readOnly()
           ? 'cursor-default'
           : 'cursor-pointer',
-      isPlaceholder() ? 'text-slate-400/90 dark:text-slate-500' : '',
       local.inputClass,
     );
+  const displayTextClass = () =>
+    cx(isPlaceholder() ? 'text-slate-400/90 dark:text-slate-500' : '');
 
   const helperClass = () => cx('text-xs', helperToneClass(), local.helperClass);
 
-  const handleContainerPointerDown: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent> = () => {
+  const handleContainerPointerDown: JSX.EventHandlerUnion<HTMLDivElement, PointerEvent> = (
+    event,
+  ) => {
     if (disabled() || readOnly()) return;
-    if (animateRingOnFocus()) {
+    const target = event.target as Node | null;
+    closeOnlyFromEdgeClick = !!open() && !!target && !controlEl?.contains(target);
+    if (!open() && animateRingOnFocus()) {
       pulseRing();
     }
   };
@@ -442,6 +455,7 @@ const Select = (props: SelectProps) => {
   const handleClick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> = (
     event,
   ) => {
+    closeOnlyFromEdgeClick = false;
     if (disabled() || readOnly()) {
       callHandler(local.onClick, event);
       return;
@@ -450,9 +464,7 @@ const Select = (props: SelectProps) => {
     if (open()) {
       closeMenu();
     } else {
-      setOpen(true);
-      updateMenuPos();
-      syncHighlightToSelection();
+      openMenu();
     }
 
     callHandler(local.onClick, event);
@@ -461,13 +473,15 @@ const Select = (props: SelectProps) => {
   const handleContainerClick: JSX.EventHandlerUnion<HTMLDivElement, MouseEvent> = (
     event,
   ) => {
-    const target = event.target as Node | null;
-    if (target && controlEl?.contains(target)) {
+    if (closeOnlyFromEdgeClick) {
+      closeOnlyFromEdgeClick = false;
+      closeMenu();
       return;
     }
 
-    if (!disabled()) {
-      controlEl?.focus();
+    const target = event.target as Node | null;
+    if (target && controlEl?.contains(target)) {
+      return;
     }
 
     if (disabled() || readOnly()) {
@@ -476,11 +490,11 @@ const Select = (props: SelectProps) => {
 
     if (open()) {
       closeMenu();
-    } else {
-      setOpen(true);
-      updateMenuPos();
-      syncHighlightToSelection();
+      return;
     }
+
+    openMenu();
+    controlEl?.focus();
   };
 
   const handleKeyDown: JSX.EventHandlerUnion<HTMLButtonElement, KeyboardEvent> = (
@@ -562,7 +576,7 @@ const Select = (props: SelectProps) => {
   const handleFocus: JSX.EventHandlerUnion<HTMLButtonElement, FocusEvent> = (
     event,
   ) => {
-    if (animateRingOnFocus() && event.currentTarget.matches(':focus-visible')) {
+    if (!open() && animateRingOnFocus() && event.currentTarget.matches(':focus-visible')) {
       pulseRing();
     }
     callHandler(local.onFocus, event);
@@ -742,7 +756,7 @@ const Select = (props: SelectProps) => {
             onFocus={handleFocus}
             {...controlProps}
           >
-            <span>{displayLabel() || '\u00A0'}</span>
+            <span class={displayTextClass()}>{displayLabel() || '\u00A0'}</span>
           </button>
 
           <Show
@@ -782,89 +796,132 @@ const Select = (props: SelectProps) => {
           </Show>
         </div>
 
-        <Show when={open()}>
-          <Portal>
-            <div
-              ref={menuEl}
-              id={menuId()}
-              role="listbox"
-              style={{
-                position: 'fixed',
-                top: `${menuPos().top}px`,
-                left: `${menuPos().left}px`,
-                width: `${menuPos().width}px`,
-              }}
-              class={cx(
-                'z-[9999] max-h-60 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
-                local.menuClass,
-              )}
-            >
-              <Show
-                when={local.options.length > 0}
-                fallback={
-                  <div class="px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
-                    No options
-                  </div>
-                }
+        <Portal>
+          <Transition
+            onEnter={(rawEl, done) => {
+              const el = rawEl as HTMLElement;
+              const DURATION_MS = 180;
+              el.classList.remove('tf-popover-exit');
+              el.classList.add('tf-popover-enter');
+              const timer = window.setTimeout(() => {
+                el.classList.remove('tf-popover-enter');
+                done();
+              }, DURATION_MS + 40);
+              el.addEventListener(
+                'animationend',
+                (event) => {
+                  if (event.target !== el) return;
+                  window.clearTimeout(timer);
+                  el.classList.remove('tf-popover-enter');
+                  done();
+                },
+                { once: true },
+              );
+            }}
+            onExit={(rawEl, done) => {
+              const el = rawEl as HTMLElement;
+              const DURATION_MS = 140;
+              el.classList.remove('tf-popover-enter');
+              el.classList.add('tf-popover-exit');
+              const timer = window.setTimeout(() => {
+                el.classList.remove('tf-popover-exit');
+                done();
+              }, DURATION_MS + 40);
+              el.addEventListener(
+                'animationend',
+                (event) => {
+                  if (event.target !== el) return;
+                  window.clearTimeout(timer);
+                  el.classList.remove('tf-popover-exit');
+                  done();
+                },
+                { once: true },
+              );
+            }}
+          >
+            {open() ? (
+              <div
+                ref={menuEl}
+                id={menuId()}
+                role="listbox"
+                style={{
+                  position: 'fixed',
+                  top: `${menuPos().top}px`,
+                  left: `${menuPos().left}px`,
+                  width: `${menuPos().width}px`,
+                }}
+                class={cx(
+                  'z-[9999] max-h-60 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
+                  local.menuClass,
+                )}
               >
-                <For each={local.options}>
-                  {(option, index) => {
-                    const selected = () => option.value === (local.value ?? '');
-                    const highlighted = () => index() === highlightedIndex();
-                    const optionDisabled = () => Boolean(option.disabled);
+                <Show
+                  when={local.options.length > 0}
+                  fallback={
+                    <div class="px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
+                      No options
+                    </div>
+                  }
+                >
+                  <For each={local.options}>
+                    {(option, index) => {
+                      const selected = () => option.value === (local.value ?? '');
+                      const highlighted = () => index() === highlightedIndex();
+                      const optionDisabled = () => Boolean(option.disabled);
 
-                    return (
-                      <div
-                        id={optionId(index())}
-                        ref={(el) => {
-                          optionEls[index()] = el;
-                        }}
-                        role="option"
-                        aria-selected={selected() ? 'true' : 'false'}
-                        aria-disabled={optionDisabled() ? 'true' : undefined}
-                        class={cx(
-                          'flex items-center justify-between transition',
-                          sizeStyles[size()].option,
-                          sizeStyles[size()].input,
-                          optionDisabled()
-                            ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
-                            : 'cursor-pointer text-slate-800 dark:text-slate-100',
-                          highlighted() && !optionDisabled()
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            : '',
-                          selected() && !optionDisabled() ? 'font-semibold' : '',
-                          local.optionClass,
-                        )}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onMouseEnter={() => {
-                          if (!optionDisabled()) setHighlightedIndex(index());
-                        }}
-                        onClick={() => selectOptionAt(index(), 'click')}
-                      >
-                        <span>{option.label}</span>
-                        <Show when={selected() && !optionDisabled()}>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            class="h-4 w-4 text-emerald-600 dark:text-emerald-300"
-                            aria-hidden="true"
-                          >
-                            <path
-                              fill-rule="evenodd"
-                              d="M16.704 5.29a1 1 0 010 1.414l-7.41 7.411a1 1 0 01-1.415 0L3.296 9.53A1 1 0 114.71 8.117l3.876 3.876 6.704-6.703a1 1 0 011.414 0z"
-                              clip-rule="evenodd"
-                            />
-                          </svg>
-                        </Show>
-                      </div>
-                    );
-                  }}
-                </For>
-              </Show>
-            </div>
-          </Portal>
-        </Show>
+                      return (
+                        <div
+                          id={optionId(index())}
+                          ref={(el) => {
+                            optionEls[index()] = el;
+                          }}
+                          role="option"
+                          aria-selected={selected() ? 'true' : 'false'}
+                          aria-disabled={optionDisabled() ? 'true' : undefined}
+                          class={cx(
+                            'flex items-center justify-between transition',
+                            sizeStyles[size()].option,
+                            sizeStyles[size()].input,
+                            optionDisabled()
+                              ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
+                              : 'cursor-pointer text-slate-800 dark:text-slate-100',
+                            highlighted() && !optionDisabled()
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                              : '',
+                            selected() && !optionDisabled() ? 'font-semibold' : '',
+                            local.optionClass,
+                          )}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseEnter={() => {
+                            if (!optionDisabled()) setHighlightedIndex(index());
+                          }}
+                          onClick={() => selectOptionAt(index(), 'click')}
+                        >
+                          <span>{option.label}</span>
+                          <Show when={selected() && !optionDisabled()}>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              class="h-4 w-4 text-emerald-600 dark:text-emerald-300"
+                              aria-hidden="true"
+                            >
+                              <path
+                                fill-rule="evenodd"
+                                d="M16.704 5.29a1 1 0 010 1.414l-7.41 7.411a1 1 0 01-1.415 0L3.296 9.53A1 1 0 114.71 8.117l3.876 3.876 6.704-6.703a1 1 0 011.414 0z"
+                                clip-rule="evenodd"
+                              />
+                            </svg>
+                          </Show>
+                        </div>
+                      );
+                    }}
+                  </For>
+                </Show>
+              </div>
+            ) : null}
+          </Transition>
+        </Portal>
       </div>
 
       <Show when={hasHelper()}>

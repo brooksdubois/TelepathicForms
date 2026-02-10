@@ -190,8 +190,10 @@ const MultiSelect = (props: MultiSelectProps) => {
   };
 
   const [open, setOpen] = createSignal(false);
+  const [menuVisible, setMenuVisible] = createSignal(false);
   const [query, setQuery] = createSignal('');
   const [activeIndex, setActiveIndex] = createSignal(-1);
+  let closeTimer: number | undefined;
 
   const required = () => Boolean(local.required);
   const disabled = () => Boolean(local.disabled);
@@ -323,7 +325,12 @@ const MultiSelect = (props: MultiSelectProps) => {
 
   const openMenu = () => {
     if (!canInteract() || open()) return;
+    if (closeTimer) {
+      window.clearTimeout(closeTimer);
+      closeTimer = undefined;
+    }
 
+    setMenuVisible(true);
     setOpen(true);
     updateMenuPos();
     syncHighlight();
@@ -333,6 +340,10 @@ const MultiSelect = (props: MultiSelectProps) => {
     setOpen(false);
     setActiveIndex(-1);
     setQuery('');
+    if (closeTimer) window.clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(() => {
+      setMenuVisible(false);
+    }, 110);
   };
 
   const emitSet = (
@@ -381,7 +392,7 @@ const MultiSelect = (props: MultiSelectProps) => {
 
     event.stopPropagation();
     local.onValue?.([], { event });
-    queryInputEl?.focus();
+    closeMenu();
   };
 
   const handleFieldClick: JSX.EventHandlerUnion<HTMLDivElement, MouseEvent> = (
@@ -391,17 +402,21 @@ const MultiSelect = (props: MultiSelectProps) => {
     if (
       target?.closest('[data-ms-chip]') ||
       target?.closest('[data-ms-chip-remove]') ||
-      target?.closest('[data-ms-clear]')
+      target?.closest('[data-ms-clear]') ||
+      target?.closest('[data-ms-query]')
     ) {
       return;
     }
 
-    queryInputEl?.focus();
     if (!canInteract()) return;
 
-    if (!open()) {
-      openMenu();
+    if (open()) {
+      closeMenu();
+      return;
     }
+
+    queryInputEl?.focus();
+    openMenu();
   };
 
   const handleInput: JSX.EventHandlerUnion<HTMLInputElement, InputEvent> = (event) => {
@@ -520,6 +535,10 @@ const MultiSelect = (props: MultiSelectProps) => {
       window.removeEventListener('resize', onReposition);
       window.removeEventListener('scroll', onReposition, true);
     });
+  });
+
+  onCleanup(() => {
+    if (closeTimer) window.clearTimeout(closeTimer);
   });
 
   createEffect(() => {
@@ -718,6 +737,7 @@ const MultiSelect = (props: MultiSelectProps) => {
               </For>
 
               <input
+                data-ms-query
                 id={inputId()}
                 ref={queryInputEl}
                 type="text"
@@ -794,7 +814,7 @@ const MultiSelect = (props: MultiSelectProps) => {
           </div>
         </div>
 
-        <Show when={open()}>
+        <Show when={menuVisible()}>
           <Portal>
             <div
               ref={menuEl}
@@ -807,7 +827,10 @@ const MultiSelect = (props: MultiSelectProps) => {
                 left: `${menuPos().left}px`,
                 width: `${menuPos().width}px`,
               }}
-              class="z-[9999] max-h-64 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60"
+              class={cx(
+                'z-[9999] max-h-64 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
+                open() ? 'tf-popover-enter' : 'tf-popover-exit pointer-events-none',
+              )}
             >
               <Show
                 when={filteredOptions().length > 0}

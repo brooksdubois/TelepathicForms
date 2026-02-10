@@ -72,6 +72,28 @@ h3,
     }
 }
 
+@keyframes tf-popover-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.995);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes tf-popover-exit {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-2px) scale(0.998);
+    }
+}
+
 .tf-focus-ant-ring {
     position: absolute;
     inset: -5px;
@@ -103,5 +125,10 @@ h3,
     animation: tf-focus-ant-ring-fade 620ms ease-out forwards;
 }
 
+.tf-popover-enter {
+    animation: tf-popover-enter 180ms ease-out both;
+}
 
-
+.tf-popover-exit {
+    animation: tf-popover-exit 140ms ease-in both;
+}
