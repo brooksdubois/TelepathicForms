@@ -7,7 +7,7 @@ import SelectPlayground from "./playgrounds/SelectPlayground";
 import SwitchPlayground from "./playgrounds/SwitchPlayground";
 import TextAreaPlayground from "./playgrounds/TextAreaPlayground";
 import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
-import DatePickerPlayground from "./playground/DatePickerPlayground";
+import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
 
 const normalizePath = (path: string) => {
   if (!path) return "/";
