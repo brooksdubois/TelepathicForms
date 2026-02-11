@@ -296,6 +296,8 @@ const DatePicker = (props: DatePickerProps) => {
   let rootEl: HTMLDivElement | undefined;
   let inputEl: HTMLInputElement | undefined;
   let popoverEl: HTMLDivElement | undefined;
+  let yearMenuRootEl: HTMLDivElement | undefined;
+  let yearListEl: HTMLDivElement | undefined;
 
   const locale = createMemo(() =>
     props.locale ??
@@ -348,6 +350,7 @@ const DatePicker = (props: DatePickerProps) => {
 
   const [viewMonth, setViewMonth] = createSignal(startOfMonth(todayDate()));
   const [activeDate, setActiveDate] = createSignal(todayDate());
+  const [showYearMenu, setShowYearMenu] = createSignal(false);
 
   const parseText = (text: string, includeCustom: boolean) => {
     const trimmed = text.trim();
@@ -394,6 +397,14 @@ const DatePicker = (props: DatePickerProps) => {
 
   const minDate = createMemo(() => parseIncoming(props.minDate));
   const maxDate = createMemo(() => parseIncoming(props.maxDate));
+
+  const clampDateToBounds = (date: Temporal.PlainDate) => {
+    const min = minDate();
+    if (min && comparePlainDate(date, min) < 0) return min;
+    const max = maxDate();
+    if (max && comparePlainDate(date, max) > 0) return max;
+    return date;
+  };
 
   const isDateDisabled = (date: Temporal.PlainDate) => {
     if (props.disabled || props.readOnly) return true;
@@ -512,6 +523,12 @@ const DatePicker = (props: DatePickerProps) => {
   });
 
   createEffect(() => {
+    if (!open()) {
+      setShowYearMenu(false);
+    }
+  });
+
+  createEffect(() => {
     if (!open()) return;
 
     updatePopoverPos();
@@ -533,6 +550,11 @@ const DatePicker = (props: DatePickerProps) => {
       const target = event.target as Node | null;
       if (!target) return;
 
+      const inYearMenu = !!yearMenuRootEl && yearMenuRootEl.contains(target);
+      if (showYearMenu() && !inYearMenu) {
+        setShowYearMenu(false);
+      }
+
       const inRoot = !!rootEl && rootEl.contains(target);
       const inPopover = !!popoverEl && popoverEl.contains(target);
 
@@ -547,6 +569,14 @@ const DatePicker = (props: DatePickerProps) => {
     onCleanup(() => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('touchstart', onPointerDown);
+    });
+  });
+
+  createEffect(() => {
+    if (!showYearMenu()) return;
+    queueMicrotask(() => {
+      const selected = yearListEl?.querySelector<HTMLElement>('[data-year-selected="true"]');
+      selected?.scrollIntoView({ block: 'nearest' });
     });
   });
 
@@ -872,9 +902,38 @@ const DatePicker = (props: DatePickerProps) => {
   const monthLabel = createMemo(() =>
     viewMonth().toLocaleString(locale(), {
       month: 'long',
-      year: 'numeric',
     }),
   );
+  const yearLabel = createMemo(() => String(viewMonth().year));
+
+  const yearOptions = createMemo(() => {
+    const currentYear = viewMonth().year;
+    const minYear = minDate()?.year;
+    const maxYear = maxDate()?.year;
+
+    let startYear: number;
+    let endYear: number;
+
+    if (minYear !== undefined && maxYear !== undefined) {
+      startYear = Math.min(minYear, maxYear);
+      endYear = Math.max(minYear, maxYear);
+    } else if (minYear !== undefined) {
+      startYear = minYear;
+      endYear = minYear + 200;
+    } else if (maxYear !== undefined) {
+      startYear = maxYear - 200;
+      endYear = maxYear;
+    } else {
+      startYear = currentYear - 100;
+      endYear = currentYear + 100;
+    }
+
+    const years: number[] = [];
+    for (let year = startYear; year <= endYear; year += 1) {
+      years.push(year);
+    }
+    return years;
+  });
 
   const selectTodayAction = (event: MouseEvent) => {
     event.preventDefault();
@@ -1141,6 +1200,7 @@ const DatePicker = (props: DatePickerProps) => {
                 onClick={(event) => {
                   event.preventDefault();
                   if (!canInteract()) return;
+                  setShowYearMenu(false);
                   const next = shiftMonthClampDay(activeDate(), -1);
                   setActiveDate(next);
                   setViewMonth(startOfMonth(next));
@@ -1162,8 +1222,91 @@ const DatePicker = (props: DatePickerProps) => {
                 </svg>
               </button>
 
-              <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {monthLabel()}
+              <div ref={yearMenuRootEl} class="relative flex items-center gap-1">
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  {monthLabel()}
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"
+                  aria-haspopup="listbox"
+                  aria-expanded={showYearMenu() ? 'true' : 'false'}
+                  aria-label="Select year"
+                  disabled={!canInteract()}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (!canInteract()) return;
+                    setShowYearMenu((prev) => !prev);
+                    inputEl?.focus();
+                  }}
+                >
+                  <span>{yearLabel()}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    class={cx('h-4 w-4 transition-transform', showYearMenu() ? 'rotate-180' : '')}
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
+
+                <Show when={showYearMenu()}>
+                  <div
+                    ref={yearListEl}
+                    role="listbox"
+                    aria-label="Year options"
+                    class="absolute left-1/2 top-[calc(100%+6px)] z-10 max-h-52 w-28 -translate-x-1/2 overflow-auto rounded-lg border border-slate-200/90 bg-white/95 p-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60"
+                  >
+                    <For each={yearOptions()}>
+                      {(year) => {
+                        const isSelected = () => year === viewMonth().year;
+                        return (
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected() ? 'true' : 'false'}
+                            data-year-selected={isSelected() ? 'true' : 'false'}
+                            class={cx(
+                              'block w-full rounded-md px-2 py-1.5 text-center text-sm transition',
+                              isSelected()
+                                ? 'bg-emerald-500 text-white dark:bg-emerald-400 dark:text-slate-950'
+                                : 'text-slate-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-slate-200 dark:hover:text-emerald-300',
+                            )}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              if (!canInteract()) return;
+
+                              const current = activeDate();
+                              const monthStart = Temporal.PlainDate.from({
+                                year,
+                                month: current.month,
+                                day: 1,
+                                calendar: calendar(),
+                              });
+                              const day = Math.min(current.day, monthStart.daysInMonth);
+                              const next = clampDateToBounds(monthStart.with({ day }));
+
+                              setActiveDate(next);
+                              setViewMonth(startOfMonth(next));
+                              setShowYearMenu(false);
+                              inputEl?.focus();
+                            }}
+                          >
+                            {year}
+                          </button>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
               </div>
 
               <button
@@ -1174,6 +1317,7 @@ const DatePicker = (props: DatePickerProps) => {
                 onClick={(event) => {
                   event.preventDefault();
                   if (!canInteract()) return;
+                  setShowYearMenu(false);
                   const next = shiftMonthClampDay(activeDate(), 1);
                   setActiveDate(next);
                   setViewMonth(startOfMonth(next));
