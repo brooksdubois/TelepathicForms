@@ -42,6 +42,8 @@ export const DatePickerWrapper: Component<DatePickerWrapperProps> = (p) => {
       weekStartsOn={p.spec.weekStartsOn}
       openOnFocus={p.spec.openOnFocus}
       closeOnSelect={p.spec.closeOnSelect}
+      ringEnabled={p.spec.ringEnabled}
+      animateRingOnFocus={p.spec.animateRingOnFocus}
       class={p.fullWidth ? "w-full" : undefined}
       onChange={(next) => p.field.setValue(next ?? "")}
       onFocus={() => p.field.setFocused(true)}
@@ -52,4 +54,3 @@ export const DatePickerWrapper: Component<DatePickerWrapperProps> = (p) => {
     />
   );
 };
-

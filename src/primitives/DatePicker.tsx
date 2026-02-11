@@ -3,6 +3,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type DatePickerChangeSource = 'typing' | 'calendar' | 'clear';
 
@@ -27,6 +28,13 @@ export type DatePickerProps = {
   required?: boolean;
   error?: boolean;
   clearable?: boolean;
+  ringEnabled?: boolean;
+  animateRingOnFocus?: boolean;
+  onRingApi?: (api: {
+    pulse: () => void;
+    focus: () => void;
+    pulseAndFocus: () => void;
+  }) => void;
 
   minDate?: string;
   maxDate?: string;
@@ -472,6 +480,31 @@ const DatePicker = (props: DatePickerProps) => {
   });
 
   const canInteract = () => !props.disabled && !props.readOnly;
+  const ringEnabled = () => props.ringEnabled ?? true;
+  const animateRingOnFocus = () => props.animateRingOnFocus ?? true;
+  const {
+    ringBox,
+    ringPathD,
+    ringPulseKey,
+    ringActive,
+    pulseRing,
+    setRingHostEl,
+    setRingMeasureEl,
+    setRingLaserSegEl,
+  } = useLaserRing({
+    enabled: ringEnabled,
+    radius: () => 16,
+  });
+
+  createEffect(() => {
+    const focus = () => inputEl?.focus();
+    const pulse = () => pulseRing();
+    const pulseAndFocus = () => {
+      focus();
+      pulse();
+    };
+    props.onRingApi?.({ pulse, focus, pulseAndFocus });
+  });
 
   const validationBuffer = createMemo(() =>
     (isEditing() || draftPinned() ? rawText() : '').trim(),
@@ -709,6 +742,10 @@ const DatePicker = (props: DatePickerProps) => {
       setRawText(valueText());
     }
     setIsEditing(true);
+
+    if (animateRingOnFocus()) {
+      pulseRing();
+    }
 
     if (!skipFocusSideEffects && openOnFocus()) {
       openIfAllowed();
@@ -1009,7 +1046,7 @@ const DatePicker = (props: DatePickerProps) => {
         fallback={
           <div
             class={cx(
-              'relative flex w-full items-center gap-1 rounded-xl border bg-white/90 px-3 py-2.5 shadow-sm transition dark:bg-slate-900/60',
+              'tf-input-container relative flex w-full items-center gap-1 rounded-xl border bg-white/90 px-3 py-2.5 shadow-sm transition dark:bg-slate-900/60',
               errorActive()
                 ? 'border-rose-500/80 focus-within:border-rose-500'
                 : 'border-slate-300/80 focus-within:border-emerald-400 dark:border-slate-700 dark:focus-within:border-emerald-400',
@@ -1030,6 +1067,59 @@ const DatePicker = (props: DatePickerProps) => {
               openIfAllowed();
             }}
           >
+            <Show when={ringEnabled()}>
+              <span
+                ref={setRingHostEl}
+                aria-hidden="true"
+                class={cx(
+                  'tf-focus-laser-ring',
+                  errorActive()
+                    ? 'text-rose-500 dark:text-rose-400'
+                    : 'text-emerald-500 dark:text-emerald-400',
+                )}
+              >
+                <svg
+                  class="tf-focus-laser-ring-svg"
+                  viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
+                  preserveAspectRatio="none"
+                >
+                  <Show when={ringActive()}>
+                    {() => (
+                      <>
+                        <path
+                          class="tf-focus-laser-ring-outline"
+                          data-pulse={ringPulseKey()}
+                          d={ringPathD()}
+                          fill="none"
+                          vector-effect="non-scaling-stroke"
+                          opacity="0.02"
+                        />
+
+                        <path
+                          ref={setRingMeasureEl}
+                          d={ringPathD()}
+                          fill="none"
+                          stroke="none"
+                        />
+
+                        <path
+                          ref={setRingLaserSegEl}
+                          class="tf-focus-laser-ring-segment"
+                          data-pulse={ringPulseKey()}
+                          d=""
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.25"
+                          stroke-linecap="round"
+                          vector-effect="non-scaling-stroke"
+                        />
+                      </>
+                    )}
+                  </Show>
+                </svg>
+              </span>
+            </Show>
+
             <input
               {...inputProps()}
               class={cx(
