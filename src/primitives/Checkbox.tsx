@@ -8,7 +8,7 @@ import {
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
-import { useAntRing } from '../utils/useAntRing';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type CheckboxSize = 'sm' | 'md' | 'lg';
 export type CheckboxVariant = 'outlined' | 'filled' | 'standard';
@@ -179,8 +179,8 @@ const Checkbox = (props: CheckboxProps) => {
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
-    setRingAntSegEl,
-  } = useAntRing({
+    setRingLaserSegEl,
+  } = useLaserRing({
     enabled: ringEnabled,
     radius: () => 8,
   });
@@ -396,7 +396,7 @@ const Checkbox = (props: CheckboxProps) => {
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
-              style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
+              style={ringActive() ? {animation: 'tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'} : undefined}
             >
               <svg
                 class="block h-full w-full"
@@ -407,7 +407,7 @@ const Checkbox = (props: CheckboxProps) => {
                   {() => (
                     <>
                       <path
-                        class="tf-focus-ant-ring-outline"
+                        class="tf-focus-laser-ring-outline"
                         data-pulse={ringPulseKey()}
                         d={ringPathD()}
                         fill="none"
@@ -421,8 +421,8 @@ const Checkbox = (props: CheckboxProps) => {
                         stroke="none"
                       />
                       <path
-                        ref={setRingAntSegEl}
-                        class="tf-focus-ant-ring-ant"
+                        ref={setRingLaserSegEl}
+                        class="tf-focus-laser-ring-segment"
                         data-pulse={ringPulseKey()}
                         d=""
                         fill="none"

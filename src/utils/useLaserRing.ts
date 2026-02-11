@@ -1,6 +1,6 @@
 import {createEffect, createSignal, onCleanup, type Accessor} from "solid-js";
 
-type UseAntRingOptions = {
+type UseLaserRingOptions = {
   enabled: Accessor<boolean>;
   radius: Accessor<number>;
   strokeWidth?: number;
@@ -15,7 +15,7 @@ type UseAntRingOptions = {
 
 type RingBox = {w: number; h: number};
 
-export function useAntRing(options: UseAntRingOptions) {
+export function useLaserRing(options: UseLaserRingOptions) {
   const strokeWidth = () => options.strokeWidth ?? 2.25;
   const segmentMin = () => options.segmentMin ?? 12;
   const segmentMax = () => options.segmentMax ?? 24;
@@ -27,7 +27,7 @@ export function useAntRing(options: UseAntRingOptions) {
 
   const [hostEl, setHostEl] = createSignal<HTMLElement | undefined>(undefined);
   let measureEl: SVGPathElement | undefined;
-  let antSegEl: SVGPathElement | undefined;
+  let laserSegEl: SVGPathElement | undefined;
   let ringRaf: number | undefined;
   let ringTimer: number | undefined;
 
@@ -43,6 +43,10 @@ export function useAntRing(options: UseAntRingOptions) {
     if (ringTimer !== undefined) {
       window.clearTimeout(ringTimer);
       ringTimer = undefined;
+    }
+    if (laserSegEl) {
+      laserSegEl.style.strokeDasharray = "";
+      laserSegEl.style.strokeDashoffset = "";
     }
   };
 
@@ -94,9 +98,9 @@ export function useAntRing(options: UseAntRingOptions) {
     ].join(" ");
   };
 
-  const startAntAnimation = () => {
+  const startLaserAnimation = () => {
     const path = measureEl;
-    const seg = antSegEl;
+    const seg = laserSegEl;
     if (!path || !seg) return false;
 
     stopAnimation();
@@ -106,21 +110,16 @@ export function useAntRing(options: UseAntRingOptions) {
     const segLen = Math.max(segmentMin(), Math.min(segmentMax(), ringBox().h * 0.55));
     const durationMs = Math.max(minMs(), Math.min(maxMs(), len / pxPerMs()));
     const start = performance.now();
+    const dashGap = Math.max(1, len - segLen);
 
-    const point = (at: number) => path.getPointAtLength(at);
+    seg.setAttribute("d", ringPathD());
+    seg.style.strokeDasharray = `${segLen} ${dashGap}`;
+    seg.style.strokeDashoffset = `${-phase}`;
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const s0 = (phase + len * t) % len;
-      const e0 = s0 + segLen;
-      const e = Math.min(e0, len);
-
-      const p0 = point(s0);
-      const p1 = point(s0 + (e - s0) / 3);
-      const p2 = point(s0 + ((e - s0) * 2) / 3);
-      const p3 = point(e);
-
-      seg.setAttribute("d", `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y} ${p2.x} ${p2.y} ${p3.x} ${p3.y}`);
+      const travel = len * t;
+      seg.style.strokeDashoffset = `${-(phase + travel)}`;
 
       if (t < 1) ringRaf = requestAnimationFrame(tick);
     };
@@ -142,7 +141,7 @@ export function useAntRing(options: UseAntRingOptions) {
       requestAnimationFrame(() => {
         let attempts = 0;
         const tryStart = () => {
-          if (startAntAnimation()) return;
+          if (startLaserAnimation()) return;
           attempts += 1;
           if (attempts < 3) requestAnimationFrame(tryStart);
         };
@@ -169,8 +168,8 @@ export function useAntRing(options: UseAntRingOptions) {
     setRingMeasureEl: (el: SVGPathElement | undefined) => {
       measureEl = el;
     },
-    setRingAntSegEl: (el: SVGPathElement | undefined) => {
-      antSegEl = el;
+    setRingLaserSegEl: (el: SVGPathElement | undefined) => {
+      laserSegEl = el;
     },
   };
 }

@@ -13,7 +13,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 
 import { cx } from '../utils/cx';
-import { useAntRing } from '../utils/useAntRing';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type MultiSelectSize = 'sm' | 'md' | 'lg';
 export type MultiSelectVariant = 'outlined' | 'filled' | 'standard';
@@ -212,8 +212,8 @@ const MultiSelect = (props: MultiSelectProps) => {
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
-    setRingAntSegEl,
-  } = useAntRing({
+    setRingLaserSegEl,
+  } = useLaserRing({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
   });
@@ -645,14 +645,14 @@ const MultiSelect = (props: MultiSelectProps) => {
               ref={setRingHostEl}
               aria-hidden="true"
               class={cx(
-                'tf-focus-ant-ring',
+                'tf-focus-laser-ring',
                 errorActive()
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
             >
               <svg
-                class="tf-focus-ant-ring-svg"
+                class="tf-focus-laser-ring-svg"
                 viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
                 preserveAspectRatio="none"
               >
@@ -660,7 +660,7 @@ const MultiSelect = (props: MultiSelectProps) => {
                   {() => (
                     <>
                       <path
-                        class="tf-focus-ant-ring-outline"
+                        class="tf-focus-laser-ring-outline"
                         data-pulse={ringPulseKey()}
                         d={ringPathD()}
                         fill="none"
@@ -676,8 +676,8 @@ const MultiSelect = (props: MultiSelectProps) => {
                       />
 
                       <path
-                        ref={setRingAntSegEl}
-                        class="tf-focus-ant-ring-ant"
+                        ref={setRingLaserSegEl}
+                        class="tf-focus-laser-ring-segment"
                         data-pulse={ringPulseKey()}
                         d=""
                         fill="none"

@@ -4,6 +4,7 @@ import {
   createSignal,
   createUniqueId,
   mergeProps,
+  onCleanup,
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
@@ -210,10 +211,9 @@ const TextField = (props: TextFieldProps) => {
   let inputEl: HTMLInputElement | undefined;
 
   let ringHostEl: HTMLSpanElement | undefined;
-  let ringOutlineEl: SVGPathElement | undefined;
   let ringMeasureEl: SVGPathElement | undefined;
-  let ringAntSegEl: SVGPathElement | undefined;
-  let ringAntRaf: number | undefined;
+  let ringLaserSegEl: SVGPathElement | undefined;
+  let ringLaserRaf: number | undefined;
 
   const [ringBox, setRingBox] = createSignal<{ w: number; h: number }>({ w: 100, h: 100 });
 
@@ -273,83 +273,73 @@ const TextField = (props: TextFieldProps) => {
     ].join(' ');
   };
 
-  const ringPathId = () => `${inputId()}-ring-path`;
+  const stopRingAnimation = () => {
+    if (ringLaserRaf !== undefined) {
+      cancelAnimationFrame(ringLaserRaf);
+      ringLaserRaf = undefined;
+    }
+    if (ringTimer !== undefined) {
+      window.clearTimeout(ringTimer);
+      ringTimer = undefined;
+    }
+    if (ringLaserSegEl) {
+      ringLaserSegEl.style.strokeDasharray = '';
+      ringLaserSegEl.style.strokeDashoffset = '';
+    }
+  };
 
   const pulseRing = () => {
     if (!ringEnabled()) return;
 
-    // Force a remount even if the user triggers pulses quickly
+    // Force a remount even if the user triggers pulses quickly.
     setRingActive(false);
-    if (ringAntRaf !== undefined) {
-      cancelAnimationFrame(ringAntRaf);
-      ringAntRaf = undefined;
-    }
+    stopRingAnimation();
     setRingPulseKey((k) => k + 1);
 
-    if (ringTimer) window.clearTimeout(ringTimer);
-
-    // Next frame: mount (restarts SMIL animateMotion cleanly)
     requestAnimationFrame(() => {
       setRingActive(true);
 
       // Next frame: SVG paths are mounted, so we can measure + animate.
-      requestAnimationFrame(() => startRingAntAnimation());
+      requestAnimationFrame(() => startRingLaserAnimation());
 
       ringTimer = window.setTimeout(() => setRingActive(false), 660);
     });
   };
 
-  const startRingAntAnimation = () => {
+  const startRingLaserAnimation = () => {
     const path = ringMeasureEl;
-    const seg = ringAntSegEl;
+    const seg = ringLaserSegEl;
     if (!path || !seg) return;
 
-    // Stop any prior rAF loop.
-    if (ringAntRaf !== undefined) {
-      cancelAnimationFrame(ringAntRaf);
-      ringAntRaf = undefined;
-    }
+    stopRingAnimation();
 
-    // One lap should always be one lap, regardless of size.
     const len = Math.max(1, path.getTotalLength());
-    // Start a quarter-lap in so the seam (path start) is not the top-left corner.
     const phase = len * 0.25;
-
-    // Segment length in SVG units (tie to height so it reads consistently at all widths).
     const segLen = Math.max(12, Math.min(24, ringBox().h * 0.55));
-
-    // Keep perceived motion smooth by keeping speed roughly constant.
-    // Wider fields => longer perimeter => longer duration, otherwise the ant jumps too far per frame.
     const PX_PER_MS = 1.0; // tune: higher = faster
     const MIN_MS = 650;
     const MAX_MS = 2600;
     const durationMs = Math.max(MIN_MS, Math.min(MAX_MS, len / PX_PER_MS));
     const start = performance.now();
+    const dashGap = Math.max(1, len - segLen);
 
-    const point = (at: number) => path.getPointAtLength(at);
+    seg.setAttribute('d', ringPathD());
+    seg.style.strokeDasharray = `${segLen} ${dashGap}`;
+    seg.style.strokeDashoffset = `${-phase}`;
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const s0 = (phase + len * t) % len;
-      const e0 = s0 + segLen;
-
-      // If we cross the seam, temporarily shorten the ant instead of drawing a second segment.
-      const e = Math.min(e0, len);
-
-      const p0 = point(s0);
-      const p1 = point(s0 + (e - s0) / 3);
-      const p2 = point(s0 + ((e - s0) * 2) / 3);
-      const p3 = point(e);
-
-      // Cubic curve through sampled points hugs corners better than a straight chord.
-      seg.setAttribute('d', `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y} ${p2.x} ${p2.y} ${p3.x} ${p3.y}`);
-      // When we hit the seam, let the next frame wrap naturally via modulo.
-
-      if (t < 1) ringAntRaf = requestAnimationFrame(tick);
+      const travel = len * t;
+      seg.style.strokeDashoffset = `${-(phase + travel)}`;
+      if (t < 1) ringLaserRaf = requestAnimationFrame(tick);
     };
 
-    ringAntRaf = requestAnimationFrame(tick);
+    ringLaserRaf = requestAnimationFrame(tick);
   };
+
+  onCleanup(() => {
+    stopRingAnimation();
+  });
 
   createEffect(() => {
     const focusInput = () => inputEl?.focus();
@@ -529,28 +519,23 @@ const TextField = (props: TextFieldProps) => {
             ref={ringHostEl}
             aria-hidden="true"
             class={cx(
-              'tf-focus-ant-ring',
+              'tf-focus-laser-ring',
               errorActive()
                 ? 'text-rose-500 dark:text-rose-400'
                 : 'text-emerald-500 dark:text-emerald-400',
             )}
           >
             <svg
-              class="tf-focus-ant-ring-svg"
+              class="tf-focus-laser-ring-svg"
               viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
               preserveAspectRatio="none"
             >
-              <defs>
-                <path id={ringPathId()} d={ringPathD()} />
-              </defs>
-
-              {/* Outline and ant mounted only during the pulse window */}
+              {/* Outline and laser segment mounted only during the pulse window */}
               <Show when={ringActive()}>
                 {() => (
                   <>
                     <path
-                      ref={ringOutlineEl}
-                      class="tf-focus-ant-ring-outline"
+                      class="tf-focus-laser-ring-outline"
                       data-pulse={ringPulseKey()}
                       d={ringPathD()}
                       fill="none"
@@ -566,10 +551,10 @@ const TextField = (props: TextFieldProps) => {
                     />
 
                     <path
-                      ref={ringAntSegEl}
-                      class="tf-focus-ant-ring-ant"
+                      ref={ringLaserSegEl}
+                      class="tf-focus-laser-ring-segment"
                       data-pulse={ringPulseKey()}
-                      d=""
+                      d={ringPathD()}
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2.25"

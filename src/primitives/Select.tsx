@@ -13,7 +13,7 @@ import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 
 import { cx } from '../utils/cx';
-import { useAntRing } from '../utils/useAntRing';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 export type SelectVariant = 'outlined' | 'filled' | 'standard';
@@ -225,8 +225,8 @@ const Select = (props: SelectProps) => {
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
-    setRingAntSegEl,
-  } = useAntRing({
+    setRingLaserSegEl,
+  } = useLaserRing({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
   });
@@ -671,15 +671,15 @@ const Select = (props: SelectProps) => {
               ref={setRingHostEl}
               aria-hidden="true"
               class={cx(
-                'tf-focus-ant-ring',
+                'tf-focus-laser-ring',
                 errorActive()
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
-              style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
+              style={ringActive() ? {animation: 'tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'} : undefined}
             >
               <svg
-                class="tf-focus-ant-ring-svg"
+                class="tf-focus-laser-ring-svg"
                 viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
                 preserveAspectRatio="none"
               >
@@ -687,7 +687,7 @@ const Select = (props: SelectProps) => {
                   {() => (
                     <>
                       <path
-                        class="tf-focus-ant-ring-outline"
+                        class="tf-focus-laser-ring-outline"
                         data-pulse={ringPulseKey()}
                         d={ringPathD()}
                         fill="none"
@@ -703,8 +703,8 @@ const Select = (props: SelectProps) => {
                       />
 
                       <path
-                        ref={setRingAntSegEl}
-                        class="tf-focus-ant-ring-ant"
+                        ref={setRingLaserSegEl}
+                        class="tf-focus-laser-ring-segment"
                         data-pulse={ringPulseKey()}
                         d=""
                         fill="none"

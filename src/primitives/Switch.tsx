@@ -8,7 +8,7 @@ import {
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
-import { useAntRing } from '../utils/useAntRing';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type SwitchSize = 'sm' | 'md' | 'lg';
 export type SwitchVariant = 'outlined' | 'filled' | 'standard';
@@ -187,8 +187,8 @@ const Switch = (props: SwitchProps) => {
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
-    setRingAntSegEl,
-  } = useAntRing({
+    setRingLaserSegEl,
+  } = useLaserRing({
     enabled: ringEnabled,
     radius: () => 8,
   });
@@ -424,7 +424,7 @@ const Switch = (props: SwitchProps) => {
                     ? 'text-rose-500 dark:text-rose-400'
                     : 'text-emerald-500 dark:text-emerald-400',
                 )}
-                style={ringActive() ? {animation: 'tf-focus-ant-ring-fade 620ms ease-out forwards'} : undefined}
+                style={ringActive() ? {animation: 'tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'} : undefined}
               >
                 <svg
                   class="block h-full w-full"
@@ -435,7 +435,7 @@ const Switch = (props: SwitchProps) => {
                     {() => (
                       <>
                         <path
-                          class="tf-focus-ant-ring-outline"
+                          class="tf-focus-laser-ring-outline"
                           data-pulse={ringPulseKey()}
                           d={ringPathD()}
                           fill="none"
@@ -449,8 +449,8 @@ const Switch = (props: SwitchProps) => {
                           stroke="none"
                         />
                         <path
-                          ref={setRingAntSegEl}
-                          class="tf-focus-ant-ring-ant"
+                          ref={setRingLaserSegEl}
+                          class="tf-focus-laser-ring-segment"
                           data-pulse={ringPulseKey()}
                           d=""
                           fill="none"
