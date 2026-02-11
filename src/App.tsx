@@ -8,6 +8,7 @@ import SwitchPlayground from "./playgrounds/SwitchPlayground";
 import TextAreaPlayground from "./playgrounds/TextAreaPlayground";
 import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
 import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
+import SliderPlayground from "./playgrounds/SliderPlayground";
 
 const normalizePath = (path: string) => {
   if (!path) return "/";
@@ -25,6 +26,7 @@ const routes: Record<string, Component> = {
   "/switch": SwitchPlayground,
   "/textarea": TextAreaPlayground,
   "/date": DatePickerPlayground,
+  "/slider": SliderPlayground,
 };
 
 const App: Component = () => {
@@ -57,7 +59,8 @@ const App: Component = () => {
         <a href="/multi-select">/multi-select</a>,{" "}
         <a href="/checkbox">/checkbox</a>,{" "}
         <a href="/radio-group">/radio-group</a>, <a href="/switch">/switch</a>,{" "}
-        <a href="/textarea">/textarea</a>, <a href="/date">/date</a>.
+        <a href="/textarea">/textarea</a>, <a href="/date">/date</a>,{" "}
+        <a href="/slider">/slider</a>.
       </p>
     </div>
   );
