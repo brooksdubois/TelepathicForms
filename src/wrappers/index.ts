@@ -39,3 +39,6 @@ export type {PercentWrapperProps} from "./PercentWrapper";
 
 export {PasswordWrapper} from "./PasswordWrapper";
 export type {PasswordWrapperProps} from "./PasswordWrapper";
+
+export {DatePickerWrapper} from "./DatePickerWrapper";
+export type {DatePickerWrapperProps} from "./DatePickerWrapper";

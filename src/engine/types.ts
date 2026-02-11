@@ -5,6 +5,7 @@ export type Formatter = (raw: string) => string;
 export type Normalizer = (raw: string) => string;
 
 export enum FieldKind {
+  date = "date",
   textArea = "textArea",
   phone = "phone",
   text = "text",
@@ -56,6 +57,16 @@ export type FieldSpec = {
   maxRows?: number;
   searchable?: boolean;
   clearable?: boolean;
+  minDate?: string;
+  maxDate?: string;
+  disablePast?: boolean;
+  disableFuture?: boolean;
+  disableWeekends?: boolean;
+  shouldDisableDate?: (isoDate: string) => boolean;
+  locale?: string;
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  openOnFocus?: boolean;
+  closeOnSelect?: boolean;
   maxSelected?: number;
   indeterminate?: boolean;
   inline?: boolean;

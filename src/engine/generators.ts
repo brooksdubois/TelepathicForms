@@ -25,6 +25,20 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
   const initial = spec.initialValue ?? "";
 
   switch (spec.kind) {
+    case FieldKind.date: {
+      const validate =
+        spec.validate ??
+        (spec.required
+          ? (v) => (v ? [] : ["Date is required."])
+          : () => []);
+
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: initial,
+        validate,
+      });
+    }
+
     case FieldKind.phone:
       return new FieldRuntimeNode<string>({
         id: spec.id,

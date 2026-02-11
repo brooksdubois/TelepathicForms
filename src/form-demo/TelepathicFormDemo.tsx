@@ -43,7 +43,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: WhenOperators.isEmpty,
             operations: [
-              {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "notes", "password"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: true},
               // keep these disabled/cleared as a safety baseline
               {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
               {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
@@ -60,7 +60,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "phone"},
             operations: [
-              {fieldIds: ["phone", "hasExtension", "preferredTime", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "hasExtension", "preferredTime", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["email", "zip"], operator: TriggerOperators.setHidden, value: true},
               // ext is controlled by its own triggers; default hidden until its triggers show it
               {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
@@ -73,7 +73,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "email"},
             operations: [
-              {fieldIds: ["email", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["email", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["phone", "hasExtension", "ext", "zip", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
@@ -82,7 +82,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "mail"},
             operations: [
-              {fieldIds: ["zip", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["zip", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
               {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: false},
             ],
@@ -275,6 +275,23 @@ export const TelepathicFormDemo: Component = () => {
         animateRingOnFocus: true,
         required: true,
         helperText: "Required only for mail contact.",
+      },
+      {
+        id: "followUpDate",
+        kind: FieldKind.date,
+        row: 4,
+        label: "Preferred follow-up date",
+        placeholder: "MM-DD-YYYY",
+        helperText: "Choose when we should follow up.",
+        inputMask: "MM-DD-YYYY",
+        clearable: true,
+        disablePast: true,
+        openOnFocus: true,
+        closeOnSelect: true,
+        size: "md",
+        variant: "outlined",
+        ringEnabled: true,
+        animateRingOnFocus: true,
       },
       {
         id: "isEmployee",

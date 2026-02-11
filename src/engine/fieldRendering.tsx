@@ -3,6 +3,7 @@ import { Transition } from "solid-transition-group";
 import {
   CheckboxWrapper,
   CurrencyWrapper,
+  DatePickerWrapper,
   MultiSelectWrapper,
   NumberWrapper,
   PasswordWrapper,
@@ -71,6 +72,9 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
     const handle = p.handle;
 
     switch (f.kind) {
+      case FieldKind.date:
+        return <DatePickerWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
+
       case FieldKind.textArea:
         return <TextAreaWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
