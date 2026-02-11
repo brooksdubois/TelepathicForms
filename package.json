@@ -19,6 +19,7 @@
     "tailwindcss": "^4.1.18"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "rxjs": "^7.8.2",
     "solid-js": "^1.9.5",
     "solid-transition-group": "^0.3.0"
