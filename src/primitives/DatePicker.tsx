@@ -1,6 +1,7 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
 import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
+import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
 
 export type DatePickerChangeSource = 'typing' | 'calendar' | 'clear';
@@ -333,15 +334,15 @@ const DatePicker = (props: DatePickerProps) => {
     isOpenControlled() ? Boolean(props.open) : internalOpen(),
   );
 
-  const [popoverMounted, setPopoverMounted] = createSignal(open());
-  const [popoverVisible, setPopoverVisible] = createSignal(open());
-  let popoverMountTimer: number | undefined;
-
   const [popoverPos, setPopoverPos] = createSignal({ top: 0, left: 0, width: 0 });
 
   const [rawText, setRawText] = createSignal('');
   const [isEditing, setIsEditing] = createSignal(false);
   const [draftPinned, setDraftPinned] = createSignal(false);
+  const [optimisticDisplayText, setOptimisticDisplayText] = createSignal<string | undefined>(
+    undefined,
+  );
+  const [skipNextFocusSync, setSkipNextFocusSync] = createSignal(false);
 
   const todayDate = () => Temporal.Now.plainDateISO().withCalendar(calendar());
 
@@ -435,6 +436,7 @@ const DatePicker = (props: DatePickerProps) => {
     if (committed === lastCommittedSync) return;
 
     lastCommittedSync = committed;
+    setOptimisticDisplayText(undefined);
 
     const parsed = parseIncoming(committed);
 
@@ -452,6 +454,8 @@ const DatePicker = (props: DatePickerProps) => {
 
   const valueText = createMemo(() => {
     if (isEditing() || draftPinned()) return rawText();
+    const optimistic = optimisticDisplayText();
+    if (optimistic !== undefined) return optimistic;
     const selected = committedDate();
     return selected ? formatDisplay(selected) : '';
   });
@@ -500,32 +504,11 @@ const DatePicker = (props: DatePickerProps) => {
   };
 
   createEffect(() => {
-    if (open()) {
-      if (popoverMountTimer !== undefined) {
-        window.clearTimeout(popoverMountTimer);
-        popoverMountTimer = undefined;
-      }
-
-      const base = committedDate() ?? todayDate();
-      setViewMonth(startOfMonth(base));
-      setActiveDate(base);
-
-      setPopoverMounted(true);
-      requestAnimationFrame(() => {
-        updatePopoverPos();
-        setPopoverVisible(true);
-      });
-      return;
-    }
-
-    setPopoverVisible(false);
-
-    if (popoverMounted()) {
-      popoverMountTimer = window.setTimeout(() => {
-        setPopoverMounted(false);
-        popoverMountTimer = undefined;
-      }, 170);
-    }
+    if (!open()) return;
+    const base = committedDate() ?? todayDate();
+    setViewMonth(startOfMonth(base));
+    setActiveDate(base);
+    updatePopoverPos();
   });
 
   createEffect(() => {
@@ -567,12 +550,6 @@ const DatePicker = (props: DatePickerProps) => {
     });
   });
 
-  onCleanup(() => {
-    if (popoverMountTimer !== undefined) {
-      window.clearTimeout(popoverMountTimer);
-    }
-  });
-
   const commitDate = (
     nextDate: Temporal.PlainDate | null,
     source: DatePickerChangeSource,
@@ -591,13 +568,13 @@ const DatePicker = (props: DatePickerProps) => {
       props.onChange?.(nextValue, { source, event });
     }
 
+    const nextDisplayText = nextDate ? formatDisplay(nextDate) : '';
     if (nextDate) {
       setViewMonth(startOfMonth(nextDate));
       setActiveDate(nextDate);
-      setRawText(formatDisplay(nextDate));
-    } else {
-      setRawText('');
     }
+    setRawText(nextDisplayText);
+    setOptimisticDisplayText(isValueControlled() ? nextDisplayText : undefined);
 
     setDraftPinned(false);
     setIsEditing(false);
@@ -632,7 +609,13 @@ const DatePicker = (props: DatePickerProps) => {
       setOpenState(false);
     }
 
+    setSkipNextFocusSync(true);
     inputEl?.focus();
+    queueMicrotask(() => {
+      if (skipNextFocusSync() && document.activeElement === inputEl) {
+        setSkipNextFocusSync(false);
+      }
+    });
   };
 
   const openIfAllowed = () => {
@@ -678,6 +661,7 @@ const DatePicker = (props: DatePickerProps) => {
       event.currentTarget.value = nextText;
     }
 
+    setOptimisticDisplayText(undefined);
     setRawText(nextText);
     setIsEditing(true);
     setDraftPinned(false);
@@ -688,12 +672,15 @@ const DatePicker = (props: DatePickerProps) => {
   const handleInputFocus: JSX.EventHandlerUnion<HTMLInputElement, FocusEvent> = (
     event,
   ) => {
-    if (!isEditing()) {
+    const skipFocusSideEffects = skipNextFocusSync();
+    if (skipFocusSideEffects) {
+      setSkipNextFocusSync(false);
+    } else if (!isEditing()) {
       setRawText(valueText());
     }
     setIsEditing(true);
 
-    if (openOnFocus()) {
+    if (!skipFocusSideEffects && openOnFocus()) {
       openIfAllowed();
     }
 
@@ -905,7 +892,7 @@ const DatePicker = (props: DatePickerProps) => {
     commitFromCalendar(today, event);
   };
 
-  const inputProps: JSX.InputHTMLAttributes<HTMLInputElement> = {
+  const inputProps = createMemo<JSX.InputHTMLAttributes<HTMLInputElement>>(() => ({
     id: inputId(),
     role: 'combobox',
     'aria-haspopup': 'dialog',
@@ -927,7 +914,7 @@ const DatePicker = (props: DatePickerProps) => {
     ref: (el: HTMLInputElement) => {
       inputEl = el;
     },
-  };
+  }));
 
   return (
     <div
@@ -985,7 +972,7 @@ const DatePicker = (props: DatePickerProps) => {
             }}
           >
             <input
-              {...inputProps}
+              {...inputProps()}
               class={cx(
                 'min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400/90 dark:text-slate-100 dark:placeholder:text-slate-500',
                 props.disabled
@@ -1065,7 +1052,7 @@ const DatePicker = (props: DatePickerProps) => {
           </div>
         }
       >
-        {props.renderInput?.({ valueText: valueText(), inputProps })}
+        {props.renderInput?.({ valueText: valueText(), inputProps: inputProps() })}
       </Show>
 
       <Show when={helperActive()}>
@@ -1082,30 +1069,69 @@ const DatePicker = (props: DatePickerProps) => {
         </div>
       </Show>
 
-      <Show when={popoverMounted()}>
-        <Portal>
-          <div
-            ref={popoverEl}
-            id={dialogId()}
-            role="dialog"
-            aria-label="Choose date"
-            style={{
-              position: 'fixed',
-              top: `${popoverPos().top}px`,
-              left: `${popoverPos().left}px`,
-              width: `${popoverPos().width}px`,
-            }}
-            class={cx(
-              'z-[9999] origin-top rounded-xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-200/60 backdrop-blur-sm transition duration-150 ease-out dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
-              popoverVisible()
-                ? 'pointer-events-auto scale-100 opacity-100'
-                : 'pointer-events-none scale-[0.98] opacity-0',
-              props.popoverClass,
-            )}
-            onMouseDown={(event) => {
-              event.preventDefault();
-            }}
-          >
+      <Portal>
+        <Transition
+          onEnter={(rawEl, done) => {
+            const el = rawEl as HTMLElement;
+            const DURATION_MS = 180;
+            el.classList.remove('tf-popover-exit');
+            el.classList.add('tf-popover-enter');
+            const timer = window.setTimeout(() => {
+              el.classList.remove('tf-popover-enter');
+              done();
+            }, DURATION_MS + 40);
+            el.addEventListener(
+              'animationend',
+              (event) => {
+                if (event.target !== el) return;
+                window.clearTimeout(timer);
+                el.classList.remove('tf-popover-enter');
+                done();
+              },
+              { once: true },
+            );
+          }}
+          onExit={(rawEl, done) => {
+            const el = rawEl as HTMLElement;
+            const DURATION_MS = 140;
+            el.classList.remove('tf-popover-enter');
+            el.classList.add('tf-popover-exit');
+            const timer = window.setTimeout(() => {
+              el.classList.remove('tf-popover-exit');
+              done();
+            }, DURATION_MS + 40);
+            el.addEventListener(
+              'animationend',
+              (event) => {
+                if (event.target !== el) return;
+                window.clearTimeout(timer);
+                el.classList.remove('tf-popover-exit');
+                done();
+              },
+              { once: true },
+            );
+          }}
+        >
+          {open() ? (
+            <div
+              ref={popoverEl}
+              id={dialogId()}
+              role="dialog"
+              aria-label="Choose date"
+              style={{
+                position: 'fixed',
+                top: `${popoverPos().top}px`,
+                left: `${popoverPos().left}px`,
+                width: `${popoverPos().width}px`,
+              }}
+              class={cx(
+                'z-[9999] origin-top rounded-xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
+                props.popoverClass,
+              )}
+              onMouseDown={(event) => {
+                event.preventDefault();
+              }}
+            >
             <div class="flex items-center justify-between border-b border-slate-200/80 px-3 py-2 dark:border-slate-700">
               <button
                 type="button"
@@ -1262,9 +1288,10 @@ const DatePicker = (props: DatePickerProps) => {
                 {toIsoDateString(activeDate())}
               </div>
             </div>
-          </div>
-        </Portal>
-      </Show>
+            </div>
+          ) : null}
+        </Transition>
+      </Portal>
     </div>
   );
 };
