@@ -12,6 +12,7 @@ const labs = [
   { href: '/radio-group', label: 'RadioGroup Lab' },
   { href: '/switch', label: 'Switch Lab' },
   { href: '/textarea', label: 'TextArea Lab' },
+  { href: '/date', label: 'DatePicker Lab' },
 ];
 
 const normalizePath = (path: string) => path.replace(/\/+$/, '') || '/';

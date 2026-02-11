@@ -230,6 +230,27 @@ const applyMask = (rawText: string, mask: string) => {
   return out;
 };
 
+const countMaskTokens = (mask: string) => (mask.match(/[YMD]/g)?.length ?? 0);
+const countDigitsBefore = (text: string, index: number) =>
+  text.slice(0, Math.max(0, index)).replace(/\D/g, '').length;
+const removeDigitAt = (digits: string, index: number) => {
+  if (index < 0 || index >= digits.length) return digits;
+  return digits.slice(0, index) + digits.slice(index + 1);
+};
+const caretIndexForDigitCount = (masked: string, digitCount: number) => {
+  if (digitCount <= 0) return 0;
+
+  let seen = 0;
+  for (let i = 0; i < masked.length; i += 1) {
+    if (/\d/.test(masked[i])) {
+      seen += 1;
+      if (seen === digitCount) return i + 1;
+    }
+  }
+
+  return masked.length;
+};
+
 const formatWithMask = (date: Temporal.PlainDate, mask: string) => {
   const year = date.year.toString().padStart(4, '0');
   const month = pad2(date.month);
@@ -435,6 +456,37 @@ const DatePicker = (props: DatePickerProps) => {
     return selected ? formatDisplay(selected) : '';
   });
 
+  const canInteract = () => !props.disabled && !props.readOnly;
+
+  const validationBuffer = createMemo(() =>
+    (isEditing() || draftPinned() ? rawText() : '').trim(),
+  );
+
+  const internalValidationMessage = createMemo<string | null>(() => {
+    if (!canInteract()) return null;
+
+    const text = validationBuffer();
+    if (!text) return null;
+
+    if (props.inputMask) {
+      const requiredDigits = countMaskTokens(props.inputMask);
+      const typedDigits = text.replace(/\D/g, '').length;
+      if (typedDigits < requiredDigits) return null;
+    } else if (text.length < 6) {
+      return null;
+    }
+
+    const parsed = parseText(text, true);
+    if (!parsed) return "This isn't a valid date.";
+    if (isDateDisabled(parsed)) return 'This date is not allowed.';
+    return null;
+  });
+
+  const errorActive = createMemo(
+    () => Boolean(props.error) || Boolean(internalValidationMessage()),
+  );
+  const helperContent = createMemo(() => internalValidationMessage() ?? props.helperText);
+
   const updatePopoverPos = () => {
     const anchor = rootEl;
     if (!anchor) return;
@@ -520,8 +572,6 @@ const DatePicker = (props: DatePickerProps) => {
       window.clearTimeout(popoverMountTimer);
     }
   });
-
-  const canInteract = () => !props.disabled && !props.readOnly;
 
   const commitDate = (
     nextDate: Temporal.PlainDate | null,
@@ -661,8 +711,64 @@ const DatePicker = (props: DatePickerProps) => {
     event,
   ) => {
     callHandler(props.onKeyDown, event);
+    if (event.defaultPrevented) return;
 
     const key = event.key;
+
+    if (
+      canInteract() &&
+      props.inputMask &&
+      (key === 'Backspace' || key === 'Delete')
+    ) {
+      const node = event.currentTarget;
+      const start = node.selectionStart ?? 0;
+      const end = node.selectionEnd ?? start;
+
+      if (start === end) {
+        const text = node.value;
+        const digits = text.replace(/\D/g, '');
+
+        if (key === 'Backspace' && start > 0 && /\D/.test(text[start - 1] ?? '')) {
+          const removeIndex = countDigitsBefore(text, start) - 1;
+          if (removeIndex >= 0) {
+            event.preventDefault();
+            const nextDigits = removeDigitAt(digits, removeIndex);
+            const nextMasked = applyMask(nextDigits, props.inputMask);
+            const nextCaret = caretIndexForDigitCount(nextMasked, removeIndex);
+
+            setRawText(nextMasked);
+            setIsEditing(true);
+            setDraftPinned(false);
+            node.value = nextMasked;
+
+            queueMicrotask(() => {
+              node.setSelectionRange(nextCaret, nextCaret);
+            });
+          }
+          return;
+        }
+
+        if (key === 'Delete' && start < text.length && /\D/.test(text[start] ?? '')) {
+          const removeIndex = countDigitsBefore(text, start);
+          if (removeIndex >= 0) {
+            event.preventDefault();
+            const nextDigits = removeDigitAt(digits, removeIndex);
+            const nextMasked = applyMask(nextDigits, props.inputMask);
+            const nextCaret = caretIndexForDigitCount(nextMasked, removeIndex);
+
+            setRawText(nextMasked);
+            setIsEditing(true);
+            setDraftPinned(false);
+            node.value = nextMasked;
+
+            queueMicrotask(() => {
+              node.setSelectionRange(nextCaret, nextCaret);
+            });
+          }
+          return;
+        }
+      }
+    }
 
     if (key === 'Tab') {
       if (open()) setOpenState(false);
@@ -766,7 +872,7 @@ const DatePicker = (props: DatePickerProps) => {
     return `${inputId()}-day-${toIsoDateString(activeDate())}`;
   });
 
-  const helperActive = createMemo(() => Boolean(props.helperText));
+  const helperActive = createMemo(() => Boolean(helperContent()));
 
   const showClear = createMemo(
     () =>
@@ -807,7 +913,7 @@ const DatePicker = (props: DatePickerProps) => {
     'aria-controls': dialogId(),
     'aria-activedescendant': activeCellId(),
     'aria-describedby': helperActive() ? helperId() : undefined,
-    'aria-invalid': props.error ? 'true' : undefined,
+    'aria-invalid': errorActive() ? 'true' : undefined,
     disabled: props.disabled,
     readOnly: props.readOnly,
     required: props.required,
@@ -858,7 +964,7 @@ const DatePicker = (props: DatePickerProps) => {
           <div
             class={cx(
               'relative flex w-full items-center gap-1 rounded-xl border bg-white/90 px-3 py-2.5 shadow-sm transition dark:bg-slate-900/60',
-              props.error
+              errorActive()
                 ? 'border-rose-500/80 focus-within:border-rose-500'
                 : 'border-slate-300/80 focus-within:border-emerald-400 dark:border-slate-700 dark:focus-within:border-emerald-400',
               props.disabled
@@ -962,17 +1068,17 @@ const DatePicker = (props: DatePickerProps) => {
         {props.renderInput?.({ valueText: valueText(), inputProps })}
       </Show>
 
-      <Show when={props.helperText}>
+      <Show when={helperActive()}>
         <div
           id={helperId()}
           class={cx(
             'text-xs',
-            props.error
+            errorActive()
               ? 'text-rose-600 dark:text-rose-300'
               : 'text-slate-500 dark:text-slate-400',
           )}
         >
-          {props.helperText}
+          {helperContent()}
         </div>
       </Show>
 
