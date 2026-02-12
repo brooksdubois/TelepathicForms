@@ -86,6 +86,8 @@ const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
 
 const pad2 = (value: number) => value.toString().padStart(2, '0');
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const isToken = (ch: string) => ch === 'Y' || ch === 'M' || ch === 'D';
 
@@ -180,31 +182,43 @@ const parseByMask = (
   mask: string,
   calendar: Temporal.CalendarLike,
 ): Temporal.PlainDate | null => {
-  const digits = text.replace(/\D/g, '');
+  const source = text.trim();
+  if (!source) return null;
+
   const groups: Array<{ token: 'Y' | 'M' | 'D'; len: number }> = [];
+  let pattern = '^';
 
-  for (let i = 0; i < mask.length; i += 1) {
-    const ch = mask[i] as 'Y' | 'M' | 'D';
-    if (!isToken(ch)) continue;
-
-    if (groups.length > 0 && groups[groups.length - 1].token === ch) {
-      groups[groups.length - 1].len += 1;
-    } else {
-      groups.push({ token: ch, len: 1 });
+  for (let i = 0; i < mask.length; ) {
+    const ch = mask[i];
+    if (!isToken(ch)) {
+      pattern += escapeRegExp(ch);
+      i += 1;
+      continue;
     }
+
+    let len = 1;
+    while (i + len < mask.length && mask[i + len] === ch) {
+      len += 1;
+    }
+
+    groups.push({ token: ch, len });
+    pattern += `(\\d{${len}})`;
+    i += len;
   }
 
-  const total = groups.reduce((sum, group) => sum + group.len, 0);
-  if (total === 0 || digits.length !== total) return null;
+  if (groups.length === 0) return null;
 
-  let cursor = 0;
+  pattern += '$';
+  const match = new RegExp(pattern).exec(source);
+  if (!match) return null;
+
   let year: number | null = null;
   let month: number | null = null;
   let day: number | null = null;
 
-  for (const group of groups) {
-    const value = Number(digits.slice(cursor, cursor + group.len));
-    cursor += group.len;
+  for (let i = 0; i < groups.length; i += 1) {
+    const group = groups[i];
+    const value = Number(match[i + 1]);
 
     if (group.token === 'Y') year = value;
     if (group.token === 'M') month = value;
