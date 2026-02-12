@@ -181,6 +181,10 @@ const Slider = (props: SliderProps) => {
   const [isDragging, setIsDragging] = createSignal(false);
   const [activeThumb, setActiveThumb] = createSignal<'min' | 'max' | 'single'>('single');
   const [inputValue, setInputValue] = createSignal<string>('');
+  
+  // FIXED: Add real-time drag value signals
+  const [dragMinValue, setDragMinValue] = createSignal<number | null>(null);
+  const [dragMaxValue, setDragMaxValue] = createSignal<number | null>(null);
 
   const min = () => local.min;
   const max = () => local.max;
@@ -217,6 +221,10 @@ const Slider = (props: SliderProps) => {
   };
 
   const getMinValue = (): number => {
+    // FIXED: Return drag value if dragging, otherwise actual value
+    if (isDragging() && activeThumb() === 'min' && dragMinValue() !== null) {
+      return dragMinValue()!;
+    }
     if (mode() === 'range') {
       const val = getCurrentValue() as [number, number];
       return val[0];
@@ -225,6 +233,13 @@ const Slider = (props: SliderProps) => {
   };
 
   const getMaxValue = (): number => {
+    // FIXED: Return drag value if dragging, otherwise actual value
+    if (isDragging() && activeThumb() === 'max' && dragMaxValue() !== null) {
+      return dragMaxValue()!;
+    }
+    if (isDragging() && activeThumb() === 'single' && dragMaxValue() !== null) {
+      return dragMaxValue()!;
+    }
     if (mode() === 'range') {
       const val = getCurrentValue() as [number, number];
       return val[1];
@@ -273,59 +288,78 @@ const Slider = (props: SliderProps) => {
   };
 
   const handleThumbMouseDown = (e: MouseEvent, thumb: 'min' | 'max' | 'single') => {
-    if (disabled() || readOnly()) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setIsDragging(true);
-    setActiveThumb(thumb);
+  if (disabled() || readOnly()) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  setIsDragging(true);
+  setActiveThumb(thumb);
+  
+  // FIXED: Clear drag values on start
+  setDragMinValue(null);
+  setDragMaxValue(null);
 
-    const startX = e.clientX;
-    const startValue = thumb === 'max' ? getMaxValue() : getMinValue();
+  const startX = e.clientX;
+  
+  // FIXED: Capture the actual current value from props, not from getMinValue/getMaxValue
+  // because those might return drag values from previous drag
+  let startValue: number;
+  if (mode() === 'range') {
+    const currentRange = getCurrentValue() as [number, number];
+    startValue = thumb === 'max' ? currentRange[1] : currentRange[0];
+  } else {
+    startValue = getCurrentValue() as number;
+  }
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!trackRef) return;
+  const handleMouseMove = (moveEvent: MouseEvent) => {
+    if (!trackRef) return;
 
-      const rect = trackRef.getBoundingClientRect();
-      const deltaX = moveEvent.clientX - startX;
-      const deltaPercent = deltaX / rect.width;
-      const deltaValue = deltaPercent * (max() - min());
-      let newValue = clamp(startValue + deltaValue);
-      newValue = snapToStep(newValue);
+    const rect = trackRef.getBoundingClientRect();
+    const deltaX = moveEvent.clientX - startX;
+    const deltaPercent = deltaX / rect.width;
+    const deltaValue = deltaPercent * (max() - min());
+    let newValue = clamp(startValue + deltaValue);
+    newValue = snapToStep(newValue);
 
-      if (mode() === 'range') {
-        const [currentMin, currentMax] = getCurrentValue() as [number, number];
-        let newRange: [number, number];
+    if (mode() === 'range') {
+      const [currentMin, currentMax] = getCurrentValue() as [number, number];
+      let newRange: [number, number];
 
-        if (thumb === 'max') {
-          newRange = [currentMin, Math.max(currentMin, newValue)];
-        } else if (thumb === 'min') {
-          newRange = [Math.min(currentMax, newValue), currentMax];
-        } else {
-          newRange = [newValue, currentMax];
-        }
-
-        local.onValue?.(newRange);
+      if (thumb === 'max') {
+        newRange = [currentMin, Math.max(currentMin, newValue)];
+        setDragMaxValue(newRange[1]);
+      } else if (thumb === 'min') {
+        newRange = [Math.min(currentMax, newValue), currentMax];
+        setDragMinValue(newRange[0]);
       } else {
-        local.onValue?.(newValue);
+        newRange = [newValue, currentMax];
+        setDragMaxValue(newValue);
       }
-    };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      setActiveThumb('single');
-      
-      const finalValue = getCurrentValue();
-      local.onChange?.(finalValue);
-
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+      local.onValue?.(newRange);
+    } else {
+      setDragMaxValue(newValue);
+      local.onValue?.(newValue);
+    }
   };
+
+  const handleMouseUp = () => {
+    setDragMinValue(null);
+    setDragMaxValue(null);
+    setIsDragging(false);
+    setActiveThumb('single');
+    
+    const finalValue = getCurrentValue();
+    local.onChange?.(finalValue);
+
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
+
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp);
+};
 
   const handleStepperChange = (delta: number) => {
     if (disabled() || readOnly()) return;
@@ -550,19 +584,25 @@ const Slider = (props: SliderProps) => {
               />
             </div>
 
-            {/* Value Display - FIXED: Clean, non-overlapping display */}
+            {/* FIXED: Value Display - Shows real-time updates during drag */}
             <Show when={local.showValue}>
               <div class="mt-4 flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
                 <span class="font-medium">{min()}{local.label?.includes('%') ? '%' : ''}</span>
-                <div class="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                <div class="flex items-center gap-1 font-medium text-emerald-600 transition-all dark:text-emerald-400">
                   {mode() === 'range' ? (
                     <>
-                      <span>{getMinValue()}{local.label?.includes('%') ? '%' : ''}</span>
+                      <span class={cx(isDragging() && activeThumb() === 'min' && 'scale-110 font-bold')}>
+                        {getMinValue()}{local.label?.includes('%') ? '%' : ''}
+                      </span>
                       <span>—</span>
-                      <span>{getMaxValue()}{local.label?.includes('%') ? '%' : ''}</span>
+                      <span class={cx(isDragging() && activeThumb() === 'max' && 'scale-110 font-bold')}>
+                        {getMaxValue()}{local.label?.includes('%') ? '%' : ''}
+                      </span>
                     </>
                   ) : (
-                    <span>{getMaxValue()}{local.label?.includes('%') ? '%' : ''}</span>
+                    <span class={cx(isDragging() && 'scale-110 font-bold transition-all')}>
+                      {getMaxValue()}{local.label?.includes('%') ? '%' : ''}
+                    </span>
                   )}
                 </div>
                 <span class="font-medium">{max()}{local.label?.includes('%') ? '%' : ''}</span>
