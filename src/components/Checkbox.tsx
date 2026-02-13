@@ -1,2 +1,2 @@
-export { default } from '../primitives/Checkbox';
-export * from '../primitives/Checkbox';
+export {default} from "../primitives/Checkbox";
+export * from "../primitives/Checkbox";
