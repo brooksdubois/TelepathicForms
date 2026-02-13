@@ -15,8 +15,6 @@ const variants: SelectVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: SelectSize[] = ['sm', 'md', 'lg'];
 
 type SelectPresetKey = 'states' | 'colors' | 'yes-no';
-type PopoverStyle = 'unfurl' | 'classic' | 'parchment';
-type TubeWarpMode = 'off' | 'soft' | 'hard';
 
 const selectOptionPresets: Array<{
   key: SelectPresetKey;
@@ -71,8 +69,6 @@ const defaults = {
   value: '',
   error: false,
   optionsPreset: 'states' as SelectPresetKey,
-  popoverStyle: 'unfurl' as PopoverStyle,
-  tubeWarp: 'soft' as TubeWarpMode,
   disableSecondOption: false,
   startAdornmentText: '',
   endAdornmentText: '',
@@ -180,12 +176,6 @@ const SelectPlayground: Component = () => {
   const [configPreset, setConfigPreset] = createSignal<SelectPresetKey>(
     defaults.optionsPreset,
   );
-  const [configPopoverStyle, setConfigPopoverStyle] = createSignal<PopoverStyle>(
-    defaults.popoverStyle,
-  );
-  const [configTubeWarp, setConfigTubeWarp] = createSignal<TubeWarpMode>(
-    defaults.tubeWarp,
-  );
   const [disableSecondOption, setDisableSecondOption] = createSignal(
     defaults.disableSecondOption,
   );
@@ -227,28 +217,6 @@ const SelectPlayground: Component = () => {
   const previewWrapperClass = createMemo(() =>
     cx('transition-all duration-200', previewFullWidth() ? 'w-full' : 'max-w-sm'),
   );
-  const previewPopoverWarpClass = createMemo(() => {
-    if (configPopoverStyle() !== 'parchment') return undefined;
-    if (configTubeWarp() === 'soft') return 'tf-popover-tube-warp';
-    if (configTubeWarp() === 'hard') return 'tf-popover-tube-warp--hard';
-    return undefined;
-  });
-  const previewPopoverEnterClass = createMemo(() =>
-    cx(
-      configPopoverStyle() === 'parchment'
-        ? 'tf-popover-enter-parchment'
-        : 'tf-popover-enter',
-      previewPopoverWarpClass(),
-    ),
-  );
-  const previewPopoverExitClass = createMemo(() =>
-    cx(
-      configPopoverStyle() === 'parchment'
-        ? 'tf-popover-exit-parchment'
-        : 'tf-popover-exit',
-      previewPopoverWarpClass(),
-    ),
-  );
 
   const inspectorSnapshot = createMemo(() =>
     JSON.stringify(
@@ -266,8 +234,6 @@ const SelectPlayground: Component = () => {
           ringEnabled: configRingEnabled(),
           size: configSize(),
           variant: configVariant(),
-          popoverStyle: configPopoverStyle(),
-          tubeWarp: configTubeWarp(),
           error: configErrorFlag(),
           preset: activePreset().label,
           options: previewOptions().map((option) => ({
@@ -297,8 +263,6 @@ const SelectPlayground: Component = () => {
     setConfigPlaceholder(defaults.placeholder);
     setConfigErrorFlag(defaults.error);
     setConfigPreset(defaults.optionsPreset);
-    setConfigPopoverStyle(defaults.popoverStyle);
-    setConfigTubeWarp(defaults.tubeWarp);
     setDisableSecondOption(defaults.disableSecondOption);
     setStartAdornmentText(defaults.startAdornmentText);
     setEndAdornmentText(defaults.endAdornmentText);
@@ -612,8 +576,6 @@ const SelectPlayground: Component = () => {
                       placeholder={configPlaceholder()}
                       options={previewOptions()}
                       error={configErrorFlag()}
-                      popoverEnterClass={previewPopoverEnterClass()}
-                      popoverExitClass={previewPopoverExitClass()}
                       value={previewValue()}
                       onValue={setPreviewValue}
                     />
@@ -657,41 +619,6 @@ const SelectPlayground: Component = () => {
                           <For each={sizes}>
                             {(item) => <option value={item}>{item}</option>}
                           </For>
-                        </select>
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Popover style</span>
-                        <select
-                          class={controlInputClass}
-                          value={configPopoverStyle()}
-                          onInput={(event) =>
-                            setConfigPopoverStyle(
-                              event.currentTarget.value as PopoverStyle,
-                            )
-                          }
-                        >
-                          <option value="unfurl">Unfurl</option>
-                          <option value="classic">Classic</option>
-                          <option value="parchment">Parchment</option>
-                        </select>
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Tube warp</span>
-                        <select
-                          class={controlInputClass}
-                          value={configTubeWarp()}
-                          disabled={configPopoverStyle() !== 'parchment'}
-                          onInput={(event) =>
-                            setConfigTubeWarp(
-                              event.currentTarget.value as TubeWarpMode,
-                            )
-                          }
-                        >
-                          <option value="off">Off</option>
-                          <option value="soft">Soft</option>
-                          <option value="hard">Hard</option>
                         </select>
                       </label>
                     </div>
