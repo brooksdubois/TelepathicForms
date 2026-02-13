@@ -73,7 +73,7 @@ const LASER_RING_VARIANTS: Record<LaserRingVariant, LaserRingVariantPreset> = {
   expanse: {
     mode: 'expanse',
     strokeWidth: 2.25,
-    expanseStrokeScale: 2.6,
+    expanseStrokeScale: 2.85,
     segmentMin: 0,
     segmentMax: 0,
     activeMs: 360,
