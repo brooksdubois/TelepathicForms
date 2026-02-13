@@ -61,6 +61,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
       laserSegEl.style.strokeDashoffset = "";
       laserSegEl.style.strokeWidth = "";
       laserSegEl.style.filter = "";
+      laserSegEl.style.strokeLinecap = "";
     }
   };
 
@@ -122,15 +123,35 @@ export function useLaserRing(options: UseLaserRingOptions) {
   const expanseCenterInsetForWidth = (width: number) =>
     RING_HOST_INSET_PX - width / 2;
 
-  const buildScannerPathD = (inset: number) => {
-    const {x, y, ww, hh} = ringMetrics(inset);
+  const scannerGeometry = (width: number) => {
+    const {w, h} = ringBox();
+    const half = width / 2;
+    const fieldLeft = RING_HOST_INSET_PX;
+    const fieldRight = w - RING_HOST_INSET_PX;
+    const fieldTop = RING_HOST_INSET_PX;
+    const fieldBottom = h - RING_HOST_INSET_PX;
+    const cornerRadius = Math.max(
+      0,
+      Math.min(options.radius(), Math.min(fieldRight - fieldLeft, fieldBottom - fieldTop) / 2),
+    );
+    const leftX = Math.max(0, fieldLeft + cornerRadius);
+    const rightX = Math.max(leftX + 1, fieldRight - cornerRadius);
+    const topY = Math.max(0, RING_HOST_INSET_PX - half);
+    const bottomY = Math.min(h, h - RING_HOST_INSET_PX + half);
+    const span = Math.max(1, rightX - leftX);
+
+    return {leftX, rightX, topY, bottomY, span};
+  };
+
+  const buildScannerPathD = (width: number) => {
+    const {leftX, rightX, topY, bottomY} = scannerGeometry(width);
 
     // Box-style scanner path: straight top + bottom runs, no corner arcs.
     return [
-      `M ${x} ${y}`,
-      `H ${x + ww}`,
-      `M ${x} ${y + hh}`,
-      `H ${x + ww}`,
+      `M ${leftX} ${topY}`,
+      `H ${rightX}`,
+      `M ${leftX} ${bottomY}`,
+      `H ${rightX}`,
     ].join(" ");
   };
 
@@ -140,7 +161,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     }
 
     if (isScannerMode()) {
-      return buildScannerPathD(strokeWidth() / 2);
+      return buildScannerPathD(strokeWidth());
     }
 
     return buildRingPathD(strokeWidth() / 2);
@@ -165,6 +186,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     seg.style.strokeDashoffset = `${-phase}`;
     seg.style.strokeWidth = "";
     seg.style.filter = "";
+    seg.style.strokeLinecap = "";
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
@@ -186,21 +208,22 @@ export function useLaserRing(options: UseLaserRingOptions) {
     stopAnimation();
 
     const durationMs = Math.max(1, activeMs());
-    const inset = strokeWidth() / 2;
-    const metrics = ringMetrics(inset);
-    const edgeLen = Math.max(1, metrics.ww);
+    const width = strokeWidth();
+    const geometry = scannerGeometry(width);
+    const edgeLen = geometry.span;
     const minSweep = Math.max(8, Math.min(segmentMin(), edgeLen * 0.2));
     const maxSweep = Math.max(
       minSweep + 5,
       Math.min(segmentMax(), edgeLen * 0.42),
     );
     const start = performance.now();
-    const scannerPathD = buildScannerPathD(inset);
+    const scannerPathD = buildScannerPathD(width);
 
     path.setAttribute("d", scannerPathD);
     seg.setAttribute("d", scannerPathD);
-    seg.style.strokeWidth = `${strokeWidth()}`;
+    seg.style.strokeWidth = `${width}`;
     seg.style.filter = "drop-shadow(0 0 1px currentColor)";
+    seg.style.strokeLinecap = "butt";
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
@@ -240,6 +263,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     seg.style.strokeDashoffset = "";
     seg.style.strokeWidth = `${startWidth}`;
     seg.style.filter = "drop-shadow(0 0 0.7px currentColor)";
+    seg.style.strokeLinecap = "";
     seg.setAttribute("d", buildRingPathD(expanseCenterInsetForWidth(startWidth)));
 
     const tick = (now: number) => {
