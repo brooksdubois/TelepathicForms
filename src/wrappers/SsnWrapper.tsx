@@ -65,6 +65,7 @@ export const SsnWrapper: Component<SsnWrapperProps> = (p) => {
       }
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onKeyDown={(e) => blockNonDigitsAndMaxLen(e as KeyboardEvent, rawDigits(), maxDigits)}

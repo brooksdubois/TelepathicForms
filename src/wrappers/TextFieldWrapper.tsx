@@ -43,6 +43,7 @@ export const TextFieldWrapper: Component<TextFieldWrapperProps> = (p) => {
       inputMask={p.spec.inputMask}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       onValue={(next) => p.field.setValue(next)}
       onFocus={() => p.field.setFocused(true)}
       onBlur={() => {

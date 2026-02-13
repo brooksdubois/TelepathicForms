@@ -55,6 +55,7 @@ export const MultiSelectWrapper: Component<MultiSelectWrapperProps> = (p) => {
       maxSelected={p.spec.maxSelected}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onValue={(next) => {

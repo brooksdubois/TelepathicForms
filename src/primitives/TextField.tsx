@@ -1,15 +1,15 @@
 import {
   Show,
   createEffect,
-  createSignal,
   createUniqueId,
   mergeProps,
-  onCleanup,
   splitProps,
 } from 'solid-js';
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
+import { useLaserRing } from '../utils/useLaserRing';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
 export type TextFieldVariant = 'outlined' | 'filled' | 'standard';
@@ -70,6 +70,7 @@ export type TextFieldProps = NativeInputProps & {
 
   /** If true, triggers the ring animation on focus. Defaults to true. */
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
 
   /** Exposes a small API to manually trigger the ring animation. */
   onRingApi?: (api: {
@@ -204,141 +205,29 @@ const TextField = (props: TextFieldProps) => {
     'onBlur',
     'ringEnabled',
     'animateRingOnFocus',
+    'ringVariant',
     'onRingApi',
     'onFocus',
   ]);
 
   let inputEl: HTMLInputElement | undefined;
 
-  let ringHostEl: HTMLSpanElement | undefined;
-  let ringMeasureEl: SVGPathElement | undefined;
-  let ringLaserSegEl: SVGPathElement | undefined;
-  let ringLaserRaf: number | undefined;
-
-  const [ringBox, setRingBox] = createSignal<{ w: number; h: number }>({ w: 100, h: 100 });
-
-  createEffect(() => {
-    if (!ringEnabled()) return;
-    const host = ringHostEl;
-    if (!host) return;
-
-    const update = () => {
-      const rect = host.getBoundingClientRect();
-      // Avoid zeros during layout / hidden states
-      const w = Math.max(1, Math.round(rect.width));
-      const h = Math.max(1, Math.round(rect.height));
-      setRingBox({ w, h });
-    };
-
-    update();
-
-    const ro = new ResizeObserver(() => update());
-    ro.observe(host);
-
-    return () => ro.disconnect();
-  });
-
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
-
-  const [ringPulseKey, setRingPulseKey] = createSignal(0);
-  const [ringActive, setRingActive] = createSignal(false);
-  let ringTimer: number | undefined;
-
-  const ringPathD = () => {
-    const { w, h } = ringBox();
-
-    // Keep stroke fully inside the box
-    const stroke = 2.25;
-    const x = stroke / 2;
-    const y = stroke / 2;
-    const ww = Math.max(1, w - stroke);
-    const hh = Math.max(1, h - stroke);
-
-    // Radius should be constrained by height on very wide fields
-    const desired = variant() === 'standard' ? 2 : 16;
-    const r = Math.max(0, Math.min(desired, Math.min(ww, hh) / 2));
-
-    return [
-      `M ${x + r} ${y}`,
-      `H ${x + ww - r}`,
-      `A ${r} ${r} 0 0 1 ${x + ww} ${y + r}`,
-      `V ${y + hh - r}`,
-      `A ${r} ${r} 0 0 1 ${x + ww - r} ${y + hh}`,
-      `H ${x + r}`,
-      `A ${r} ${r} 0 0 1 ${x} ${y + hh - r}`,
-      `V ${y + r}`,
-      `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
-      'Z',
-    ].join(' ');
-  };
-
-  const stopRingAnimation = () => {
-    if (ringLaserRaf !== undefined) {
-      cancelAnimationFrame(ringLaserRaf);
-      ringLaserRaf = undefined;
-    }
-    if (ringTimer !== undefined) {
-      window.clearTimeout(ringTimer);
-      ringTimer = undefined;
-    }
-    if (ringLaserSegEl) {
-      ringLaserSegEl.style.strokeDasharray = '';
-      ringLaserSegEl.style.strokeDashoffset = '';
-    }
-  };
-
-  const pulseRing = () => {
-    if (!ringEnabled()) return;
-
-    // Force a remount even if the user triggers pulses quickly.
-    setRingActive(false);
-    stopRingAnimation();
-    setRingPulseKey((k) => k + 1);
-
-    requestAnimationFrame(() => {
-      setRingActive(true);
-
-      // Next frame: SVG paths are mounted, so we can measure + animate.
-      requestAnimationFrame(() => startRingLaserAnimation());
-
-      ringTimer = window.setTimeout(() => setRingActive(false), 660);
-    });
-  };
-
-  const startRingLaserAnimation = () => {
-    const path = ringMeasureEl;
-    const seg = ringLaserSegEl;
-    if (!path || !seg) return;
-
-    stopRingAnimation();
-
-    const len = Math.max(1, path.getTotalLength());
-    const phase = len * 0.25;
-    const segLen = Math.max(12, Math.min(24, ringBox().h * 0.55));
-    const PX_PER_MS = 1.0; // tune: higher = faster
-    const MIN_MS = 650;
-    const MAX_MS = 2600;
-    const durationMs = Math.max(MIN_MS, Math.min(MAX_MS, len / PX_PER_MS));
-    const start = performance.now();
-    const dashGap = Math.max(1, len - segLen);
-
-    seg.setAttribute('d', ringPathD());
-    seg.style.strokeDasharray = `${segLen} ${dashGap}`;
-    seg.style.strokeDashoffset = `${-phase}`;
-
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / durationMs);
-      const travel = len * t;
-      seg.style.strokeDashoffset = `${-(phase + travel)}`;
-      if (t < 1) ringLaserRaf = requestAnimationFrame(tick);
-    };
-
-    ringLaserRaf = requestAnimationFrame(tick);
-  };
-
-  onCleanup(() => {
-    stopRingAnimation();
+  const {
+    ringBox,
+    ringPathD,
+    ringPulseKey,
+    ringActive,
+    ringFadeAnimation,
+    pulseRing,
+    setRingHostEl,
+    setRingMeasureEl,
+    setRingLaserSegEl,
+  } = useLaserRing({
+    enabled: ringEnabled,
+    radius: () => (variant() === 'standard' ? 2 : 16),
+    variant: () => local.ringVariant,
   });
 
   createEffect(() => {
@@ -516,7 +405,7 @@ const TextField = (props: TextFieldProps) => {
       <div class={containerClass()}>
         <Show when={ringEnabled()}>
           <span
-            ref={ringHostEl}
+            ref={setRingHostEl}
             aria-hidden="true"
             class={cx(
               'tf-focus-laser-ring',
@@ -524,6 +413,7 @@ const TextField = (props: TextFieldProps) => {
                 ? 'text-rose-500 dark:text-rose-400'
                 : 'text-emerald-500 dark:text-emerald-400',
             )}
+            style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
           >
             <svg
               class="tf-focus-laser-ring-svg"
@@ -544,17 +434,17 @@ const TextField = (props: TextFieldProps) => {
                     />
 
                     <path
-                      ref={ringMeasureEl}
+                      ref={setRingMeasureEl}
                       d={ringPathD()}
                       fill="none"
                       stroke="none"
                     />
 
                     <path
-                      ref={ringLaserSegEl}
+                      ref={setRingLaserSegEl}
                       class="tf-focus-laser-ring-segment"
                       data-pulse={ringPulseKey()}
-                      d={ringPathD()}
+                      d=""
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2.25"

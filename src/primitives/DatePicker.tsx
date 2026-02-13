@@ -3,6 +3,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
 import { useLaserRing } from '../utils/useLaserRing';
 
 export type DatePickerChangeSource = 'typing' | 'calendar' | 'clear';
@@ -30,6 +31,7 @@ export type DatePickerProps = {
   clearable?: boolean;
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   onRingApi?: (api: {
     pulse: () => void;
     focus: () => void;
@@ -501,6 +503,7 @@ const DatePicker = (props: DatePickerProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
@@ -508,6 +511,7 @@ const DatePicker = (props: DatePickerProps) => {
   } = useLaserRing({
     enabled: ringEnabled,
     radius: () => 16,
+    variant: () => props.ringVariant,
   });
 
   createEffect(() => {
@@ -1091,6 +1095,7 @@ const DatePicker = (props: DatePickerProps) => {
                     ? 'text-rose-500 dark:text-rose-400'
                     : 'text-emerald-500 dark:text-emerald-400',
                 )}
+                style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
               >
                 <svg
                   class="tf-focus-laser-ring-svg"

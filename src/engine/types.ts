@@ -1,4 +1,5 @@
 import type {BehaviorSubject, Observable} from "rxjs";
+import type {LaserRingVariant} from "../utils/laserRingVariants";
 
 export type Validator<T> = (value: T) => string[];
 export type Formatter = (raw: string) => string;
@@ -51,6 +52,7 @@ export type FieldSpec = {
   endAdornment?: string;
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   rows?: number;
   autosize?: boolean;
   minRows?: number;

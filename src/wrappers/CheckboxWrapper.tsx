@@ -37,6 +37,7 @@ export const CheckboxWrapper: Component<CheckboxWrapperProps> = (p) => {
       variant={p.spec.variant}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onChecked={(next) => {

@@ -1,8 +1,13 @@
 import {createEffect, createSignal, onCleanup, type Accessor} from "solid-js";
+import {
+  getLaserRingVariantPreset,
+  type LaserRingVariant,
+} from "./laserRingVariants";
 
 type UseLaserRingOptions = {
   enabled: Accessor<boolean>;
   radius: Accessor<number>;
+  variant?: Accessor<LaserRingVariant | undefined>;
   strokeWidth?: number;
   segmentMin?: number;
   segmentMax?: number;
@@ -16,14 +21,17 @@ type UseLaserRingOptions = {
 type RingBox = {w: number; h: number};
 
 export function useLaserRing(options: UseLaserRingOptions) {
-  const strokeWidth = () => options.strokeWidth ?? 2.25;
-  const segmentMin = () => options.segmentMin ?? 12;
-  const segmentMax = () => options.segmentMax ?? 24;
-  const activeMs = () => options.activeMs ?? 660;
-  const pxPerMs = () => options.pxPerMs ?? 1;
-  const minMs = () => options.minMs ?? 650;
-  const maxMs = () => options.maxMs ?? 2600;
-  const phaseRatio = () => options.phaseRatio ?? 0.25;
+  const preset = () => getLaserRingVariantPreset(options.variant?.());
+  const strokeWidth = () => options.strokeWidth ?? preset().strokeWidth;
+  const segmentMin = () => options.segmentMin ?? preset().segmentMin;
+  const segmentMax = () => options.segmentMax ?? preset().segmentMax;
+  const activeMs = () => options.activeMs ?? preset().activeMs;
+  const pxPerMs = () => options.pxPerMs ?? preset().pxPerMs;
+  const minMs = () => options.minMs ?? preset().minMs;
+  const maxMs = () => options.maxMs ?? preset().maxMs;
+  const phaseRatio = () => options.phaseRatio ?? preset().phaseRatio;
+  const ringFadeAnimation = () =>
+    `${preset().fadeKeyframe} ${activeMs()}ms ${preset().fadeEasing} forwards`;
 
   const [hostEl, setHostEl] = createSignal<HTMLElement | undefined>(undefined);
   let measureEl: SVGPathElement | undefined;
@@ -163,6 +171,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl: setHostEl,
     setRingMeasureEl: (el: SVGPathElement | undefined) => {

@@ -13,6 +13,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 
 import { cx } from '../utils/cx';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
 import { useLaserRing } from '../utils/useLaserRing';
 
 export type MultiSelectSize = 'sm' | 'md' | 'lg';
@@ -48,6 +49,7 @@ export type MultiSelectProps = {
   maxSelected?: number;
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   onRingApi?: (api: {
     pulse: () => void;
     focus: () => void;
@@ -159,6 +161,7 @@ const MultiSelect = (props: MultiSelectProps) => {
     'maxSelected',
     'ringEnabled',
     'animateRingOnFocus',
+    'ringVariant',
     'onRingApi',
     'onValue',
     'renderLabel',
@@ -209,6 +212,7 @@ const MultiSelect = (props: MultiSelectProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
@@ -216,6 +220,7 @@ const MultiSelect = (props: MultiSelectProps) => {
   } = useLaserRing({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
+    variant: () => local.ringVariant,
   });
 
   const size = () => (local.size ?? 'md') as MultiSelectSize;
@@ -650,6 +655,7 @@ const MultiSelect = (props: MultiSelectProps) => {
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
+              style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
             >
               <svg
                 class="tf-focus-laser-ring-svg"

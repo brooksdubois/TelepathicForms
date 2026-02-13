@@ -44,6 +44,7 @@ export const DatePickerWrapper: Component<DatePickerWrapperProps> = (p) => {
       closeOnSelect={p.spec.closeOnSelect}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       class={p.fullWidth ? "w-full" : undefined}
       onChange={(next) => p.field.setValue(next ?? "")}
       onFocus={() => p.field.setFocused(true)}
