@@ -8,6 +8,12 @@ import MultiSelect, {
   type MultiSelectVariant,
 } from '../components/MultiSelect';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 const variants: MultiSelectVariant[] = ['outlined', 'filled', 'standard'];
@@ -58,7 +64,7 @@ const defaults = {
   required: false,
   error: false,
   fullWidth: false,
-  ringEnabled: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   inline: false,
   searchable: true,
   clearable: true,
@@ -109,7 +115,9 @@ const MultiSelectPlayground: Component = () => {
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configError, setConfigError] = createSignal(defaults.error);
   const [configFullWidth, setConfigFullWidth] = createSignal(defaults.fullWidth);
-  const [configRingEnabled, setConfigRingEnabled] = createSignal(defaults.ringEnabled);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [configInline, setConfigInline] = createSignal(defaults.inline);
   const [configSearchable, setConfigSearchable] = createSignal(defaults.searchable);
   const [configClearable, setConfigClearable] = createSignal(defaults.clearable);
@@ -166,7 +174,8 @@ const MultiSelectPlayground: Component = () => {
           disabled: configDisabled(),
           readOnly: configReadOnly(),
           fullWidth: configFullWidth(),
-          ringEnabled: configRingEnabled(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           inline: configInline(),
           searchable: configSearchable(),
           clearable: configClearable(),
@@ -191,7 +200,7 @@ const MultiSelectPlayground: Component = () => {
     setConfigRequired(defaults.required);
     setConfigError(defaults.error);
     setConfigFullWidth(defaults.fullWidth);
-    setConfigRingEnabled(defaults.ringEnabled);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigInline(defaults.inline);
     setConfigSearchable(defaults.searchable);
     setConfigClearable(defaults.clearable);
@@ -382,7 +391,8 @@ const MultiSelectPlayground: Component = () => {
                       disabled={configDisabled()}
                       readOnly={configReadOnly()}
                       fullWidth={configFullWidth()}
-                      ringEnabled={configRingEnabled()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       onRingApi={setRingApi}
                       inline={configInline()}
                       size={configSize()}
@@ -508,16 +518,21 @@ const MultiSelectPlayground: Component = () => {
                           onInput={(event) => setConfigError(event.currentTarget.checked)}
                         />
                       </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
                           onInput={(event) =>
-                            setConfigRingEnabled(event.currentTarget.checked)
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
                           }
-                        />
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
                       </label>
                       <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
                         <span>Searchable</span>
@@ -563,7 +578,7 @@ const MultiSelectPlayground: Component = () => {
                           'disabled:cursor-not-allowed disabled:opacity-50',
                           'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
                         )}
-                        disabled={!configRingEnabled() || !ringApi()}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
                         onClick={() => ringApi()?.pulseAndFocus()}
                       >
                         Trigger ring

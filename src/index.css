@@ -72,6 +72,29 @@ h3,
     }
 }
 
+@keyframes tf-focus-expanse-ring-fade {
+    0% {
+        opacity: 0;
+        transform: scale(1);
+    }
+    8% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    44% {
+        opacity: 0.2;
+        transform: scale(1.07);
+    }
+    62% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.12);
+    }
+}
+
 @keyframes tf-popover-enter {
     0% {
         opacity: 0;
@@ -99,6 +122,7 @@ h3,
     inset: -5px;
     pointer-events: none;
     opacity: 0;
+    transform-origin: center;
 }
 
 .tf-focus-laser-ring-svg {

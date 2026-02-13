@@ -26,10 +26,12 @@ export function useLaserRing(options: UseLaserRingOptions) {
   const segmentMin = () => options.segmentMin ?? preset().segmentMin;
   const segmentMax = () => options.segmentMax ?? preset().segmentMax;
   const activeMs = () => options.activeMs ?? preset().activeMs;
+  const expanseStrokeScale = () => preset().expanseStrokeScale;
   const pxPerMs = () => options.pxPerMs ?? preset().pxPerMs;
   const minMs = () => options.minMs ?? preset().minMs;
   const maxMs = () => options.maxMs ?? preset().maxMs;
   const phaseRatio = () => options.phaseRatio ?? preset().phaseRatio;
+  const usesLaserSegment = () => preset().mode === "laser";
   const ringFadeAnimation = () =>
     `${preset().fadeKeyframe} ${activeMs()}ms ${preset().fadeEasing} forwards`;
 
@@ -55,6 +57,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     if (laserSegEl) {
       laserSegEl.style.strokeDasharray = "";
       laserSegEl.style.strokeDashoffset = "";
+      laserSegEl.style.strokeWidth = "";
     }
   };
 
@@ -123,6 +126,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     seg.setAttribute("d", ringPathD());
     seg.style.strokeDasharray = `${segLen} ${dashGap}`;
     seg.style.strokeDashoffset = `${-phase}`;
+    seg.style.strokeWidth = "";
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
@@ -135,6 +139,42 @@ export function useLaserRing(options: UseLaserRingOptions) {
     ringRaf = requestAnimationFrame(tick);
     return true;
   };
+
+  const startExpanseAnimation = () => {
+    const path = measureEl;
+    const seg = laserSegEl;
+    if (!path || !seg) return false;
+
+    stopAnimation();
+
+    const len = Math.max(1, path.getTotalLength());
+    const durationMs = Math.max(1, activeMs());
+    const startWidth = strokeWidth();
+    const endWidth = startWidth * expanseStrokeScale();
+    const start = performance.now();
+
+    seg.setAttribute("d", ringPathD());
+    seg.style.strokeDasharray = `${len} 0`;
+    seg.style.strokeDashoffset = "0";
+    seg.style.strokeWidth = `${startWidth}`;
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const widthProgress = Math.min(1, t * 1.28);
+      const eased = 1 - Math.pow(1 - widthProgress, 4);
+      const width = startWidth + (endWidth - startWidth) * eased;
+      seg.style.strokeWidth = `${width}`;
+
+      if (t < 1) ringRaf = requestAnimationFrame(tick);
+    };
+
+    ringRaf = requestAnimationFrame(tick);
+
+    return true;
+  };
+
+  const startVariantAnimation = () =>
+    usesLaserSegment() ? startLaserAnimation() : startExpanseAnimation();
 
   const pulseRing = () => {
     if (!options.enabled()) return;
@@ -149,7 +189,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
       requestAnimationFrame(() => {
         let attempts = 0;
         const tryStart = () => {
-          if (startLaserAnimation()) return;
+          if (startVariantAnimation()) return;
           attempts += 1;
           if (attempts < 3) requestAnimationFrame(tryStart);
         };

@@ -6,6 +6,12 @@ import TextArea, {
   type TextAreaVariant,
 } from '../components/TextArea';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 const variants: TextAreaVariant[] = ['outlined', 'filled', 'standard'];
@@ -18,7 +24,7 @@ const defaults = {
   readOnly: false,
   required: false,
   fullWidth: false,
-  ringEnabled: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   autosize: true,
   minRows: 2,
   maxRows: 6 as number | undefined,
@@ -57,7 +63,9 @@ const TextAreaPlayground: Component = () => {
   const [configReadOnly, setConfigReadOnly] = createSignal(defaults.readOnly);
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configFullWidth, setConfigFullWidth] = createSignal(defaults.fullWidth);
-  const [configRingEnabled, setConfigRingEnabled] = createSignal(defaults.ringEnabled);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [configAutosize, setConfigAutosize] = createSignal(defaults.autosize);
   const [configMinRows, setConfigMinRows] = createSignal(defaults.minRows);
   const [configMaxRowsInput, setConfigMaxRowsInput] = createSignal(
@@ -131,7 +139,8 @@ const TextAreaPlayground: Component = () => {
           disabled: configDisabled(),
           readOnly: configReadOnly(),
           fullWidth: configFullWidth(),
-          ringEnabled: configRingEnabled(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           autosize: configAutosize(),
           minRows: resolvedMinRows(),
           maxRows: resolvedMaxRows(),
@@ -157,7 +166,7 @@ const TextAreaPlayground: Component = () => {
     setConfigReadOnly(defaults.readOnly);
     setConfigRequired(defaults.required);
     setConfigFullWidth(defaults.fullWidth);
-    setConfigRingEnabled(defaults.ringEnabled);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigAutosize(defaults.autosize);
     setConfigMinRows(defaults.minRows);
     setConfigMaxRowsInput(defaults.maxRows?.toString() ?? '');
@@ -246,7 +255,8 @@ const TextAreaPlayground: Component = () => {
                       disabled={configDisabled()}
                       readOnly={configReadOnly()}
                       fullWidth={configFullWidth()}
-                      ringEnabled={configRingEnabled()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       onRingApi={setRingApi}
                       autosize={configAutosize()}
                       minRows={resolvedMinRows()}
@@ -364,16 +374,21 @@ const TextAreaPlayground: Component = () => {
                           }
                         />
                       </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
                           onInput={(event) =>
-                            setConfigRingEnabled(event.currentTarget.checked)
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
                           }
-                        />
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
                       </label>
                       <button
                         type="button"
@@ -383,7 +398,7 @@ const TextAreaPlayground: Component = () => {
                           'disabled:cursor-not-allowed disabled:opacity-50',
                           'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
                         )}
-                        disabled={!configRingEnabled() || !ringApi()}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
                         onClick={() => ringApi()?.pulseAndFocus()}
                       >
                         Trigger ring
