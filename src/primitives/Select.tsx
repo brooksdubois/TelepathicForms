@@ -90,6 +90,12 @@ export type SelectProps = NativeControlProps & {
   helperClass?: string;
   menuClass?: string;
   optionClass?: string;
+
+  // Popover animation (for playground demos)
+  popoverEnterMs?: number;
+  popoverExitMs?: number;
+  popoverEnterClass?: string;
+  popoverExitClass?: string;
 };
 
 const sizeStyles: Record<
@@ -183,6 +189,11 @@ const Select = (props: SelectProps) => {
     'ringEnabled',
     'animateRingOnFocus',
     'onRingApi',
+    // Popover animation props
+    'popoverEnterMs',
+    'popoverExitMs',
+    'popoverEnterClass',
+    'popoverExitClass',
   ]);
 
   let rootEl: HTMLDivElement | undefined;
@@ -800,19 +811,24 @@ const Select = (props: SelectProps) => {
           <Transition
             onEnter={(rawEl, done) => {
               const el = rawEl as HTMLElement;
-              const DURATION_MS = 180;
-              el.classList.remove('tf-popover-exit');
-              el.classList.add('tf-popover-enter');
+              const enterClass = local.popoverEnterClass ?? 'tf-popover-enter';
+              const exitClass = local.popoverExitClass ?? 'tf-popover-exit';
+              const DURATION_MS = local.popoverEnterMs ?? 180;
+
+              el.classList.remove(exitClass);
+              el.classList.add(enterClass);
+
               const timer = window.setTimeout(() => {
-                el.classList.remove('tf-popover-enter');
+                el.classList.remove(enterClass);
                 done();
               }, DURATION_MS + 40);
+
               el.addEventListener(
                 'animationend',
                 (event) => {
                   if (event.target !== el) return;
                   window.clearTimeout(timer);
-                  el.classList.remove('tf-popover-enter');
+                  el.classList.remove(enterClass);
                   done();
                 },
                 { once: true },
@@ -820,19 +836,24 @@ const Select = (props: SelectProps) => {
             }}
             onExit={(rawEl, done) => {
               const el = rawEl as HTMLElement;
-              const DURATION_MS = 140;
-              el.classList.remove('tf-popover-enter');
-              el.classList.add('tf-popover-exit');
+              const enterClass = local.popoverEnterClass ?? 'tf-popover-enter';
+              const exitClass = local.popoverExitClass ?? 'tf-popover-exit';
+              const DURATION_MS = local.popoverExitMs ?? 140;
+
+              el.classList.remove(enterClass);
+              el.classList.add(exitClass);
+
               const timer = window.setTimeout(() => {
-                el.classList.remove('tf-popover-exit');
+                el.classList.remove(exitClass);
                 done();
               }, DURATION_MS + 40);
+
               el.addEventListener(
                 'animationend',
                 (event) => {
                   if (event.target !== el) return;
                   window.clearTimeout(timer);
-                  el.classList.remove('tf-popover-exit');
+                  el.classList.remove(exitClass);
                   done();
                 },
                 { once: true },
