@@ -1,0 +1,33 @@
+@import "./ring/laser.css";
+@import "./ring/expanse.css";
+@import "./ring/scanner.css";
+
+.tf-focus-laser-ring {
+    position: absolute;
+    inset: -5px;
+    pointer-events: none;
+    opacity: 0;
+    transform-origin: center;
+}
+
+.tf-focus-laser-ring-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.tf-focus-laser-ring-outline {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.10;
+}
+
+.tf-focus-laser-ring-segment {
+    fill: none;
+    shape-rendering: geometricPrecision;
+    stroke-linejoin: round;
+    will-change: stroke-dashoffset;
+}

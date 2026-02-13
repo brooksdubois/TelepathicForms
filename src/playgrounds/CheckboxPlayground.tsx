@@ -5,18 +5,78 @@ import Checkbox, {
   type CheckboxProps,
   type CheckboxSize,
   type CheckboxVariant,
-} from '../components/Checkbox';
-import PlaygroundNav from './PlaygroundNav';
-import {
-  ringAnimationEnabled,
-  ringAnimationOptions,
-  ringAnimationVariant,
-  type RingAnimationSelection,
-} from './ringAnimationOptions';
-import { cx } from '../utils/cx';
+} from '../packages/checkbox';
 
 const variants: CheckboxVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: CheckboxSize[] = ['sm', 'md', 'lg'];
+
+const cx = (...classes: Array<string | false | null | undefined>) =>
+  classes.filter(Boolean).join(' ');
+
+type RingAnimationSelection = 'none' | 'laser' | 'expanse' | 'scanner';
+
+const ringAnimationOptions: Array<{
+  value: RingAnimationSelection;
+  label: string;
+}> = [
+  { value: 'none', label: 'None' },
+  { value: 'laser', label: 'Laser' },
+  { value: 'expanse', label: 'Expanse' },
+  { value: 'scanner', label: 'Scanner' },
+];
+
+const ringAnimationEnabled = (selection: RingAnimationSelection) =>
+  selection !== 'none';
+
+const ringAnimationVariant = (selection: RingAnimationSelection) =>
+  selection === 'none' ? undefined : selection;
+
+const labs = [
+  { href: '/form-demo', label: 'Form Demo' },
+  { href: '/text-field', label: 'TextField Lab' },
+  { href: '/select', label: 'Select Lab' },
+  { href: '/multi-select', label: 'MultiSelect Lab' },
+  { href: '/checkbox', label: 'Checkbox Lab' },
+  { href: '/radio-group', label: 'RadioGroup Lab' },
+  { href: '/switch', label: 'Switch Lab' },
+  { href: '/textarea', label: 'TextArea Lab' },
+  { href: '/date', label: 'DatePicker Lab' },
+];
+
+const normalizePath = (path: string) => path.replace(/\/+$/, '') || '/';
+
+const navItemClass =
+  'rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-slate-700 transition hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200';
+
+const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props) => {
+  const activePath = () => normalizePath(props.currentPath);
+
+  return (
+    <div
+      class={cx(
+        'flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400',
+        props.class,
+      )}
+    >
+      <For each={labs}>
+        {(item) =>
+          normalizePath(item.href) === activePath() ? (
+            <span
+              aria-current="page"
+              class="rounded-full border border-emerald-300/70 bg-emerald-500/10 px-3 py-1.5 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-300"
+            >
+              {item.label}
+            </span>
+          ) : (
+            <a href={item.href} class={navItemClass}>
+              {item.label}
+            </a>
+          )
+        }
+      </For>
+    </div>
+  );
+};
 
 const defaults = {
   checked: false,
