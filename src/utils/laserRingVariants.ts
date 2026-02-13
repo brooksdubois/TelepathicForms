@@ -3,9 +3,10 @@ export type LaserRingVariant =
   | 'laser'
   | 'swift'
   | 'lingering'
-  | 'expanse';
+  | 'expanse'
+  | 'scanner';
 
-export type LaserRingAnimationMode = 'laser' | 'expanse';
+export type LaserRingAnimationMode = 'laser' | 'expanse' | 'scanner';
 
 export type LaserRingVariantPreset = {
   mode: LaserRingAnimationMode;
@@ -84,6 +85,20 @@ const LASER_RING_VARIANTS: Record<LaserRingVariant, LaserRingVariantPreset> = {
     fadeKeyframe: 'tf-focus-expanse-ring-fade',
     fadeEasing: 'cubic-bezier(0.16, 0.9, 0.27, 1)',
   },
+  scanner: {
+    mode: 'scanner',
+    strokeWidth: 2.3,
+    expanseStrokeScale: 1,
+    segmentMin: 12,
+    segmentMax: 40,
+    activeMs: 620,
+    pxPerMs: 1,
+    minMs: 620,
+    maxMs: 620,
+    phaseRatio: 0,
+    fadeKeyframe: 'tf-focus-scanner-ring-fade',
+    fadeEasing: 'cubic-bezier(0.2, 0.72, 0.26, 1)',
+  },
 };
 
 export function getLaserRingVariantPreset(
@@ -96,5 +111,5 @@ export function getLaserRingVariantPreset(
 }
 
 export function listLaserRingVariants(): LaserRingVariant[] {
-  return ['laser', 'swift', 'lingering', 'expanse'];
+  return ['laser', 'swift', 'lingering', 'expanse', 'scanner'];
 }

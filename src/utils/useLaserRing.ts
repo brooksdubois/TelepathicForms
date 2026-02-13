@@ -32,7 +32,8 @@ export function useLaserRing(options: UseLaserRingOptions) {
   const minMs = () => options.minMs ?? preset().minMs;
   const maxMs = () => options.maxMs ?? preset().maxMs;
   const phaseRatio = () => options.phaseRatio ?? preset().phaseRatio;
-  const usesLaserSegment = () => preset().mode === "laser";
+  const isExpanseMode = () => preset().mode === "expanse";
+  const isScannerMode = () => preset().mode === "scanner";
   const ringFadeAnimation = () =>
     `${preset().fadeKeyframe} ${activeMs()}ms ${preset().fadeEasing} forwards`;
 
@@ -87,7 +88,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     stopAnimation();
   });
 
-  const buildRingPathD = (stroke: number, inset: number) => {
+  const ringMetrics = (inset: number) => {
     const {w, h} = ringBox();
     const x = inset;
     const y = inset;
@@ -95,6 +96,14 @@ export function useLaserRing(options: UseLaserRingOptions) {
     const hh = Math.max(1, h - inset * 2);
     const desired = options.radius();
     const r = Math.max(0, Math.min(desired, Math.min(ww, hh) / 2));
+    const topStraight = Math.max(1, ww - r * 2);
+    const quarterArc = (Math.PI * r) / 2;
+
+    return {x, y, ww, hh, r, topStraight, quarterArc};
+  };
+
+  const buildRingPathD = (inset: number) => {
+    const {x, y, ww, hh, r} = ringMetrics(inset);
 
     return [
       `M ${x + r} ${y}`,
@@ -113,10 +122,29 @@ export function useLaserRing(options: UseLaserRingOptions) {
   const expanseCenterInsetForWidth = (width: number) =>
     RING_HOST_INSET_PX - width / 2;
 
-  const ringPathD = () =>
-    usesLaserSegment()
-      ? buildRingPathD(strokeWidth(), strokeWidth() / 2)
-      : buildRingPathD(strokeWidth(), expanseCenterInsetForWidth(strokeWidth()));
+  const buildScannerPathD = (inset: number) => {
+    const {x, y, ww, hh} = ringMetrics(inset);
+
+    // Box-style scanner path: straight top + bottom runs, no corner arcs.
+    return [
+      `M ${x} ${y}`,
+      `H ${x + ww}`,
+      `M ${x} ${y + hh}`,
+      `H ${x + ww}`,
+    ].join(" ");
+  };
+
+  const ringPathD = () => {
+    if (isExpanseMode()) {
+      return buildRingPathD(expanseCenterInsetForWidth(strokeWidth()));
+    }
+
+    if (isScannerMode()) {
+      return buildScannerPathD(strokeWidth() / 2);
+    }
+
+    return buildRingPathD(strokeWidth() / 2);
+  };
 
   const startLaserAnimation = () => {
     const path = measureEl;
@@ -150,6 +178,52 @@ export function useLaserRing(options: UseLaserRingOptions) {
     return true;
   };
 
+  const startScannerAnimation = () => {
+    const path = measureEl;
+    const seg = laserSegEl;
+    if (!path || !seg) return false;
+
+    stopAnimation();
+
+    const durationMs = Math.max(1, activeMs());
+    const inset = strokeWidth() / 2;
+    const metrics = ringMetrics(inset);
+    const edgeLen = Math.max(1, metrics.ww);
+    const minSweep = Math.max(8, Math.min(segmentMin(), edgeLen * 0.2));
+    const maxSweep = Math.max(
+      minSweep + 5,
+      Math.min(segmentMax(), edgeLen * 0.42),
+    );
+    const start = performance.now();
+    const scannerPathD = buildScannerPathD(inset);
+
+    path.setAttribute("d", scannerPathD);
+    seg.setAttribute("d", scannerPathD);
+    seg.style.strokeWidth = `${strokeWidth()}`;
+    seg.style.filter = "drop-shadow(0 0 1px currentColor)";
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const travelT = t * t;
+      const bulgeT = 0.18 + t * 0.82;
+      const bulge = Math.pow(Math.sin(Math.PI * bulgeT), 1.2);
+      const sweep = minSweep + (maxSweep - minSweep) * bulge;
+      const head = travelT * (edgeLen + sweep);
+      const sweepStart = Math.max(0, Math.min(edgeLen - sweep, head - sweep));
+      const gap = Math.max(1, edgeLen - sweep);
+
+      // Dash pattern duplicated for top and bottom subpaths to keep both in sync.
+      seg.style.strokeDasharray = `${sweep} ${gap} ${sweep} ${gap}`;
+      seg.style.strokeDashoffset = `${-sweepStart}`;
+      seg.style.filter = `drop-shadow(0 0 ${1 + 1.8 * bulge}px currentColor)`;
+
+      if (t < 1) ringRaf = requestAnimationFrame(tick);
+    };
+
+    ringRaf = requestAnimationFrame(tick);
+    return true;
+  };
+
   const startExpanseAnimation = () => {
     const path = measureEl;
     const seg = laserSegEl;
@@ -166,10 +240,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     seg.style.strokeDashoffset = "";
     seg.style.strokeWidth = `${startWidth}`;
     seg.style.filter = "drop-shadow(0 0 0.7px currentColor)";
-    seg.setAttribute(
-      "d",
-      buildRingPathD(startWidth, expanseCenterInsetForWidth(startWidth)),
-    );
+    seg.setAttribute("d", buildRingPathD(expanseCenterInsetForWidth(startWidth)));
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
@@ -177,7 +248,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
       const eased = 1 - Math.pow(1 - widthProgress, 4);
       const width = startWidth + (endWidth - startWidth) * eased;
       seg.style.strokeWidth = `${width}`;
-      seg.setAttribute("d", buildRingPathD(width, expanseCenterInsetForWidth(width)));
+      seg.setAttribute("d", buildRingPathD(expanseCenterInsetForWidth(width)));
       seg.style.filter = `drop-shadow(0 0 ${0.7 + 2.6 * eased}px currentColor)`;
 
       if (t < 1) ringRaf = requestAnimationFrame(tick);
@@ -188,8 +259,11 @@ export function useLaserRing(options: UseLaserRingOptions) {
     return true;
   };
 
-  const startVariantAnimation = () =>
-    usesLaserSegment() ? startLaserAnimation() : startExpanseAnimation();
+  const startVariantAnimation = () => {
+    if (isExpanseMode()) return startExpanseAnimation();
+    if (isScannerMode()) return startScannerAnimation();
+    return startLaserAnimation();
+  };
 
   const pulseRing = () => {
     if (!options.enabled()) return;

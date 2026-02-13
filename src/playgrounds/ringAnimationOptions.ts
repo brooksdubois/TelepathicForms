@@ -8,6 +8,7 @@ const RING_ANIMATION_LABELS: Record<LaserRingVariant, string> = {
   swift: 'Laser (Swift)',
   lingering: 'Laser (Lingering)',
   expanse: 'Expanse',
+  scanner: 'Scanner',
 };
 
 export const ringAnimationOptions: Array<{
