@@ -72,9 +72,6 @@ const defaults = {
   disableSecondOption: false,
   startAdornmentText: '',
   endAdornmentText: '',
-  popoverStyle: 'unfurl' as 'unfurl' | 'classic' | 'parchment',
-  popoverEnterMs: 220,
-  popoverExitMs: 160,
 };
 
 const yesNoOptions: SelectOption[] = [
@@ -182,37 +179,6 @@ const SelectPlayground: Component = () => {
   const [disableSecondOption, setDisableSecondOption] = createSignal(
     defaults.disableSecondOption,
   );
-  // Popover animation config signals
-  const [configPopoverStyle, setConfigPopoverStyle] = createSignal<
-    'unfurl' | 'classic' | 'parchment'
-  >(defaults.popoverStyle);
-  const [configPopoverEnterMs, setConfigPopoverEnterMs] = createSignal(
-    defaults.popoverEnterMs,
-  );
-  const [configPopoverExitMs, setConfigPopoverExitMs] = createSignal(
-    defaults.popoverExitMs,
-  );
-
-  // Helpful defaults when switching styles (won't fight manual knob edits)
-  createEffect(() => {
-    const style = configPopoverStyle();
-
-    if (style === 'parchment') {
-      if (configPopoverEnterMs() === 220) setConfigPopoverEnterMs(520);
-      if (configPopoverExitMs() === 160) setConfigPopoverExitMs(360);
-      return;
-    }
-
-    if (style === 'classic') {
-      if (configPopoverEnterMs() === 520) setConfigPopoverEnterMs(180);
-      if (configPopoverExitMs() === 360) setConfigPopoverExitMs(140);
-      return;
-    }
-
-    // unfurl
-    if (configPopoverEnterMs() === 180) setConfigPopoverEnterMs(220);
-    if (configPopoverExitMs() === 140) setConfigPopoverExitMs(160);
-  });
 
   const startAdornment = createMemo(() => {
     const value = startAdornmentText();
@@ -275,9 +241,6 @@ const SelectPlayground: Component = () => {
             label: option.label,
             disabled: option.disabled ?? false,
           })),
-          popoverStyle: configPopoverStyle(),
-          popoverEnterMs: configPopoverEnterMs(),
-          popoverExitMs: configPopoverExitMs(),
         },
       },
       null,
@@ -304,9 +267,6 @@ const SelectPlayground: Component = () => {
     setStartAdornmentText(defaults.startAdornmentText);
     setEndAdornmentText(defaults.endAdornmentText);
     setDarkMode(defaults.darkMode);
-    setConfigPopoverStyle(defaults.popoverStyle);
-    setConfigPopoverEnterMs(defaults.popoverEnterMs);
-    setConfigPopoverExitMs(defaults.popoverExitMs);
   };
 
   const examples: Array<{
@@ -618,22 +578,6 @@ const SelectPlayground: Component = () => {
                       error={configErrorFlag()}
                       value={previewValue()}
                       onValue={setPreviewValue}
-                      popoverEnterMs={configPopoverEnterMs()}
-                      popoverExitMs={configPopoverExitMs()}
-                      popoverEnterClass={
-                        configPopoverStyle() === 'parchment'
-                          ? 'tf-popover-enter-parchment'
-                          : configPopoverStyle() === 'unfurl'
-                            ? 'tf-popover-enter'
-                            : 'tf-popover-enter-classic'
-                      }
-                      popoverExitClass={
-                        configPopoverStyle() === 'parchment'
-                          ? 'tf-popover-exit-parchment'
-                          : configPopoverStyle() === 'unfurl'
-                            ? 'tf-popover-exit'
-                            : 'tf-popover-exit-classic'
-                      }
                     />
                   </div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
@@ -643,7 +587,7 @@ const SelectPlayground: Component = () => {
                 </div>
 
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <div class="flex max-h-[calc(100vh-280px)] flex-col gap-4 overflow-auto pr-1">
+                  <div class="flex flex-col gap-4">
                     <div class="grid gap-3">
                       <div class={controlLabelClass}>Appearance</div>
                       <label class="flex flex-col gap-2">
@@ -677,83 +621,6 @@ const SelectPlayground: Component = () => {
                           </For>
                         </select>
                       </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Popover animation</div>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Style</span>
-                        <select
-                          class={controlInputClass}
-                          value={configPopoverStyle()}
-                          onInput={(event) =>
-                            setConfigPopoverStyle(
-                              event.currentTarget.value as
-                                | 'unfurl'
-                                | 'classic'
-                                | 'parchment',
-                            )
-                          }
-                        >
-                          <option value="unfurl">Unfurl</option>
-                          <option value="classic">Classic</option>
-                          <option value="parchment">Parchment</option>
-                        </select>
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Enter ms</span>
-                        <input
-                          class={controlInputClass}
-                          type="number"
-                          min="0"
-                          step="10"
-                          value={String(configPopoverEnterMs())}
-                          onInput={(event) =>
-                            setConfigPopoverEnterMs(
-                              Math.max(0, Number(event.currentTarget.value) || 0),
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Exit ms</span>
-                        <input
-                          class={controlInputClass}
-                          type="number"
-                          min="0"
-                          step="10"
-                          value={String(configPopoverExitMs())}
-                          onInput={(event) =>
-                            setConfigPopoverExitMs(
-                              Math.max(0, Number(event.currentTarget.value) || 0),
-                            )
-                          }
-                        />
-                      </label>
-
-                      <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                        <div>
-                          <span class="font-semibold">Unfurl</span> uses{' '}
-                          <code class="rounded bg-slate-900/10 px-1 py-0.5 dark:bg-white/10">
-                            .tf-popover-enter/.tf-popover-exit
-                          </code>
-                        </div>
-                        <div>
-                          <span class="font-semibold">Classic</span> uses{' '}
-                          <code class="rounded bg-slate-900/10 px-1 py-0.5 dark:bg-white/10">
-                            .tf-popover-enter-classic/.tf-popover-exit-classic
-                          </code>
-                        </div>
-                        <div>
-                          <span class="font-semibold">Parchment</span> uses{' '}
-                          <code class="rounded bg-slate-900/10 px-1 py-0.5 dark:bg-white/10">
-                            .tf-popover-enter-parchment/.tf-popover-exit-parchment
-                          </code>
-                        </div>
-                      </div>
                     </div>
 
                     <div class="grid gap-2">
@@ -837,7 +704,6 @@ const SelectPlayground: Component = () => {
                       >
                         Trigger ring
                       </button>
-
                     </div>
 
                     <div class="grid gap-3">
