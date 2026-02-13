@@ -4,7 +4,7 @@ import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type DatePickerChangeSource = 'typing' | 'calendar' | 'clear';
 
@@ -508,7 +508,7 @@ const DatePicker = (props: DatePickerProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => 16,
     variant: () => props.ringVariant,

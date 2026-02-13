@@ -1,8 +1,6 @@
 export type LaserRingVariant =
   | 'default'
   | 'laser'
-  | 'swift'
-  | 'lingering'
   | 'expanse'
   | 'scanner';
 
@@ -43,34 +41,6 @@ const LASER_PRESET: LaserRingVariantPreset = {
 const LASER_RING_VARIANTS: Record<LaserRingVariant, LaserRingVariantPreset> = {
   default: LASER_PRESET,
   laser: LASER_PRESET,
-  swift: {
-    mode: 'laser',
-    strokeWidth: 2.25,
-    expanseStrokeScale: 1,
-    segmentMin: 10,
-    segmentMax: 20,
-    activeMs: 520,
-    pxPerMs: 1.35,
-    minMs: 480,
-    maxMs: 1800,
-    phaseRatio: 0.22,
-    fadeKeyframe: 'tf-focus-laser-ring-fade',
-    fadeEasing: 'cubic-bezier(0.2, 0.7, 0.28, 1)',
-  },
-  lingering: {
-    mode: 'laser',
-    strokeWidth: 2.25,
-    expanseStrokeScale: 1,
-    segmentMin: 14,
-    segmentMax: 30,
-    activeMs: 820,
-    pxPerMs: 0.82,
-    minMs: 760,
-    maxMs: 3200,
-    phaseRatio: 0.3,
-    fadeKeyframe: 'tf-focus-laser-ring-fade',
-    fadeEasing: 'cubic-bezier(0.19, 0.68, 0.28, 1)',
-  },
   expanse: {
     mode: 'expanse',
     strokeWidth: 2.25,
@@ -111,5 +81,5 @@ export function getLaserRingVariantPreset(
 }
 
 export function listLaserRingVariants(): LaserRingVariant[] {
-  return ['laser', 'swift', 'lingering', 'expanse', 'scanner'];
+  return ['laser', 'expanse', 'scanner'];
 }

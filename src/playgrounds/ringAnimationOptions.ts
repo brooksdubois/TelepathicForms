@@ -5,8 +5,6 @@ export type RingAnimationSelection = 'none' | LaserRingVariant;
 const RING_ANIMATION_LABELS: Record<LaserRingVariant, string> = {
   default: 'Laser',
   laser: 'Laser',
-  swift: 'Laser (Swift)',
-  lingering: 'Laser (Lingering)',
   expanse: 'Expanse',
   scanner: 'Scanner',
 };

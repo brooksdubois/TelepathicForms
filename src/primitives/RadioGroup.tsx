@@ -12,7 +12,7 @@ import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type RadioGroupSize = 'sm' | 'md' | 'lg';
 export type RadioGroupVariant = 'outlined' | 'filled' | 'standard';
@@ -215,7 +215,7 @@ const RadioGroup = (props: RadioGroupProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => 8,
     variant: () => local.ringVariant,

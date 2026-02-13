@@ -9,7 +9,7 @@ import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type CheckboxSize = 'sm' | 'md' | 'lg';
 export type CheckboxVariant = 'outlined' | 'filled' | 'standard';
@@ -184,7 +184,7 @@ const Checkbox = (props: CheckboxProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => 8,
     variant: () => local.ringVariant,

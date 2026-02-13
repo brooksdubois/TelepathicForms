@@ -14,7 +14,7 @@ import { Transition } from 'solid-transition-group';
 
 import { cx } from '../utils/cx';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 export type SelectVariant = 'outlined' | 'filled' | 'standard';
@@ -230,7 +230,7 @@ const Select = (props: SelectProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
     variant: () => local.ringVariant,

@@ -9,7 +9,7 @@ import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
 export type TextFieldVariant = 'outlined' | 'filled' | 'standard';
@@ -224,7 +224,7 @@ const TextField = (props: TextFieldProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
     variant: () => local.ringVariant,

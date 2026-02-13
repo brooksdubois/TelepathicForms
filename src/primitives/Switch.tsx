@@ -9,7 +9,7 @@ import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
 import type { LaserRingVariant } from '../utils/laserRingVariants';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type SwitchSize = 'sm' | 'md' | 'lg';
 export type SwitchVariant = 'outlined' | 'filled' | 'standard';
@@ -192,7 +192,7 @@ const Switch = (props: SwitchProps) => {
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => 8,
     variant: () => local.ringVariant,
