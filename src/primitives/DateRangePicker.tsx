@@ -3,7 +3,7 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
-import { useLaserRing } from '../utils/useLaserRing';
+import { useLaserAnimation as useLaserRing } from '../utils/useLaserAnimation';
 
 /* ── Types ── */
 export type DateRangeValue = { start: string; end: string } | null;
