@@ -2,6 +2,7 @@ import { For, createSignal, onCleanup } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import { cx } from '../utils/cx';
+import { navigateTo, path } from '../router';
 
 const labs = [
   { href: '/form-demo', label: 'Form Demo' },
@@ -17,18 +18,21 @@ const labs = [
   { href: '/date-range', label: 'Date Range Lab' },
 ];
 
-const normalizePath = (path: string) => path.replace(/\/+$/, '') || '/';
+const normalizePath = (p: string) => p.replace(/\/+$/, '') || '/';
+
+const DRAG_THRESHOLD = 5;
 
 const navItemClass =
   'rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-slate-700 transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600 hover:scale-105 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200';
 
-const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props) => {
-  const activePath = () => normalizePath(props.currentPath);
+const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (props) => {
+  const activePath = () => normalizePath(props.currentPath ?? path());
   const [currentIndex, setCurrentIndex] = createSignal(0);
   const [isDragging, setIsDragging] = createSignal(false);
   const [startX, setStartX] = createSignal(0);
   const [dragOffset, setDragOffset] = createSignal(0);
   const [startIndex, setStartIndex] = createSignal(0);
+  const [didDrag, setDidDrag] = createSignal(false);
   
   const itemsPerPage = 7;
   const maxIndex = labs.length - itemsPerPage;
@@ -43,51 +47,44 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
   };
 
   const handleDragStart = (e: MouseEvent | TouchEvent) => {
-    e.preventDefault();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     setStartX(clientX);
     setStartIndex(currentIndex());
-    setIsDragging(true);
+    setIsDragging(false);
+    setDidDrag(false);
     setDragOffset(0);
+    setupDragListeners();
   };
 
   const handleDragMove = (e: MouseEvent | TouchEvent) => {
-    if (!isDragging()) return;
-    e.preventDefault();
-    
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const diff = clientX - startX();
     
-    // Calculate drag offset in pixels
-    setDragOffset(diff);
+    if (!isDragging() && Math.abs(diff) > DRAG_THRESHOLD) {
+      setIsDragging(true);
+      setDidDrag(true);
+    }
+    
+    if (isDragging()) {
+      e.preventDefault();
+      setDragOffset(diff);
+    }
   };
 
-  const handleDragEnd = (e: MouseEvent | TouchEvent) => {
-    if (!isDragging()) return;
-    e.preventDefault();
+  const handleDragEnd = () => {
+    if (isDragging()) {
+      const itemWidth = containerRef ? containerRef.clientWidth / itemsPerPage : 0;
+      const dragDistance = dragOffset();
+      const itemsMoved = Math.round(dragDistance / itemWidth);
+      const newIndex = Math.max(0, Math.min(startIndex() - itemsMoved, maxIndex));
+      setCurrentIndex(newIndex);
+    }
     
-    const itemWidth = containerRef ? containerRef.clientWidth / itemsPerPage : 0;
-    const dragDistance = dragOffset();
-    
-    // Calculate how many items to move based on drag distance
-    const itemsMoved = Math.round(dragDistance / itemWidth);
-    const newIndex = Math.max(0, Math.min(startIndex() - itemsMoved, maxIndex));
-    
-    setCurrentIndex(newIndex);
     setIsDragging(false);
     setDragOffset(0);
+    removeDragListeners();
   };
 
-  // Add global event listeners for drag
-  onCleanup(() => {
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
-    document.removeEventListener('touchmove', handleDragMove);
-    document.removeEventListener('touchend', handleDragEnd);
-    document.removeEventListener('touchcancel', handleDragEnd);
-  });
-
-  // Setup drag event listeners
   const setupDragListeners = () => {
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
@@ -96,7 +93,18 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
     document.addEventListener('touchcancel', handleDragEnd);
   };
 
-  // Calculate transform with smooth dragging
+  const removeDragListeners = () => {
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    document.removeEventListener('touchmove', handleDragMove);
+    document.removeEventListener('touchend', handleDragEnd);
+    document.removeEventListener('touchcancel', handleDragEnd);
+  };
+
+  onCleanup(() => {
+    removeDragListeners();
+  });
+
   const getTransformValue = () => {
     if (!containerRef) return `translateX(-${currentIndex() * (100 / itemsPerPage)}%)`;
     
@@ -104,12 +112,19 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
     const baseTransform = -currentIndex() * itemWidth;
     
     if (isDragging()) {
-      // During drag, show smooth movement based on drag offset
       return `translateX(${baseTransform + dragOffset()}px)`;
     } else {
-      // After drag, snap to the correct position with CSS transition
       return `translateX(-${currentIndex() * (100 / itemsPerPage)}%)`;
     }
+  };
+
+  const handleNavClick = (e: MouseEvent, href: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!didDrag()) {
+      navigateTo(href);
+    }
+    setDidDrag(false);
   };
 
   return (
@@ -141,11 +156,10 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
         class="overflow-hidden flex-1 select-none"
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        onMouseEnter={() => setupDragListeners()}
         style={{ 
-          cursor: isDragging() ? 'grabbing' : 'grab',
-          WebkitUserSelect: 'none',
-          userSelect: 'none'
+          cursor: isDragging() ? 'grabbing' : 'pointer',
+          "-webkit-user-select": 'none',
+          "user-select": 'none'
         }}
       >
         <div
@@ -155,18 +169,17 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
           }}
           style={{ 
             transform: getTransformValue(),
-            WebkitTransform: getTransformValue(),
-            pointerEvents: isDragging() ? 'none' : 'auto',
-            willChange: 'transform',
+            "-webkit-transform": getTransformValue(),
+            "will-change": 'transform',
           }}
         >
           <For each={labs}>
-            {(item, index) => (
+            {(item) => (
               <div 
                 class="flex-shrink-0" 
                 style={{ 
                   width: `calc(${100 / itemsPerPage}% - 4px)`,
-                  WebkitFlexShrink: 0
+                  "-webkit-flex-shrink": 0
                 }}
               >
                 {normalizePath(item.href) === activePath() ? (
@@ -184,7 +197,8 @@ const PlaygroundNav: Component<{ currentPath: string; class?: string }> = (props
                 ) : (
                   <a
                     href={item.href}
-                    class={cx(navItemClass, 'block w-full text-center truncate')}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    class={cx(navItemClass, 'block w-full text-center truncate cursor-pointer')}
                     title={item.label}
                     draggable={false}
                   >
