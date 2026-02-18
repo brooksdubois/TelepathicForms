@@ -9,6 +9,7 @@ import TextAreaPlayground from "./playgrounds/TextAreaPlayground";
 import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
 import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
 import SliderPlayground from "./playgrounds/SliderPlayground";
+import DateRangePickerPlayground from "./playgrounds/DateRangePickerPlayground";
 
 const normalizePath = (path: string) => {
   if (!path) return "/";
@@ -27,6 +28,7 @@ const routes: Record<string, Component> = {
   "/textarea": TextAreaPlayground,
   "/date": DatePickerPlayground,
   "/slider": SliderPlayground,
+  "/date-range": DateRangePickerPlayground,
 };
 
 const App: Component = () => {
@@ -60,7 +62,8 @@ const App: Component = () => {
         <a href="/checkbox">/checkbox</a>,{" "}
         <a href="/radio-group">/radio-group</a>, <a href="/switch">/switch</a>,{" "}
         <a href="/textarea">/textarea</a>, <a href="/date">/date</a>,{" "}
-        <a href="/slider">/slider</a>.
+        <a href="/slider">/slider</a>,{" "}
+        <a href="/date-range">/date-range</a>.
       </p>
     </div>
   );

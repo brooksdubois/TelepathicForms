@@ -4,7 +4,9 @@ export type Validator<T> = (value: T) => string[];
 export type Formatter = (raw: string) => string;
 export type Normalizer = (raw: string) => string;
 
+
 export enum FieldKind {
+    dateRange = "dateRange",
   date = "date",
   textArea = "textArea",
   phone = "phone",
