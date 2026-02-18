@@ -7,6 +7,12 @@ import TextField, {
   type TextFieldVariant,
 } from '../components/TextField';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 const variants: TextFieldVariant[] = ['outlined', 'filled', 'standard'];
@@ -19,7 +25,7 @@ const defaults = {
   readOnly: false,
   required: false,
   fullWidth: false,
-  ringEnabled: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   label: 'Email address',
   helperText: 'We will only use this for account updates.',
   errorText: 'Enter a valid email address.',
@@ -74,7 +80,9 @@ const TextFieldPlayground: Component = () => {
   const [configReadOnly, setConfigReadOnly] = createSignal(defaults.readOnly);
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configFullWidth, setConfigFullWidth] = createSignal(defaults.fullWidth);
-  const [configRingEnabled, setConfigRingEnabled] = createSignal(defaults.ringEnabled);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [ringApi, setRingApi] = createSignal<{
     pulse: () => void;
     focus: () => void;
@@ -123,7 +131,8 @@ const TextFieldPlayground: Component = () => {
           disabled: configDisabled(),
           readOnly: configReadOnly(),
           fullWidth: configFullWidth(),
-          ringEnabled: configRingEnabled(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           size: configSize(),
           variant: configVariant(),
           error: configErrorFlag(),
@@ -144,7 +153,7 @@ const TextFieldPlayground: Component = () => {
     setConfigReadOnly(defaults.readOnly);
     setConfigRequired(defaults.required);
     setConfigFullWidth(defaults.fullWidth);
-    setConfigRingEnabled(defaults.ringEnabled);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigLabel(defaults.label);
     setConfigHelperText(defaults.helperText);
     setConfigErrorText(defaults.errorText);
@@ -414,7 +423,8 @@ const TextFieldPlayground: Component = () => {
                       disabled={configDisabled()}
                       readOnly={configReadOnly()}
                       fullWidth={configFullWidth()}
-                      ringEnabled={configRingEnabled()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       onRingApi={setRingApi}
                       size={configSize()}
                       variant={configVariant()}
@@ -547,14 +557,21 @@ const TextFieldPlayground: Component = () => {
                           }
                         />
                       </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
-                          onInput={(event) => setConfigRingEnabled(event.currentTarget.checked)}
-                        />
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
+                          onInput={(event) =>
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
+                          }
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
                       </label>
                       <button
                         type="button"
@@ -564,7 +581,7 @@ const TextFieldPlayground: Component = () => {
                           'disabled:cursor-not-allowed disabled:opacity-50',
                           'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
                         )}
-                        disabled={!configRingEnabled() || !ringApi()}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
                         onClick={() => ringApi()?.pulseAndFocus()}
                       >
                         Trigger ring

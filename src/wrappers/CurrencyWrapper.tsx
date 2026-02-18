@@ -46,6 +46,7 @@ export const CurrencyWrapper: Component<CurrencyWrapperProps> = (p) => {
       endAdornment={p.spec.endAdornment}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onKeyDown={(e) => blockNonDecimalInput(e as KeyboardEvent, raw())}

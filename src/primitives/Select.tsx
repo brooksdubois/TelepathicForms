@@ -13,7 +13,8 @@ import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 
 import { cx } from '../utils/cx';
-import { useLaserRing } from '../utils/useLaserRing';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type SelectSize = 'sm' | 'md' | 'lg';
 export type SelectVariant = 'outlined' | 'filled' | 'standard';
@@ -62,6 +63,7 @@ export type SelectProps = NativeControlProps & {
   endAdornment?: JSX.Element;
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   onRingApi?: (api: {
     pulse: () => void;
     focus: () => void;
@@ -182,6 +184,7 @@ const Select = (props: SelectProps) => {
     'onFocus',
     'ringEnabled',
     'animateRingOnFocus',
+    'ringVariant',
     'onRingApi',
   ]);
 
@@ -222,13 +225,15 @@ const Select = (props: SelectProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
+    variant: () => local.ringVariant,
   });
 
   createEffect(() => {
@@ -676,7 +681,7 @@ const Select = (props: SelectProps) => {
                   ? 'text-rose-500 dark:text-rose-400'
                   : 'text-emerald-500 dark:text-emerald-400',
               )}
-              style={ringActive() ? {animation: 'tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'} : undefined}
+              style={ringActive() ? {animation: ringFadeAnimation()} : undefined}
             >
               <svg
                 class="tf-focus-laser-ring-svg"

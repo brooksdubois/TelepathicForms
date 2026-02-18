@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "./styles/ring/laser.css";
+@import "./styles/ring/expanse.css";
+@import "./styles/ring/scanner.css";
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -57,21 +60,6 @@ h3,
     animation: float 8s ease-in-out infinite;
 }
 
-@keyframes tf-focus-laser-ring-fade {
-    0% {
-        opacity: 0;
-    }
-    14% {
-        opacity: 1;
-    }
-    72% {
-        opacity: 0.92;
-    }
-    100% {
-        opacity: 0;
-    }
-}
-
 @keyframes tf-popover-enter {
     0% {
         opacity: 0;
@@ -99,6 +87,7 @@ h3,
     inset: -5px;
     pointer-events: none;
     opacity: 0;
+    transform-origin: center;
 }
 
 .tf-focus-laser-ring-svg {
@@ -121,10 +110,6 @@ h3,
     shape-rendering: geometricPrecision;
     stroke-linejoin: round;
     will-change: stroke-dashoffset;
-}
-
-.tf-input-container:focus-within .tf-focus-laser-ring {
-    animation: tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 .tf-popover-enter {

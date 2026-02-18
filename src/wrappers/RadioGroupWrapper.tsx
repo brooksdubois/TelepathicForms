@@ -46,6 +46,7 @@ export const RadioGroupWrapper: Component<RadioGroupWrapperProps> = (p) => {
       variant={p.spec.variant}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onValue={(next) => {

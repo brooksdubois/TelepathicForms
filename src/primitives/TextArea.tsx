@@ -10,7 +10,8 @@ import {
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
-import { useLaserRing } from '../utils/useLaserRing';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type TextAreaSize = 'sm' | 'md' | 'lg';
 export type TextAreaVariant = 'outlined' | 'filled' | 'standard';
@@ -50,6 +51,7 @@ export type TextAreaProps = NativeTextareaProps & {
 
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   onRingApi?: (api: {
     pulse: () => void;
     focus: () => void;
@@ -175,6 +177,7 @@ const TextArea = (props: TextAreaProps) => {
     'onFocus',
     'ringEnabled',
     'animateRingOnFocus',
+    'ringVariant',
     'onRingApi',
   ]);
 
@@ -187,13 +190,15 @@ const TextArea = (props: TextAreaProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
+    variant: () => local.ringVariant,
   });
 
   const required = () => Boolean(local.required);
@@ -401,6 +406,7 @@ const TextArea = (props: TextAreaProps) => {
                 ? 'text-rose-500 dark:text-rose-400'
                 : 'text-emerald-500 dark:text-emerald-400',
             )}
+            style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
           >
             <svg
               class="tf-focus-laser-ring-svg"

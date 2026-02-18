@@ -7,6 +7,12 @@ import Switch, {
   type SwitchVariant,
 } from '../components/Switch';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 const variants: SwitchVariant[] = ['outlined', 'filled', 'standard'];
@@ -19,7 +25,7 @@ const defaults = {
   required: false,
   error: false,
   fullWidth: false,
-  ringEnabled: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   inline: false,
   variant: 'outlined' as SwitchVariant,
   size: 'md' as SwitchSize,
@@ -59,7 +65,9 @@ const SwitchPlayground: Component = () => {
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configError, setConfigError] = createSignal(defaults.error);
   const [configFullWidth, setConfigFullWidth] = createSignal(defaults.fullWidth);
-  const [configRingEnabled, setConfigRingEnabled] = createSignal(defaults.ringEnabled);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [configInline, setConfigInline] = createSignal(defaults.inline);
   const [configVariant, setConfigVariant] = createSignal(defaults.variant);
   const [configSize, setConfigSize] = createSignal(defaults.size);
@@ -94,7 +102,8 @@ const SwitchPlayground: Component = () => {
           disabled: configDisabled(),
           readOnly: configReadOnly(),
           fullWidth: configFullWidth(),
-          ringEnabled: configRingEnabled(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           inline: configInline(),
           error: configError(),
           size: configSize(),
@@ -114,7 +123,7 @@ const SwitchPlayground: Component = () => {
     setConfigRequired(defaults.required);
     setConfigError(defaults.error);
     setConfigFullWidth(defaults.fullWidth);
-    setConfigRingEnabled(defaults.ringEnabled);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigInline(defaults.inline);
     setConfigVariant(defaults.variant);
     setConfigSize(defaults.size);
@@ -269,7 +278,8 @@ const SwitchPlayground: Component = () => {
                       disabled={configDisabled()}
                       readOnly={configReadOnly()}
                       fullWidth={configFullWidth()}
-                      ringEnabled={configRingEnabled()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       onRingApi={setRingApi}
                       inline={configInline()}
                       size={configSize()}
@@ -372,16 +382,21 @@ const SwitchPlayground: Component = () => {
                           onInput={(event) => setConfigError(event.currentTarget.checked)}
                         />
                       </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
                           onInput={(event) =>
-                            setConfigRingEnabled(event.currentTarget.checked)
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
                           }
-                        />
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
                       </label>
                       <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
                         <span>Inline</span>
@@ -411,7 +426,7 @@ const SwitchPlayground: Component = () => {
                           'disabled:cursor-not-allowed disabled:opacity-50',
                           'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
                         )}
-                        disabled={!configRingEnabled() || !ringApi()}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
                         onClick={() => ringApi()?.pulseAndFocus()}
                       >
                         Trigger ring

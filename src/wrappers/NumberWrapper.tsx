@@ -44,6 +44,7 @@ export const NumberWrapper: Component<NumberWrapperProps> = (p) => {
       endAdornment={p.spec.endAdornment}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       error={!!errorText()}
       errorText={errorText()}
       onKeyDown={(e) => blockNonDigitsAndMaxLen(e as KeyboardEvent, value(), maxDigits)}

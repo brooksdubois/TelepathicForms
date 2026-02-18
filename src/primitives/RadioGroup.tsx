@@ -11,7 +11,8 @@ import {
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
-import { useLaserRing } from '../utils/useLaserRing';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type RadioGroupSize = 'sm' | 'md' | 'lg';
 export type RadioGroupVariant = 'outlined' | 'filled' | 'standard';
@@ -44,6 +45,7 @@ export type RadioGroupProps = {
   options: RadioOption[];
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
   onRingApi?: (api: {
     pulse: () => void;
     focus: () => void;
@@ -142,6 +144,7 @@ const RadioGroup = (props: RadioGroupProps) => {
     'options',
     'ringEnabled',
     'animateRingOnFocus',
+    'ringVariant',
     'onRingApi',
     'onValue',
     'renderLabel',
@@ -207,13 +210,15 @@ const RadioGroup = (props: RadioGroupProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({
+  } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => 8,
+    variant: () => local.ringVariant,
   });
 
   const errorActive = () => Boolean(local.error);
@@ -451,7 +456,7 @@ const RadioGroup = (props: RadioGroupProps) => {
                       ? 'text-rose-500 dark:text-rose-400'
                       : 'text-emerald-500 dark:text-emerald-400',
                   )}
-                  style={ringActive() ? {animation: 'tf-focus-laser-ring-fade 680ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'} : undefined}
+                  style={ringActive() ? {animation: ringFadeAnimation()} : undefined}
                 >
                   <svg
                     class="block h-full w-full"

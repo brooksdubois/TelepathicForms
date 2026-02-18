@@ -4,6 +4,12 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import DatePicker, { type DatePickerProps } from '../primitives/DatePicker';
 import PlaygroundNav from '../playgrounds/PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 type DateFormat = 'MM-DD-YYYY' | 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'DD.MM.YYYY';
@@ -42,6 +48,7 @@ const defaults = {
   required: false,
   error: false,
   fullWidth: false,
+  ringAnimation: 'laser' as RingAnimationSelection,
   clearable: true,
   openOnFocus: true,
   closeOnSelect: true,
@@ -230,6 +237,14 @@ const DatePickerPlayground: Component = () => {
   const [configClearable, setConfigClearable] = createSignal(defaults.clearable);
   const [configOpenOnFocus, setConfigOpenOnFocus] = createSignal(defaults.openOnFocus);
   const [configCloseOnSelect, setConfigCloseOnSelect] = createSignal(defaults.closeOnSelect);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
+  const [ringApi, setRingApi] = createSignal<{
+    pulse: () => void;
+    focus: () => void;
+    pulseAndFocus: () => void;
+  }>();
 
   const [configMinDate, setConfigMinDate] = createSignal<string | undefined>(defaults.minDate);
   const [configMaxDate, setConfigMaxDate] = createSignal<string | undefined>(defaults.maxDate);
@@ -314,6 +329,8 @@ const DatePickerPlayground: Component = () => {
           required: configRequired(),
           error: configError(),
           fullWidth: configFullWidth(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           clearable: configClearable(),
           openOnFocus: configOpenOnFocus(),
           closeOnSelect: configCloseOnSelect(),
@@ -376,6 +393,7 @@ const DatePickerPlayground: Component = () => {
     setConfigClearable(defaults.clearable);
     setConfigOpenOnFocus(defaults.openOnFocus);
     setConfigCloseOnSelect(defaults.closeOnSelect);
+    setConfigRingAnimation(defaults.ringAnimation);
 
     setConfigMinDate(defaults.minDate);
     setConfigMaxDate(defaults.maxDate);
@@ -565,6 +583,8 @@ const DatePickerPlayground: Component = () => {
                       required={configRequired()}
                       error={configError()}
                       clearable={configClearable()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       placeholder={resolvedPlaceholder()}
                       minDate={configMinDate()}
                       maxDate={configMaxDate()}
@@ -578,6 +598,7 @@ const DatePickerPlayground: Component = () => {
                       parse={parseForPicker}
                       inputMask={configInputFormat()}
                       onOpenChange={setLastOpenState}
+                      onRingApi={setRingApi}
                     />
                   </div>
 
@@ -770,6 +791,35 @@ const DatePickerPlayground: Component = () => {
                           onInput={(event) => setConfigClearable(event.currentTarget.checked)}
                         />
                       </label>
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
+                          onInput={(event) =>
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
+                          }
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        class={cx(
+                          'mt-1 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
+                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
+                          'disabled:cursor-not-allowed disabled:opacity-50',
+                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
+                        )}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
+                        onClick={() => ringApi()?.pulseAndFocus()}
+                      >
+                        Trigger ring
+                      </button>
                     </div>
 
                     <div class="grid gap-3">

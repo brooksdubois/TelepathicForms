@@ -9,6 +9,12 @@ import Select, {
   type SelectVariant,
 } from '../components/Select';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
 import { cx } from '../utils/cx';
 
 const variants: SelectVariant[] = ['outlined', 'filled', 'standard'];
@@ -60,7 +66,7 @@ const defaults = {
   readOnly: false,
   required: false,
   fullWidth: false,
-  ringEnabled: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   label: 'State',
   helperText: 'Pick the state used for billing.',
   errorText: 'Please choose a state.',
@@ -154,7 +160,9 @@ const SelectPlayground: Component = () => {
   const [configReadOnly, setConfigReadOnly] = createSignal(defaults.readOnly);
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configFullWidth, setConfigFullWidth] = createSignal(defaults.fullWidth);
-  const [configRingEnabled, setConfigRingEnabled] = createSignal(defaults.ringEnabled);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [ringApi, setRingApi] = createSignal<{
     pulse: () => void;
     focus: () => void;
@@ -231,7 +239,8 @@ const SelectPlayground: Component = () => {
           disabled: configDisabled(),
           readOnly: configReadOnly(),
           fullWidth: configFullWidth(),
-          ringEnabled: configRingEnabled(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           size: configSize(),
           variant: configVariant(),
           error: configErrorFlag(),
@@ -256,7 +265,7 @@ const SelectPlayground: Component = () => {
     setConfigReadOnly(defaults.readOnly);
     setConfigRequired(defaults.required);
     setConfigFullWidth(defaults.fullWidth);
-    setConfigRingEnabled(defaults.ringEnabled);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigLabel(defaults.label);
     setConfigHelperText(defaults.helperText);
     setConfigErrorText(defaults.errorText);
@@ -567,7 +576,8 @@ const SelectPlayground: Component = () => {
                       disabled={configDisabled()}
                       readOnly={configReadOnly()}
                       fullWidth={configFullWidth()}
-                      ringEnabled={configRingEnabled()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       onRingApi={setRingApi}
                       size={configSize()}
                       variant={configVariant()}
@@ -680,16 +690,21 @@ const SelectPlayground: Component = () => {
                           }
                         />
                       </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
+                      <label class="flex flex-col gap-2">
+                        <span class={controlLabelClass}>Ring animation</span>
+                        <select
+                          class={controlInputClass}
+                          value={configRingAnimation()}
                           onInput={(event) =>
-                            setConfigRingEnabled(event.currentTarget.checked)
+                            setConfigRingAnimation(
+                              event.currentTarget.value as RingAnimationSelection,
+                            )
                           }
-                        />
+                        >
+                          <For each={ringAnimationOptions}>
+                            {(item) => <option value={item.value}>{item.label}</option>}
+                          </For>
+                        </select>
                       </label>
                       <button
                         type="button"
@@ -699,7 +714,7 @@ const SelectPlayground: Component = () => {
                           'disabled:cursor-not-allowed disabled:opacity-50',
                           'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
                         )}
-                        disabled={!configRingEnabled() || !ringApi()}
+                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
                         onClick={() => ringApi()?.pulseAndFocus()}
                       >
                         Trigger ring

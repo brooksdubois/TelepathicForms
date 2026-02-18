@@ -1,29 +1,29 @@
-import {createEffect, createSignal, onCleanup, type Accessor} from "solid-js";
+import {createEffect, createSignal, onCleanup, type Accessor} from 'solid-js';
+import {
+  buildRoundedRingPathD,
+  expanseCenterInsetForWidth,
+  type RingBox,
+} from './ringGeometry';
 
-type UseLaserRingOptions = {
+type UseExpanseAnimationOptions = {
   enabled: Accessor<boolean>;
   radius: Accessor<number>;
-  strokeWidth?: number;
-  segmentMin?: number;
-  segmentMax?: number;
-  activeMs?: number;
-  pxPerMs?: number;
-  minMs?: number;
-  maxMs?: number;
-  phaseRatio?: number;
+  strokeWidth?: Accessor<number>;
+  expanseStrokeScale?: Accessor<number>;
+  activeMs?: Accessor<number>;
+  fadeKeyframe?: Accessor<string>;
+  fadeEasing?: Accessor<string>;
 };
 
-type RingBox = {w: number; h: number};
-
-export function useLaserRing(options: UseLaserRingOptions) {
-  const strokeWidth = () => options.strokeWidth ?? 2.25;
-  const segmentMin = () => options.segmentMin ?? 12;
-  const segmentMax = () => options.segmentMax ?? 24;
-  const activeMs = () => options.activeMs ?? 660;
-  const pxPerMs = () => options.pxPerMs ?? 1;
-  const minMs = () => options.minMs ?? 650;
-  const maxMs = () => options.maxMs ?? 2600;
-  const phaseRatio = () => options.phaseRatio ?? 0.25;
+export function useExpanseAnimation(options: UseExpanseAnimationOptions) {
+  const strokeWidth = () => options.strokeWidth?.() ?? 2.25;
+  const expanseStrokeScale = () => options.expanseStrokeScale?.() ?? 2.85;
+  const activeMs = () => options.activeMs?.() ?? 360;
+  const fadeKeyframe = () => options.fadeKeyframe?.() ?? 'tf-focus-expanse-ring-fade';
+  const fadeEasing = () =>
+    options.fadeEasing?.() ?? 'cubic-bezier(0.16, 0.9, 0.27, 1)';
+  const ringFadeAnimation = () =>
+    `${fadeKeyframe()} ${activeMs()}ms ${fadeEasing()} forwards`;
 
   const [hostEl, setHostEl] = createSignal<HTMLElement | undefined>(undefined);
   let measureEl: SVGPathElement | undefined;
@@ -45,8 +45,11 @@ export function useLaserRing(options: UseLaserRingOptions) {
       ringTimer = undefined;
     }
     if (laserSegEl) {
-      laserSegEl.style.strokeDasharray = "";
-      laserSegEl.style.strokeDashoffset = "";
+      laserSegEl.style.strokeDasharray = '';
+      laserSegEl.style.strokeDashoffset = '';
+      laserSegEl.style.strokeWidth = '';
+      laserSegEl.style.filter = '';
+      laserSegEl.style.strokeLinecap = '';
     }
   };
 
@@ -74,52 +77,54 @@ export function useLaserRing(options: UseLaserRingOptions) {
     stopAnimation();
   });
 
-  const ringPathD = () => {
-    const {w, h} = ringBox();
-    const stroke = strokeWidth();
-    const x = stroke / 2;
-    const y = stroke / 2;
-    const ww = Math.max(1, w - stroke);
-    const hh = Math.max(1, h - stroke);
-    const desired = options.radius();
-    const r = Math.max(0, Math.min(desired, Math.min(ww, hh) / 2));
+  const ringPathD = () =>
+    buildRoundedRingPathD(
+      ringBox(),
+      expanseCenterInsetForWidth(strokeWidth()),
+      options.radius(),
+    );
 
-    return [
-      `M ${x + r} ${y}`,
-      `H ${x + ww - r}`,
-      `A ${r} ${r} 0 0 1 ${x + ww} ${y + r}`,
-      `V ${y + hh - r}`,
-      `A ${r} ${r} 0 0 1 ${x + ww - r} ${y + hh}`,
-      `H ${x + r}`,
-      `A ${r} ${r} 0 0 1 ${x} ${y + hh - r}`,
-      `V ${y + r}`,
-      `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
-      "Z",
-    ].join(" ");
-  };
-
-  const startLaserAnimation = () => {
+  const startExpanseAnimation = () => {
     const path = measureEl;
     const seg = laserSegEl;
     if (!path || !seg) return false;
 
     stopAnimation();
 
-    const len = Math.max(1, path.getTotalLength());
-    const phase = len * phaseRatio();
-    const segLen = Math.max(segmentMin(), Math.min(segmentMax(), ringBox().h * 0.55));
-    const durationMs = Math.max(minMs(), Math.min(maxMs(), len / pxPerMs()));
+    const durationMs = Math.max(1, activeMs());
+    const startWidth = strokeWidth();
+    const endWidth = startWidth * expanseStrokeScale();
     const start = performance.now();
-    const dashGap = Math.max(1, len - segLen);
 
-    seg.setAttribute("d", ringPathD());
-    seg.style.strokeDasharray = `${segLen} ${dashGap}`;
-    seg.style.strokeDashoffset = `${-phase}`;
+    seg.style.strokeDasharray = '';
+    seg.style.strokeDashoffset = '';
+    seg.style.strokeWidth = `${startWidth}`;
+    seg.style.filter = 'drop-shadow(0 0 0.7px currentColor)';
+    seg.style.strokeLinecap = '';
+    seg.setAttribute(
+      'd',
+      buildRoundedRingPathD(
+        ringBox(),
+        expanseCenterInsetForWidth(startWidth),
+        options.radius(),
+      ),
+    );
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const travel = len * t;
-      seg.style.strokeDashoffset = `${-(phase + travel)}`;
+      const widthProgress = Math.min(1, t * 1.28);
+      const eased = 1 - Math.pow(1 - widthProgress, 4);
+      const width = startWidth + (endWidth - startWidth) * eased;
+      seg.style.strokeWidth = `${width}`;
+      seg.setAttribute(
+        'd',
+        buildRoundedRingPathD(
+          ringBox(),
+          expanseCenterInsetForWidth(width),
+          options.radius(),
+        ),
+      );
+      seg.style.filter = `drop-shadow(0 0 ${0.7 + 2.6 * eased}px currentColor)`;
 
       if (t < 1) ringRaf = requestAnimationFrame(tick);
     };
@@ -141,7 +146,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
       requestAnimationFrame(() => {
         let attempts = 0;
         const tryStart = () => {
-          if (startLaserAnimation()) return;
+          if (startExpanseAnimation()) return;
           attempts += 1;
           if (attempts < 3) requestAnimationFrame(tryStart);
         };
@@ -163,6 +168,7 @@ export function useLaserRing(options: UseLaserRingOptions) {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl: setHostEl,
     setRingMeasureEl: (el: SVGPathElement | undefined) => {
