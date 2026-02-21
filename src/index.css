@@ -119,3 +119,12 @@ h3,
 .tf-popover-exit {
     animation: tf-popover-exit 140ms ease-in both;
 }
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
