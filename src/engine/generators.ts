@@ -25,6 +25,39 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
   const initial = spec.initialValue ?? "";
 
   switch (spec.kind) {
+    case FieldKind.dateRange: {
+  const validate =
+    spec.validate ??
+    (spec.required
+      ? (v: string) => {
+          // Validate that a proper date range object is provided
+          try {
+            const parsed = JSON.parse(v);
+            if (!parsed.start || !parsed.end) {
+              return ["Date range is required."];
+            }
+            // Optional: Add more specific date validation
+            const startDate = new Date(parsed.start);
+            const endDate = new Date(parsed.end);
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              return ["Invalid date format."];
+            }
+            if (startDate > endDate) {
+              return ["Start date must be before end date."];
+            }
+            return [];
+          } catch {
+            return ["Invalid date range format."];
+          }
+        }
+      : () => []);
+
+  return new FieldRuntimeNode<string>({
+    id: spec.id,
+    initialValue: initial || JSON.stringify({ start: '', end: '' }),
+    validate,
+  });
+}
     case FieldKind.date: {
       const validate =
         spec.validate ??

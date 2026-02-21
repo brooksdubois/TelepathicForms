@@ -10,8 +10,7 @@ import {
 import type { JSX } from 'solid-js';
 
 import { cx } from '../utils/cx';
-import { useLaserRing } from '../utils/useLaserRing';
-
+import { useLaserAnimation as useLaserRing } from '../utils/useLaserAnimation';
 export type SliderSize = 'sm' | 'md' | 'lg';
 export type SliderVariant = 'outlined' | 'filled' | 'standard';
 export type SliderMode = 'single' | 'range' | 'stepper';

@@ -1,6 +1,6 @@
 export {TextFieldWrapper} from "./TextFieldWrapper";
 export type {TextFieldWrapperProps} from "./TextFieldWrapper";
-
+export * from './DateRangePickerWrapper';
 export {TextAreaWrapper} from "./TextAreaWrapper";
 export type {TextAreaWrapperProps} from "./TextAreaWrapper";
 

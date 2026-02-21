@@ -45,7 +45,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: WhenOperators.isEmpty,
             operations: [
-              {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: true},
+              {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: true},
               // keep these disabled/cleared as a safety baseline
               {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
               {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
@@ -62,7 +62,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "phone"},
             operations: [
-              {fieldIds: ["phone", "hasExtension", "preferredTime", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["phone", "hasExtension", "preferredTime", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["email", "zip"], operator: TriggerOperators.setHidden, value: true},
               // ext is controlled by its own triggers; default hidden until its triggers show it
               {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
@@ -75,7 +75,7 @@ export const TelepathicFormDemo: Component = () => {
           {
             when: {operator: WhenOperators.equals, value: "email"},
             operations: [
-              {fieldIds: ["email", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
+              {fieldIds: ["email", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["phone", "hasExtension", "ext", "zip", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
@@ -87,6 +87,8 @@ export const TelepathicFormDemo: Component = () => {
               {fieldIds: ["zip", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
               {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
               {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: false},
+              // Hide travelDates when mail is selected
+              {fieldIds: ["travelDates"], operator: TriggerOperators.setHidden, value: true},
             ],
           },
 
@@ -294,6 +296,48 @@ export const TelepathicFormDemo: Component = () => {
         variant: "outlined",
         ringEnabled: true,
         animateRingOnFocus: true,
+      },
+      // New DateRange field
+      {
+        id: "travelDates",
+        kind: FieldKind.dateRange,
+        row: 4,
+        label: "Travel Dates",
+        placeholder: "Select travel dates",
+        helperText: "Choose your start and end dates",
+        required: false,
+        clearable: true,
+        disablePast: true,
+        size: "md",
+        variant: "outlined",
+        ringEnabled: true,
+        animateRingOnFocus: true,
+        validate: (v) => {
+          try {
+            const parsed = JSON.parse(v);
+            const startDate = new Date(parsed.start);
+            const endDate = new Date(parsed.end);
+
+            // Ensure valid dates
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              return ["Invalid date format"];
+            }
+
+            // Ensure start date is before end date
+            if (startDate > endDate) {
+              return ["Start date must be before end date"];
+            }
+
+            // Ensure trip is not longer than 30 days
+            const daysDifference = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+            if (daysDifference > 30) {
+              return ["Trip cannot be longer than 30 days"];
+            }
+            return [];
+          } catch {
+            return ["Invalid date range"];
+          }
+        },
       },
       {
         id: "isEmployee",
