@@ -1,6 +1,7 @@
 import {
   Show,
   createEffect,
+  createMemo,
   createSignal,
   createUniqueId,
   mergeProps,
@@ -15,6 +16,8 @@ import { useRingAnimation } from '../utils/useRingAnimation';
 
 export type TextAreaSize = 'sm' | 'md' | 'lg';
 export type TextAreaVariant = 'outlined' | 'filled' | 'standard';
+export type TextAreaResize = 'auto' | 'manual' | 'none';
+export type TextAreaCountMode = 'characters' | 'words' | false;
 
 type NativeTextareaProps = Omit<
   JSX.TextareaHTMLAttributes<HTMLTextAreaElement>,
@@ -45,9 +48,32 @@ export type TextAreaProps = NativeTextareaProps & {
   maxLength?: number;
   rows?: number;
 
+  /**
+   * Resize behavior:
+   * - `'auto'`   – grows/shrinks to fit content (default, same as old `autosize: true`)
+   * - `'manual'` – user drags the corner handle to resize
+   * - `'none'`   – fixed size, no resizing
+   */
+  resize?: TextAreaResize;
+
+  /** @deprecated Use `resize` prop instead. Kept for backward compat. */
   autosize?: boolean;
+
   minRows?: number;
   maxRows?: number;
+
+  /** Minimum height in px when resize='manual'. */
+  minHeight?: number;
+  /** Maximum height in px when resize='manual'. */
+  maxHeight?: number;
+
+  /**
+   * Show a character or word counter below the textarea.
+   * - `'characters'` – shows character count (and maxLength if set)
+   * - `'words'`      – shows word count
+   * - `false`        – no counter (default)
+   */
+  showCount?: TextAreaCountMode;
 
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
@@ -78,6 +104,8 @@ export type TextAreaProps = NativeTextareaProps & {
   inputClass?: string;
   helperClass?: string;
 };
+
+/* ── Style maps ── */
 
 const sizeStyles: Record<
   TextAreaSize,
@@ -114,6 +142,8 @@ const variantStyles: Record<TextAreaVariant, string> = {
 const baseInputClass =
   'min-w-0 w-full flex-1 bg-transparent text-slate-900 outline-none placeholder:text-slate-400/90 dark:text-slate-100 dark:placeholder:text-slate-500';
 
+/* ── Helpers ── */
+
 const callHandler = <T, E extends Event>(
   handler: JSX.EventHandlerUnion<T, E> | undefined,
   event: E,
@@ -133,6 +163,14 @@ const clampRows = (value: number | undefined, fallback: number) => {
   if (!Number.isFinite(value)) return fallback;
   return Math.max(1, Math.floor(value));
 };
+
+const countWords = (text: string): number => {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+};
+
+/* ── Component ── */
 
 const TextArea = (props: TextAreaProps) => {
   const merged = mergeProps(props);
@@ -154,9 +192,13 @@ const TextArea = (props: TextAreaProps) => {
     'value',
     'onValue',
     'rows',
+    'resize',
     'autosize',
     'minRows',
     'maxRows',
+    'minHeight',
+    'maxHeight',
+    'showCount',
     'inputRef',
     'renderLabel',
     'renderHelper',
@@ -183,6 +225,8 @@ const TextArea = (props: TextAreaProps) => {
 
   let textAreaEl: HTMLTextAreaElement | undefined;
 
+  /* ── Ring ── */
+
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
   const {
@@ -201,16 +245,32 @@ const TextArea = (props: TextAreaProps) => {
     variant: () => local.ringVariant,
   });
 
+  /* ── Basic derived state ── */
+
   const required = () => Boolean(local.required);
   const disabled = () => Boolean(local.disabled);
   const readOnly = () => Boolean(local.readOnly);
   const fullWidth = () => Boolean(local.fullWidth);
-  const autosize = () => local.autosize ?? true;
-  const minRows = () => clampRows(local.minRows, 1);
+
+  // Resolve resize mode (backward compat with `autosize` prop)
+  const resizeMode = (): TextAreaResize => {
+    if (local.resize !== undefined) return local.resize;
+    if (local.autosize === false) return 'none';
+    return 'auto'; // default
+  };
+
+  const isAutosize = () => resizeMode() === 'auto';
+  const isManualResize = () => resizeMode() === 'manual';
+
+  const minRows = () => clampRows(local.minRows, isAutosize() ? 2 : 3);
   const maxRows = () => {
     if (local.maxRows === undefined) return undefined;
     return clampRows(local.maxRows, minRows());
   };
+
+  const showCount = () => local.showCount ?? false;
+
+  /* ── Ring API ── */
 
   createEffect(() => {
     const focus = () => textAreaEl?.focus();
@@ -219,15 +279,16 @@ const TextArea = (props: TextAreaProps) => {
       focus();
       pulse();
     };
-
     local.onRingApi?.({ pulse, focus, pulseAndFocus });
   });
+
+  /* ── Autosize logic ── */
 
   const resizeToContent = () => {
     const el = textAreaEl;
     if (!el) return;
 
-    if (!autosize()) {
+    if (!isAutosize()) {
       el.style.height = '';
       el.style.overflowY = '';
       return;
@@ -262,7 +323,8 @@ const TextArea = (props: TextAreaProps) => {
   };
 
   createEffect(() => {
-    autosize();
+    // Track dependencies
+    isAutosize();
     minRows();
     maxRows();
     local.value;
@@ -272,12 +334,53 @@ const TextArea = (props: TextAreaProps) => {
 
   createEffect(() => {
     const el = textAreaEl;
-    if (!el || !autosize() || typeof ResizeObserver !== 'function') return;
+    if (!el || !isAutosize() || typeof ResizeObserver !== 'function') return;
 
     const observer = new ResizeObserver(() => resizeToContent());
     observer.observe(el);
     onCleanup(() => observer.disconnect());
   });
+
+  /* ── Manual resize (drag handle) ── */
+
+  const [manualHeight, setManualHeight] = createSignal<number | undefined>(undefined);
+  const [isResizing, setIsResizing] = createSignal(false);
+
+  const startManualResize = (e: MouseEvent) => {
+    if (!isManualResize() || disabled() || readOnly()) return;
+    e.preventDefault();
+
+    const startY = e.clientY;
+    const el = textAreaEl;
+    if (!el) return;
+    const startHeight = el.getBoundingClientRect().height;
+
+    setIsResizing(true);
+
+    const onMove = (ev: MouseEvent) => {
+      const diff = ev.clientY - startY;
+      let next = startHeight + diff;
+
+      // Clamp to minHeight / maxHeight if set
+      const minH = local.minHeight ?? 60;
+      const maxH = local.maxHeight;
+      next = Math.max(minH, next);
+      if (maxH !== undefined) next = Math.min(maxH, next);
+
+      setManualHeight(next);
+    };
+
+    const onUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  /* ── Style/class derivation ── */
 
   const size = () => (local.size ?? 'md') as TextAreaSize;
   const variant = () => (local.variant ?? 'outlined') as TextAreaVariant;
@@ -291,6 +394,7 @@ const TextArea = (props: TextAreaProps) => {
   };
 
   const hasHelper = () => Boolean(local.renderHelper) || Boolean(helperContent());
+  const hasFooter = () => hasHelper() || showCount() !== false;
 
   const autoId = createUniqueId();
   const inputId = () => local.id ?? `ta-${autoId}`;
@@ -334,16 +438,63 @@ const TextArea = (props: TextAreaProps) => {
     return 'text-slate-500 dark:text-slate-400';
   };
 
-  const inputClass = () =>
-    cx(
+  const inputClass = () => {
+    let resizeClass: string;
+    if (isAutosize()) {
+      resizeClass = 'resize-none overflow-hidden';
+    } else if (isManualResize()) {
+      resizeClass = 'resize-none overflow-auto'; // we handle resize via handle
+    } else {
+      resizeClass = 'resize-none';
+    }
+
+    return cx(
       baseInputClass,
       sizeStyles[size()].input,
       disabled() ? 'cursor-not-allowed' : 'cursor-text',
-      autosize() ? 'resize-none overflow-hidden' : 'resize-y',
+      resizeClass,
       local.inputClass,
     );
+  };
 
   const helperClass = () => cx('text-xs', helperToneClass(), local.helperClass);
+
+  /* ── Character / word count ── */
+
+  const charCount = createMemo(() => (local.value ?? '').length);
+  const wordCount = createMemo(() => countWords(local.value ?? ''));
+
+  const isOverLimit = createMemo(() => {
+    if (showCount() === 'characters' && local.maxLength) {
+      return charCount() > local.maxLength;
+    }
+    return false;
+  });
+
+  const countDisplay = createMemo(() => {
+    const mode = showCount();
+    if (mode === 'characters') {
+      if (local.maxLength) {
+        return `${charCount()} / ${local.maxLength}`;
+      }
+      return `${charCount()}`;
+    }
+    if (mode === 'words') {
+      return `${wordCount()} word${wordCount() !== 1 ? 's' : ''}`;
+    }
+    return '';
+  });
+
+  /* ── Textarea style for manual mode ── */
+
+  const textAreaStyle = (): JSX.CSSProperties | undefined => {
+    if (isManualResize() && manualHeight() !== undefined) {
+      return { height: `${manualHeight()}px` };
+    }
+    return undefined;
+  };
+
+  /* ── Event handlers ── */
 
   const handleInput: JSX.EventHandlerUnion<HTMLTextAreaElement, InputEvent> = (
     event,
@@ -352,7 +503,7 @@ const TextArea = (props: TextAreaProps) => {
     local.onValue?.(el.value);
     callHandler(local.onInput, event);
 
-    if (autosize()) {
+    if (isAutosize()) {
       queueMicrotask(() => resizeToContent());
     }
   };
@@ -372,6 +523,7 @@ const TextArea = (props: TextAreaProps) => {
         local.rootClass,
       )}
     >
+      {/* Label */}
       {local.renderLabel
         ? local.renderLabel({
             label: local.label,
@@ -395,123 +547,173 @@ const TextArea = (props: TextAreaProps) => {
             </label>
           )}
 
-      <div class={containerClass()}>
-        <Show when={ringEnabled()}>
-          <span
-            ref={setRingHostEl}
-            aria-hidden="true"
-            class={cx(
-              'tf-focus-laser-ring',
-              errorActive()
-                ? 'text-rose-500 dark:text-rose-400'
-                : 'text-emerald-500 dark:text-emerald-400',
-            )}
-            style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
-          >
-            <svg
-              class="tf-focus-laser-ring-svg"
-              viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
-              preserveAspectRatio="none"
+      {/* Container */}
+      <div class="relative">
+        <div class={containerClass()}>
+          {/* Laser ring */}
+          <Show when={ringEnabled()}>
+            <span
+              ref={setRingHostEl}
+              aria-hidden="true"
+              class={cx(
+                'tf-focus-laser-ring',
+                errorActive()
+                  ? 'text-rose-500 dark:text-rose-400'
+                  : 'text-emerald-500 dark:text-emerald-400',
+              )}
+              style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
             >
-              <Show when={ringActive()}>
-                {() => (
-                  <>
-                    <path
-                      class="tf-focus-laser-ring-outline"
-                      data-pulse={ringPulseKey()}
-                      d={ringPathD()}
-                      fill="none"
-                      vector-effect="non-scaling-stroke"
-                      opacity="0.02"
-                    />
+              <svg
+                class="tf-focus-laser-ring-svg"
+                viewBox={`0 0 ${ringBox().w} ${ringBox().h}`}
+                preserveAspectRatio="none"
+              >
+                <Show when={ringActive()}>
+                  {() => (
+                    <>
+                      <path
+                        class="tf-focus-laser-ring-outline"
+                        data-pulse={ringPulseKey()}
+                        d={ringPathD()}
+                        fill="none"
+                        vector-effect="non-scaling-stroke"
+                        opacity="0.02"
+                      />
+                      <path
+                        ref={setRingMeasureEl}
+                        d={ringPathD()}
+                        fill="none"
+                        stroke="none"
+                      />
+                      <path
+                        ref={setRingLaserSegEl}
+                        class="tf-focus-laser-ring-segment"
+                        data-pulse={ringPulseKey()}
+                        d=""
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.25"
+                        stroke-linecap="round"
+                        vector-effect="non-scaling-stroke"
+                      />
+                    </>
+                  )}
+                </Show>
+              </svg>
+            </span>
+          </Show>
 
-                    <path
-                      ref={setRingMeasureEl}
-                      d={ringPathD()}
-                      fill="none"
-                      stroke="none"
-                    />
+          {/* Start adornment */}
+          <Show when={local.startAdornment}>
+            <span
+              class={cx(
+                'self-start pt-0.5 text-slate-500 dark:text-slate-400',
+                sizeStyles[size()].adornment,
+              )}
+            >
+              {local.startAdornment}
+            </span>
+          </Show>
 
-                    <path
-                      ref={setRingLaserSegEl}
-                      class="tf-focus-laser-ring-segment"
-                      data-pulse={ringPulseKey()}
-                      d=""
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.25"
-                      stroke-linecap="round"
-                      vector-effect="non-scaling-stroke"
-                    />
-                  </>
-                )}
-              </Show>
-            </svg>
-          </span>
-        </Show>
+          {/* Textarea */}
+          <textarea
+            id={inputId()}
+            ref={(el) => {
+              textAreaEl = el;
+              local.inputRef?.(el);
+            }}
+            name={local.name}
+            placeholder={local.placeholder}
+            autoComplete={local.autoComplete}
+            minLength={local.minLength}
+            maxLength={showCount() === 'characters' ? undefined : local.maxLength}
+            rows={isAutosize() ? minRows() : (local.rows ?? minRows())}
+            class={inputClass()}
+            style={textAreaStyle()}
+            required={required()}
+            disabled={disabled()}
+            readOnly={readOnly()}
+            aria-invalid={ariaInvalid()}
+            aria-describedby={describedBy()}
+            onInput={handleInput}
+            onChange={local.onChange}
+            onKeyDown={local.onKeyDown}
+            onBlur={handleBlur}
+            onFocus={(event) => {
+              if (animateRingOnFocus()) pulseRing();
+              callHandler(local.onFocus, event);
+            }}
+            value={local.value ?? ''}
+            {...inputProps}
+          />
 
-        <Show when={local.startAdornment}>
-          <span
-            class={cx(
-              'self-start pt-0.5 text-slate-500 dark:text-slate-400',
-              sizeStyles[size()].adornment,
-            )}
-          >
-            {local.startAdornment}
-          </span>
-        </Show>
+          {/* End adornment */}
+          <Show when={local.endAdornment}>
+            <span
+              class={cx(
+                'self-start pt-0.5 text-slate-500 dark:text-slate-400',
+                sizeStyles[size()].adornment,
+              )}
+            >
+              {local.endAdornment}
+            </span>
+          </Show>
 
-        <textarea
-          id={inputId()}
-          ref={(el) => {
-            textAreaEl = el;
-            local.inputRef?.(el);
-          }}
-          name={local.name}
-          placeholder={local.placeholder}
-          autoComplete={local.autoComplete}
-          minLength={local.minLength}
-          maxLength={local.maxLength}
-          rows={autosize() ? minRows() : local.rows}
-          class={inputClass()}
-          required={required()}
-          disabled={disabled()}
-          readOnly={readOnly()}
-          aria-invalid={ariaInvalid()}
-          aria-describedby={describedBy()}
-          onInput={handleInput}
-          onChange={local.onChange}
-          onKeyDown={local.onKeyDown}
-          onBlur={handleBlur}
-          onFocus={(event) => {
-            if (animateRingOnFocus()) pulseRing();
-            callHandler(local.onFocus, event);
-          }}
-          value={local.value ?? ''}
-          {...inputProps}
-        />
-
-        <Show when={local.endAdornment}>
-          <span
-            class={cx(
-              'self-start pt-0.5 text-slate-500 dark:text-slate-400',
-              sizeStyles[size()].adornment,
-            )}
-          >
-            {local.endAdornment}
-          </span>
-        </Show>
+          {/* Manual resize handle */}
+          <Show when={isManualResize() && !disabled() && !readOnly()}>
+            <div
+              class={cx(
+                'absolute bottom-1 right-1 flex h-5 w-5 cursor-s-resize items-center justify-center rounded-sm',
+                'text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300',
+                isResizing() && 'text-emerald-500 dark:text-emerald-400',
+              )}
+              onMouseDown={startManualResize}
+              aria-hidden="true"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M9 1L1 9M9 5L5 9M9 9L9 9"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+          </Show>
+        </div>
       </div>
 
-      <Show when={hasHelper()}>
-        <div id={helperId()} class={helperClass()}>
-          {local.renderHelper
-            ? local.renderHelper({
-                helperText: helperContent(),
-                error: errorActive(),
-                id: helperId(),
-              })
-            : helperContent()}
+      {/* Footer: helper text + count */}
+      <Show when={hasFooter()}>
+        <div class="flex items-start justify-between gap-3">
+          {/* Helper text */}
+          <div class="flex-1">
+            <Show when={hasHelper()}>
+              <div id={helperId()} class={helperClass()}>
+                {local.renderHelper
+                  ? local.renderHelper({
+                      helperText: helperContent(),
+                      error: errorActive(),
+                      id: helperId(),
+                    })
+                  : helperContent()}
+              </div>
+            </Show>
+          </div>
+
+          {/* Character / word counter */}
+          <Show when={showCount() !== false}>
+            <div
+              class={cx(
+                'flex-shrink-0 text-xs tabular-nums transition-colors',
+                isOverLimit()
+                  ? 'font-medium text-rose-600 dark:text-rose-400'
+                  : 'text-slate-400 dark:text-slate-500',
+              )}
+            >
+              {countDisplay()}
+            </div>
+          </Show>
         </div>
       </Show>
     </div>

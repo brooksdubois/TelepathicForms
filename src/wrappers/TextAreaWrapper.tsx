@@ -38,9 +38,13 @@ export const TextAreaWrapper: Component<TextAreaWrapperProps> = (p) => {
       startAdornment={p.spec.startAdornment}
       endAdornment={p.spec.endAdornment}
       rows={p.spec.rows}
+      resize={p.spec.resize}
       autosize={p.spec.autosize}
       minRows={p.spec.minRows}
       maxRows={p.spec.maxRows}
+      minHeight={p.spec.minHeight}
+      maxHeight={p.spec.maxHeight}
+      showCount={p.spec.showCount}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
       ringVariant={p.spec.ringVariant}
