@@ -4,6 +4,7 @@ import {
   CheckboxWrapper,
   CurrencyWrapper,
   DatePickerWrapper,
+  DateRangePickerWrapper,
   MultiSelectWrapper,
   NumberWrapper,
   PasswordWrapper,
@@ -27,35 +28,32 @@ export type RowGroup = {
 };
 
 export function groupFieldsByRow(fields: FieldSpec[]): RowGroup[] {
-  const groups: RowGroup[] = [];
-  const groupsByRow = new Map<number, RowGroup>();
+  const groupsByRow = new Map<number, FieldSpec[]>();
+  const unassignedGroups: RowGroup[] = [];
 
   fields.forEach((field, index) => {
     if (typeof field.row === "number") {
-      const existing = groupsByRow.get(field.row);
-      if (existing) {
-        existing.fields.push(field);
-        return;
-      }
-
-      const nextGroup: RowGroup = {
-        key: `row-${field.row}`,
-        fields: [field],
-        sharedRow: true,
-      };
-      groupsByRow.set(field.row, nextGroup);
-      groups.push(nextGroup);
+      const existing = groupsByRow.get(field.row) ?? [];
+      groupsByRow.set(field.row, [...existing, field]);
       return;
     }
 
-    groups.push({
+    unassignedGroups.push({
       key: `field-${field.id}-${index}`,
       fields: [field],
       sharedRow: false,
     });
   });
 
-  return groups;
+  const orderedRowGroups: RowGroup[] = [...groupsByRow.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([rowNumber, rowFields]) => ({
+      key: `row-${rowNumber}`,
+      fields: rowFields,
+      sharedRow: true,
+    }));
+
+  return [...orderedRowGroups, ...unassignedGroups];
 }
 
 export type FieldSlotProps = {
@@ -72,6 +70,9 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
     const handle = p.handle;
 
     switch (f.kind) {
+      case FieldKind.dateRange:
+        return <DateRangePickerWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
+
       case FieldKind.date:
         return <DatePickerWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
@@ -224,7 +225,7 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
     >
       {!hidden() ? (
         p.wrapInRow ? (
-          <div class="tf-slot" style={{ flex: "1 1 0", "min-width": "240px" }}>
+          <div class="tf-slot" style={{ width: "100%", "min-width": "0" }}>
             {renderContent()}
           </div>
         ) : (

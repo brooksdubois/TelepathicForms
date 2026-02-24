@@ -22,6 +22,8 @@
     "@js-temporal/polyfill": "^0.5.1",
     "date-fns": "^4.1.0",
     "rxjs": "^7.8.2",
+    "shiki": "^3.22.0",
+    "solid-codeblock": "^0.0.6",
     "solid-js": "^1.9.5",
     "solid-transition-group": "^0.3.0"
   }

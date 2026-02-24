@@ -12,6 +12,7 @@ import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
 import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
 import SliderPlayground from "./playgrounds/SliderPlayground";
 import DateRangePickerPlayground from "./playgrounds/DateRangePickerPlayground";
+import DesignerPage from "./designer-tool/DesignerPage";
 
 const normalizePath = (p: string) => {
   if (!p) return "/";
@@ -31,6 +32,7 @@ const routes: Record<string, Component> = {
   "/date": DatePickerPlayground,
   "/slider": SliderPlayground,
   "/date-range": DateRangePickerPlayground,
+  "/designer": DesignerPage,
 };
 
 const NotFound: Component = () => (
@@ -38,6 +40,7 @@ const NotFound: Component = () => (
     <h1>Route Not Found</h1>
     <p>
       Try one of these routes:{" "}
+      <a href="/designer" onClick={(e) => { e.preventDefault(); navigateTo("/designer"); }}>/designer</a>,{" "}
       <a href="/form-demo" onClick={(e) => { e.preventDefault(); navigateTo("/form-demo"); }}>/form-demo</a>,{" "}
       <a href="/text-field" onClick={(e) => { e.preventDefault(); navigateTo("/text-field"); }}>/text-field</a>,{" "}
       <a href="/select" onClick={(e) => { e.preventDefault(); navigateTo("/select"); }}>/select</a>,{" "}

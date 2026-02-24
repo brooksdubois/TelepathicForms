@@ -27,6 +27,7 @@ const navItemClass =
 
 const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (props) => {
   const activePath = () => normalizePath(props.currentPath ?? path());
+  const isDesignerActive = () => activePath() === '/designer';
   const [currentIndex, setCurrentIndex] = createSignal(0);
   const [isDragging, setIsDragging] = createSignal(false);
   const [startX, setStartX] = createSignal(0);
@@ -230,6 +231,22 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => navigateTo('/designer')}
+        class={cx(
+          'ml-2 flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em]',
+          'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2',
+          'dark:focus:ring-offset-slate-950',
+          isDesignerActive()
+            ? 'bg-sky-700 text-white shadow-[0_0_0_1px_rgba(125,211,252,0.35),0_8px_20px_rgba(2,132,199,0.4)]'
+            : 'bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.25)_inset,0_8px_20px_rgba(14,116,144,0.35)] hover:brightness-110'
+        )}
+        aria-label="Open designer tool"
+      >
+        DESIGNER
       </button>
     </div>
   );

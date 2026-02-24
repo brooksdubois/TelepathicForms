@@ -1,39 +1,23 @@
-import { Component, createMemo } from 'solid-js';
-import DateRangePicker from '../primitives/DateRangePicker';
-import type { DateRangeValue, DateRangePickerProps } from '../primitives/DateRangePicker';
+import { createMemo, type Component } from "solid-js";
+import type { FieldHandle, FieldSpec } from "../engine/generators";
+import DateRangePicker from "../primitives/DateRangePicker";
+import type { DateRangeValue } from "../primitives/DateRangePicker";
+import { fromObservable } from "../utils/fromObservable";
 
-export interface DateRangePickerWrapperProps {
-  label?: string;
-  value?: { start: string; end: string } | string;
-  onChange?: (value: { start: string; end: string } | undefined) => void;
-  required?: boolean;
-  disabled?: boolean;
-  readOnly?: boolean;
-  error?: boolean;
-  helperText?: string;
-  placeholder?: string;
-  clearable?: boolean;
-  disablePast?: boolean;
-  disableFuture?: boolean;
-  disableWeekends?: boolean;
-  minDate?: string;
-  maxDate?: string;
-  shouldDisableDate?: (iso: string) => boolean;
+export type DateRangePickerWrapperProps = {
+  spec: FieldSpec;
+  field: FieldHandle;
+  fullWidth?: boolean;
+};
 
-  ringEnabled?: boolean;
-  animateRingOnFocus?: boolean;
-  openOnFocus?: boolean;
-  closeOnSelect?: boolean;
+export const DateRangePickerWrapper: Component<DateRangePickerWrapperProps> = (p) => {
+  const value = fromObservable(p.field.value$, "");
+  const disabled = fromObservable(p.field.disabled$, false);
+  const errors = fromObservable(p.field.errors$, []);
+  const touched = fromObservable(p.field.touched$, false);
 
-  class?: string;
-  inputClass?: string;
-  popoverClass?: string;
-}
-
-export const DateRangePickerWrapper: Component<DateRangePickerWrapperProps> = (props) => {
-  // Parse value — supports both object and JSON string from engine
   const parsedValue = createMemo<DateRangeValue>(() => {
-    const v = props.value;
+    const v = value();
     if (!v) return null;
 
     if (typeof v === 'object' && 'start' in v && 'end' in v) {
@@ -50,39 +34,40 @@ export const DateRangePickerWrapper: Component<DateRangePickerWrapperProps> = (p
     return null;
   });
 
-  const handleChange = (value: DateRangeValue) => {
-    if (value) {
-      props.onChange?.(value);
-    } else {
-      props.onChange?.(undefined);
-    }
-  };
+  const errorText = createMemo(() =>
+    disabled() ? "" : touched() ? errors()[0] ?? "" : "",
+  );
 
   return (
     <DateRangePicker
-      label={props.label}
+      label={p.spec.label}
       value={parsedValue()}
-      onChange={handleChange}
-      required={props.required}
-      disabled={props.disabled}
-      readOnly={props.readOnly}
-      error={props.error}
-      helperText={props.helperText}
-      placeholder={props.placeholder}
-      clearable={props.clearable ?? true}
-      disablePast={props.disablePast}
-      disableFuture={props.disableFuture}
-      disableWeekends={props.disableWeekends}
-      minDate={props.minDate}
-      maxDate={props.maxDate}
-      shouldDisableDate={props.shouldDisableDate}
-      ringEnabled={props.ringEnabled}
-      animateRingOnFocus={props.animateRingOnFocus}
-      openOnFocus={props.openOnFocus}
-      closeOnSelect={props.closeOnSelect}
-      class={props.class}
-      inputClass={props.inputClass}
-      popoverClass={props.popoverClass}
+      onChange={(next) =>
+        p.field.setValue(next ? JSON.stringify(next) : "")
+      }
+      required={!!p.spec.required}
+      disabled={disabled()}
+      readOnly={!!p.spec.readOnly}
+      error={!!errorText()}
+      helperText={errorText() || p.spec.helperText}
+      placeholder={p.spec.placeholder}
+      clearable={p.spec.clearable ?? true}
+      disablePast={p.spec.disablePast}
+      disableFuture={p.spec.disableFuture}
+      disableWeekends={p.spec.disableWeekends}
+      minDate={p.spec.minDate}
+      maxDate={p.spec.maxDate}
+      shouldDisableDate={p.spec.shouldDisableDate}
+      ringEnabled={p.spec.ringEnabled}
+      animateRingOnFocus={p.spec.animateRingOnFocus}
+      openOnFocus={p.spec.openOnFocus}
+      closeOnSelect={p.spec.closeOnSelect}
+      class={p.fullWidth ? "w-full" : undefined}
+      onFocus={() => p.field.setFocused(true)}
+      onBlur={() => {
+        p.field.markTouched();
+        p.field.setFocused(false);
+      }}
     />
   );
 };
