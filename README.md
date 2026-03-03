@@ -7,11 +7,9 @@ $ bun run dev
 
 Note: Use Bun for this repo. I will expect `bun install` and `bun run dev` whenever you make changes here.
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
-
 ## Core Tenet: Telepathic Wiring (No Central Authority)
 
-This repo intentionally avoids a single, centralized form state controller. Each field is its own runtime node with observable state streams, and fields influence each other through a small wiring substrate. The graph only routes signals and batches writes; it does not own canonical form state or impose "boss logic." Any changes should preserve this decentralized, observable wiring model.
+This repo intentionally avoids a single, centralized form state controller. Each field is its own runtime node with observable state streams, and fields influence each other through a small wiring substrate. The graph only routes signals and batches writes; it does not own canonical form state or impose a centralized model. Any changes should preserve this decentralized, observable wiring model.
 
 ## Available Scripts
 
