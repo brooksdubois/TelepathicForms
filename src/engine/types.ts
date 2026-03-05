@@ -48,6 +48,7 @@ export type FieldSpec = {
   readOnly?: boolean;
   minLength?: number;
   maxLength?: number;
+  showCharacterCount?: boolean;
   size?: "sm" | "md" | "lg";
   variant?: "outlined" | "filled" | "standard";
   startAdornment?: string;

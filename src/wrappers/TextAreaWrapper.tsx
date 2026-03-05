@@ -29,6 +29,7 @@ export const TextAreaWrapper: Component<TextAreaWrapperProps> = (p) => {
       autoComplete={p.spec.autoComplete}
       minLength={p.spec.minLength}
       maxLength={p.spec.maxLength}
+      showCharacterCount={p.spec.showCharacterCount}
       required={!!p.spec.required}
       disabled={disabled()}
       readOnly={!!p.spec.readOnly}

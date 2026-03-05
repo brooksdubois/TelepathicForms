@@ -43,6 +43,7 @@ export type TextAreaProps = NativeTextareaProps & {
   placeholder?: string;
   minLength?: number;
   maxLength?: number;
+  showCharacterCount?: boolean;
   rows?: number;
 
   autosize?: boolean;
@@ -170,6 +171,7 @@ const TextArea = (props: TextAreaProps) => {
     'autoComplete',
     'minLength',
     'maxLength',
+    'showCharacterCount',
     'onInput',
     'onChange',
     'onKeyDown',
@@ -205,6 +207,8 @@ const TextArea = (props: TextAreaProps) => {
   const disabled = () => Boolean(local.disabled);
   const readOnly = () => Boolean(local.readOnly);
   const fullWidth = () => Boolean(local.fullWidth);
+  const currentValue = () => local.value ?? '';
+  const [characterCount, setCharacterCount] = createSignal(currentValue().length);
   const autosize = () => local.autosize ?? true;
   const minRows = () => clampRows(local.minRows, 1);
   const maxRows = () => {
@@ -265,9 +269,13 @@ const TextArea = (props: TextAreaProps) => {
     autosize();
     minRows();
     maxRows();
-    local.value;
+    currentValue();
 
     queueMicrotask(() => resizeToContent());
+  });
+
+  createEffect(() => {
+    setCharacterCount(currentValue().length);
   });
 
   createEffect(() => {
@@ -290,7 +298,26 @@ const TextArea = (props: TextAreaProps) => {
     return local.helperText;
   };
 
-  const hasHelper = () => Boolean(local.renderHelper) || Boolean(helperContent());
+  const maxCharacterCount = () => {
+    if (typeof local.maxLength !== 'number') return undefined;
+    if (!Number.isFinite(local.maxLength) || local.maxLength <= 0) return undefined;
+    return Math.floor(local.maxLength);
+  };
+
+  const showCharacterCount = () =>
+    Boolean(local.showCharacterCount) && maxCharacterCount() !== undefined;
+
+  const characterCountText = () => {
+    const max = maxCharacterCount();
+    if (max === undefined) return '';
+
+    const current = Math.max(0, characterCount());
+    if (current === 0) return `0/${max}`;
+    return `count: ${current}/${max}`;
+  };
+
+  const hasPrimaryHelper = () => Boolean(local.renderHelper) || Boolean(helperContent());
+  const hasHelper = () => hasPrimaryHelper() || showCharacterCount();
 
   const autoId = createUniqueId();
   const inputId = () => local.id ?? `ta-${autoId}`;
@@ -349,6 +376,7 @@ const TextArea = (props: TextAreaProps) => {
     event,
   ) => {
     const el = event.currentTarget;
+    setCharacterCount(el.value.length);
     local.onValue?.(el.value);
     callHandler(local.onInput, event);
 
@@ -487,7 +515,7 @@ const TextArea = (props: TextAreaProps) => {
             if (animateRingOnFocus()) pulseRing();
             callHandler(local.onFocus, event);
           }}
-          value={local.value ?? ''}
+          value={currentValue()}
           {...inputProps}
         />
 
@@ -504,14 +532,28 @@ const TextArea = (props: TextAreaProps) => {
       </div>
 
       <Show when={hasHelper()}>
-        <div id={helperId()} class={helperClass()}>
-          {local.renderHelper
-            ? local.renderHelper({
-                helperText: helperContent(),
-                error: errorActive(),
-                id: helperId(),
-              })
-            : helperContent()}
+        <div id={helperId()} class={cx('flex items-start gap-3', helperClass())}>
+          <Show when={hasPrimaryHelper()}>
+            <div class={cx(showCharacterCount() ? 'min-w-0 flex-1' : '')}>
+              {local.renderHelper
+                ? local.renderHelper({
+                    helperText: helperContent(),
+                    error: errorActive(),
+                    id: helperId(),
+                  })
+                : helperContent()}
+            </div>
+          </Show>
+          <Show when={showCharacterCount()}>
+            <span
+              class={cx(
+                'ml-auto whitespace-nowrap tabular-nums',
+                !hasPrimaryHelper() ? 'w-full text-right' : '',
+              )}
+            >
+              {characterCountText()}
+            </span>
+          </Show>
         </div>
       </Show>
     </div>

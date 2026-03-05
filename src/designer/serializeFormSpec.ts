@@ -28,6 +28,7 @@ const FIELD_KEY_ORDER = [
   "readOnly",
   "minLength",
   "maxLength",
+  "showCharacterCount",
   "size",
   "variant",
   "startAdornment",
