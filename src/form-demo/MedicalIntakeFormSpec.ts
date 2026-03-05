@@ -1,4 +1,11 @@
-import {FieldKind, type FieldSpec, TriggerOperators, type FormSpec, WhenOperators} from "../engine/types";
+import {
+  FieldKind,
+  OperatorMaths,
+  type FieldSpec,
+  TriggerOperators,
+  type FormSpec,
+  WhenOperators,
+} from "../engine/types";
 
 export type DemoSection = {
   id: string;
@@ -23,6 +30,10 @@ const timeOfDayOptions = [
   {label: "Bedtime", value: "bedtime"},
   {label: "As Needed", value: "asNeeded"},
 ];
+
+const normalizePhoneDigits = (value: string) => (value ?? "").replace(/\D/g, "");
+const normalizeEmail = (value: string) =>
+  (value ?? "").trim().toLowerCase().replace(/\s+/g, "");
 
 const applyInitialValues = (
   fields: FieldSpec[],
@@ -181,6 +192,59 @@ export const buildMedicalIntakeSections = (
           startAdornment: "US",
           ringEnabled: true,
           animateRingOnFocus: true,
+          triggers: [
+            {
+              when: {operator: WhenOperators.isValid},
+              operation: {
+                fieldIds: ["confirmPatientPhone"],
+                operator: TriggerOperators.setDisabled,
+                value: false,
+              },
+            },
+            {
+              when: {operator: WhenOperators.isInvalid},
+              operations: [
+                {
+                  fieldIds: ["confirmPatientPhone"],
+                  operator: TriggerOperators.setDisabled,
+                  value: true,
+                },
+                {
+                  fieldIds: ["confirmPatientPhone"],
+                  operator: TriggerOperators.setValue,
+                  value: "",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "confirmPatientPhone",
+          kind: FieldKind.phone,
+          label: "Confirm Patient Phone",
+          row: 3,
+          placeholder: "(___) ___-____",
+          inputMask: "(___) ___-____",
+          inputBlocker: "^\\d{0,10}$",
+          required: false,
+          size: "md",
+          variant: "outlined",
+          startAdornment: "US",
+          ringEnabled: true,
+          animateRingOnFocus: true,
+          validationDependencies: ["phone"],
+          validate: (value, context) => {
+            const confirmValue = normalizePhoneDigits(value);
+            const sourceValue = context?.getValue?.("phone") ?? "";
+
+            if (!confirmValue) return [];
+            if (!sourceValue) return [];
+
+            return confirmValue === sourceValue
+              ? []
+              : ["Phone numbers do not match."];
+          },
+          helperText: "Re-enter patient phone number.",
         },
         {
           id: "email",
@@ -194,6 +258,85 @@ export const buildMedicalIntakeSections = (
           variant: "outlined",
           ringEnabled: true,
           animateRingOnFocus: true,
+          validate: (value) => {
+            if (!value) return [];
+            if (!/^[^@]+@[^@]+\.[^@]+$/.test(value)) return ["Enter a valid email."];
+            return [];
+          },
+          triggers: [
+            {
+              when: {
+                [OperatorMaths.all]: [
+                  {fieldIds: ["email"], operator: WhenOperators.isValid},
+                  {fieldIds: ["email"], operator: WhenOperators.notEquals, value: ""},
+                ],
+              },
+              operation: {
+                fieldIds: ["confirmEmail"],
+                operator: TriggerOperators.setDisabled,
+                value: false,
+              },
+            },
+            {
+              when: {fieldIds: ["email"], operator: WhenOperators.isEmpty},
+              operations: [
+                {
+                  fieldIds: ["confirmEmail"],
+                  operator: TriggerOperators.setDisabled,
+                  value: true,
+                },
+                {
+                  fieldIds: ["confirmEmail"],
+                  operator: TriggerOperators.setValue,
+                  value: "",
+                },
+              ],
+            },
+            {
+              when: {fieldIds: ["email"], operator: WhenOperators.isInvalid},
+              operations: [
+                {
+                  fieldIds: ["confirmEmail"],
+                  operator: TriggerOperators.setDisabled,
+                  value: true,
+                },
+                {
+                  fieldIds: ["confirmEmail"],
+                  operator: TriggerOperators.setValue,
+                  value: "",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "confirmEmail",
+          kind: FieldKind.text,
+          label: "Confirm Email",
+          row: 3,
+          placeholder: "you@example.com",
+          autoComplete: "email",
+          type: "email",
+          size: "md",
+          variant: "outlined",
+          ringEnabled: true,
+          animateRingOnFocus: true,
+          validationDependencies: ["email"],
+          helperText: "Re-enter email address.",
+          validate: (value, context) => {
+            const confirmValue = normalizeEmail(value);
+            const sourceValue = normalizeEmail(context?.getValue?.("email") ?? "");
+            if (!confirmValue) return [];
+            if (!sourceValue) return [];
+
+            if (!/^\S+@\S+\.\S+$/.test(confirmValue)) {
+              return ["Enter a valid email."];
+            }
+
+            return confirmValue === sourceValue
+              ? []
+              : ["Email addresses do not match."];
+          },
         },
       ],
       initialValues,

@@ -5,6 +5,7 @@ import {
   FieldKind,
   OperatorMaths,
   TriggerOperators,
+  type ValidationContext,
   WhenOperators,
   type FieldHandle,
   type FieldSpec,
@@ -21,8 +22,17 @@ import {
   validatePhone,
 } from "../utils/fieldHelpers";
 
-function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
+function createNodeFromSpec(
+  spec: FieldSpec,
+  validationContext: ValidationContext,
+  validateDeps?: Array<Observable<string>>,
+): FieldRuntimeNode<string> {
   const initial = spec.initialValue ?? "";
+  const extras = {
+    validationContext,
+    validateDeps$:
+      validateDeps && validateDeps.length > 0 ? validateDeps : undefined,
+  };
 
   switch (spec.kind) {
     case FieldKind.dateRange: {
@@ -56,6 +66,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
     id: spec.id,
     initialValue: initial || JSON.stringify({ start: '', end: '' }),
     validate,
+    ...extras,
   });
 }
     case FieldKind.date: {
@@ -69,6 +80,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: initial,
         validate,
+        ...extras,
       });
     }
 
@@ -77,6 +89,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: normalizePhone(initial),
         validate: spec.validate ?? validatePhone,
+        ...extras,
       });
 
     case FieldKind.number: {
@@ -86,6 +99,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: digits,
         validate: spec.validate ?? (() => []),
+        ...extras,
       });
     }
 
@@ -98,6 +112,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: normalized,
         validate,
+        ...extras,
       });
     }
 
@@ -110,6 +125,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: normalized,
         validate,
+        ...extras,
       });
     }
 
@@ -120,6 +136,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: digits,
         validate: spec.validate ?? makeSsnValidator(!!spec.required),
+        ...extras,
       });
     }
 
@@ -130,6 +147,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: digits,
         validate: spec.validate ?? makeZipValidator(!!spec.required),
+        ...extras,
       });
     }
 
@@ -146,6 +164,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: initial,
         validate,
+        ...extras,
       });
     }
 
@@ -156,6 +175,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: next,
         validate: spec.validate ?? (() => []),
+        ...extras,
       });
     }
 
@@ -165,6 +185,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: next,
         validate: spec.validate ?? (() => []),
+        ...extras,
       });
     }
 
@@ -176,6 +197,7 @@ function createNodeFromSpec(spec: FieldSpec): FieldRuntimeNode<string> {
         id: spec.id,
         initialValue: initial,
         validate: spec.validate ?? (() => []),
+        ...extras,
       });
   }
 }
@@ -278,9 +300,18 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
 export function buildGraphFromFormSpec(form: FormSpec) {
   const graph = new GraphRuntime();
   const nodesById = new Map<string, FieldRuntimeNode<string>>();
+  const getValue = (fieldId: string) => (nodesById.get(fieldId)?.value$?.value as string) ?? "";
 
   form.fields.forEach((f) => {
-    const node = graph.register(createNodeFromSpec(f));
+    const deps = (f.validationDependencies ?? []).map((fieldId) => nodesById.get(fieldId)?.value$);
+
+    const node = graph.register(
+      createNodeFromSpec(
+        f,
+        {getValue},
+        deps.filter(Boolean) as Array<Observable<string>>,
+      ),
+    );
     nodesById.set(f.id, node);
   });
 

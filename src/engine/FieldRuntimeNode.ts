@@ -1,5 +1,5 @@
-import {BehaviorSubject, combineLatest, distinctUntilChanged, map, startWith, type Observable} from "rxjs";
-import type {Validator} from "./types";
+import {BehaviorSubject, combineLatest, distinctUntilChanged, map, type Observable} from "rxjs";
+import type {Validator, ValidationContext} from "./types";
 
 export type NodePatch<T> = {
   value?: T;
@@ -28,14 +28,25 @@ export class FieldRuntimeNode<T> {
     validate?: Validator<T>;
     disabled$?: Observable<boolean>;
     hidden$?: Observable<boolean>;
+    validateDeps$?: Array<Observable<unknown>>;
+    validationContext?: ValidationContext;
   }) {
     this.id = args.id;
     this.value$ = new BehaviorSubject<T>(args.initialValue);
 
     const validate = args.validate ?? (() => []);
-    this.errors$ = this.value$.pipe(
-      map((v) => validate(v)),
-      startWith(validate(args.initialValue)),
+    const validationContext = args.validationContext ?? {getValue: () => ""};
+    const value$ = this.value$ as Observable<unknown>;
+    const sources = args.validateDeps$?.length
+      ? combineLatest([value$, ...args.validateDeps$])
+      : value$;
+
+    this.errors$ = sources.pipe(
+      map((valueOrValues) => {
+        const value =
+          Array.isArray(valueOrValues) ? (valueOrValues[0] as T) : (valueOrValues as T);
+        return validate(value, validationContext);
+      }),
       distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
     );
 
@@ -44,8 +55,8 @@ export class FieldRuntimeNode<T> {
       distinctUntilChanged()
     );
 
-    const base$ = args.disabled$ ?? new BehaviorSubject(false);
-    this.disabled$ = combineLatest([base$, this.disabledOverride$]).pipe(
+    const disabledBase$ = args.disabled$ ?? new BehaviorSubject(false);
+    this.disabled$ = combineLatest([disabledBase$, this.disabledOverride$]).pipe(
       map(([base, override]) => (override === null ? base : override)),
       distinctUntilChanged()
     );

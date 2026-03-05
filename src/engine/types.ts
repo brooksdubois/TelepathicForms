@@ -1,7 +1,11 @@
 import type {BehaviorSubject, Observable} from "rxjs";
 import type {LaserRingVariant} from "../utils/laserRingVariants";
 
-export type Validator<T> = (value: T) => string[];
+export type ValidationContext = {
+  getValue: (fieldId: string) => string;
+};
+
+export type Validator<T> = (value: T, context?: ValidationContext) => string[];
 export type Formatter = (raw: string) => string;
 export type Normalizer = (raw: string) => string;
 
@@ -79,6 +83,7 @@ export type FieldSpec = {
   required?: boolean;
   initialValue?: string;
   validate?: Validator<string>;
+  validationDependencies?: string[];
   inputMask?: string;
   inputBlocker?: string;
   triggers?: TriggerSpec[];
