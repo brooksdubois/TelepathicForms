@@ -26,15 +26,6 @@ export const demoFormSpec: FormSpec = {
           when: WhenOperators.isEmpty,
           operations: [
             {fieldIds: ["phone", "hasExtension", "ext", "email", "zip", "preferredTime", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: true},
-            // keep these disabled/cleared as a safety baseline
-            {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["hasExtension"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["ext"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["ext"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["zip"], operator: TriggerOperators.setValue, value: ""},
           ],
         },
 
@@ -43,11 +34,8 @@ export const demoFormSpec: FormSpec = {
           when: {operator: WhenOperators.equals, value: "phone"},
           operations: [
             {fieldIds: ["phone", "hasExtension", "preferredTime", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: false},
-            {fieldIds: ["email", "zip"], operator: TriggerOperators.setHidden, value: true},
-            // ext is controlled by its own triggers; default hidden until its triggers show it
-            {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
-            {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: false},
-            {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: false},
+            {fieldIds: ["email", "zip", "ext"], operator: TriggerOperators.setHidden, value: true},
+            {fieldIds: ["email", "zip", "ext"], operator: TriggerOperators.setValue, value: ""},
           ],
         },
 
@@ -57,6 +45,7 @@ export const demoFormSpec: FormSpec = {
           operations: [
             {fieldIds: ["email", "followUpDate", "notes", "password", "travelDates"], operator: TriggerOperators.setHidden, value: false},
             {fieldIds: ["phone", "hasExtension", "ext", "zip", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
+            {fieldIds: ["phone", "hasExtension", "ext", "zip", "preferredTime"], operator: TriggerOperators.setValue, value: ""},
           ],
         },
 
@@ -65,33 +54,8 @@ export const demoFormSpec: FormSpec = {
           when: {operator: WhenOperators.equals, value: "mail"},
           operations: [
             {fieldIds: ["zip", "followUpDate", "notes", "password"], operator: TriggerOperators.setHidden, value: false},
-            {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime"], operator: TriggerOperators.setHidden, value: true},
-            {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: false},
-            // Hide travelDates when mail is selected
-            {fieldIds: ["travelDates"], operator: TriggerOperators.setHidden, value: true},
-          ],
-        },
-
-        // NOT PHONE: disable + clear phone and extension controls
-        {
-          when: {operator: WhenOperators.notEquals, value: "phone"},
-          operations: [
-            {fieldIds: ["phone"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["phone"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["hasExtension"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["hasExtension"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["ext"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["ext"], operator: TriggerOperators.setValue, value: ""},
-            {fieldIds: ["ext"], operator: TriggerOperators.setHidden, value: true},
-          ],
-        },
-
-        // NOT MAIL: disable + clear zip
-        {
-          when: {operator: WhenOperators.notEquals, value: "mail"},
-          operations: [
-            {fieldIds: ["zip"], operator: TriggerOperators.setDisabled, value: true},
-            {fieldIds: ["zip"], operator: TriggerOperators.setValue, value: ""},
+            {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime", "travelDates"], operator: TriggerOperators.setHidden, value: true},
+            {fieldIds: ["phone", "hasExtension", "ext", "email", "preferredTime", "travelDates"], operator: TriggerOperators.setValue, value: ""},
           ],
         },
       ],

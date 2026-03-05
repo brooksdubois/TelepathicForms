@@ -227,11 +227,17 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
     >
       {!hidden() ? (
         p.wrapInRow ? (
-          <div class="tf-slot" style={{ width: "100%", "min-width": "0" }}>
+          <div
+            class="tf-slot"
+            data-field-slot-id={p.f.id}
+            style={{ width: "100%", "min-width": "0" }}
+          >
             {renderContent()}
           </div>
         ) : (
-          <div class="tf-slot">{renderContent()}</div>
+          <div class="tf-slot" data-field-slot-id={p.f.id}>
+            {renderContent()}
+          </div>
         )
       ) : null}
     </Transition>

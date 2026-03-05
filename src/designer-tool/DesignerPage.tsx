@@ -151,6 +151,7 @@ const convertFieldToKind = (field: FieldSpec, kind: FieldKind): FieldSpec => {
 const DesignerPage: Component = () => {
   const [formSpec, setFormSpec] = createSignal<FormSpec>(cloneFormSpec(demoFormSpec));
   const [selected, setSelected] = createSignal<DesignerSelection>(null);
+  const [showTriggers, setShowTriggers] = createSignal(false);
   const [isAddFieldModalOpen, setIsAddFieldModalOpen] = createSignal(false);
   const [pendingFieldKind, setPendingFieldKind] = createSignal<FieldKind>(
     FIELD_TYPE_OPTIONS[0]?.kind ?? FieldKind.text,
@@ -300,6 +301,8 @@ const DesignerPage: Component = () => {
       onAddAfterField={(fieldId) => openAddFieldModal({ mode: "after-field", fieldId })}
       onRemoveRow={removeRow}
       onRemoveField={removeField}
+      showTriggers={showTriggers()}
+      onShowTriggersChange={setShowTriggers}
     />
   );
 
@@ -312,7 +315,9 @@ const DesignerPage: Component = () => {
     />
   );
 
-  const PreviewPanel: Component = () => <FormPreview formSpec={formSpec()} />;
+  const PreviewPanel: Component = () => (
+    <FormPreview formSpec={formSpec()} showTriggers={showTriggers()} />
+  );
 
   return (
     <>

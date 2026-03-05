@@ -27,6 +27,8 @@ type TreeCodeViewerProps = {
   onAddAfterField: (fieldId: string) => void;
   onRemoveRow: (rowId: string) => void;
   onRemoveField: (fieldId: string) => void;
+  showTriggers: boolean;
+  onShowTriggersChange: (next: boolean) => void;
 };
 
 type CodeTabContentProps = {
@@ -311,6 +313,18 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
           </ul>
         </div>
       </Show>
+
+      <div class="pointer-events-none absolute bottom-3 right-3 z-30">
+        <label class="pointer-events-auto inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white/95 px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm">
+          <input
+            type="checkbox"
+            class="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            checked={props.showTriggers}
+            onInput={(event) => props.onShowTriggersChange(event.currentTarget.checked)}
+          />
+          show triggers
+        </label>
+      </div>
     </div>
   );
 };
