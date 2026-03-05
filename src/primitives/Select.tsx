@@ -141,6 +141,11 @@ const callHandler = <T, E extends Event>(
   handlers.forEach((item) => item && item(event));
 };
 
+const MENU_GAP_PX = 8;
+const VIEWPORT_MARGIN_PX = 8;
+const MAX_MENU_HEIGHT_PX = 240;
+const MIN_MENU_HEIGHT_PX = 80;
+
 const Select = (props: SelectProps) => {
   const merged = mergeProps(
     {
@@ -194,18 +199,67 @@ const Select = (props: SelectProps) => {
 
   let menuEl: HTMLDivElement | undefined;
 
-  const [menuPos, setMenuPos] = createSignal<{ top: number; left: number; width: number }>({
+  const [menuPos, setMenuPos] = createSignal<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+    placement: 'top' | 'bottom';
+  }>({
     top: 0,
     left: 0,
     width: 0,
+    maxHeight: MAX_MENU_HEIGHT_PX,
+    placement: 'bottom',
   });
 
   const updateMenuPos = () => {
     const anchor = controlEl;
     if (!anchor) return;
+
     const rect = anchor.getBoundingClientRect();
-    // 8px gap (matches `mt-2`)
-    setMenuPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const width = Math.min(
+      Math.max(1, rect.width),
+      Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2),
+    );
+    const left = Math.max(
+      VIEWPORT_MARGIN_PX,
+      Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+    );
+
+    const measuredHeight = menuEl
+      ? Math.min(menuEl.scrollHeight, MAX_MENU_HEIGHT_PX)
+      : MAX_MENU_HEIGHT_PX;
+    const targetHeight = Math.max(MIN_MENU_HEIGHT_PX, measuredHeight);
+
+    const availableBelow = Math.max(
+      0,
+      viewportHeight - rect.bottom - MENU_GAP_PX - VIEWPORT_MARGIN_PX,
+    );
+    const availableAbove = Math.max(0, rect.top - MENU_GAP_PX - VIEWPORT_MARGIN_PX);
+
+    const shouldPlaceTop =
+      availableBelow < Math.min(targetHeight, 160) && availableAbove > availableBelow;
+
+    const placement: 'top' | 'bottom' = shouldPlaceTop ? 'top' : 'bottom';
+    const availableForPlacement = placement === 'top' ? availableAbove : availableBelow;
+    const maxHeight = Math.max(
+      MIN_MENU_HEIGHT_PX,
+      Math.min(targetHeight, availableForPlacement || targetHeight),
+    );
+
+    const top =
+      placement === 'top'
+        ? Math.max(VIEWPORT_MARGIN_PX, rect.top - MENU_GAP_PX - maxHeight)
+        : Math.min(
+            rect.bottom + MENU_GAP_PX,
+            viewportHeight - VIEWPORT_MARGIN_PX - maxHeight,
+          );
+
+    setMenuPos({ top, left, width, maxHeight, placement });
   };
 
   const [open, setOpen] = createSignal(false);
@@ -355,32 +409,23 @@ const Select = (props: SelectProps) => {
     if (!canInteract() || open() || suppressOpen) return;
     setOpen(true);
     updateMenuPos();
+    queueMicrotask(() => updateMenuPos());
+    requestAnimationFrame(() => updateMenuPos());
+    queueMicrotask(() => controlEl?.focus());
     syncHighlightToSelection();
   };
 
-  const moveHighlight = (direction: 1 | -1) => {
-    if (!open()) {
-      openMenu();
-      if (direction === -1 && highlightedIndex() < 0) {
-        setHighlightedIndex(lastEnabledIndex());
-      }
-      return;
-    }
-
+  const selectableHighlightedIndex = () => {
     const current = highlightedIndex();
-    const start =
-      current >= 0
-        ? current
-        : direction === 1
-          ? local.options.length - 1
-          : 0;
-    const next = nextEnabledIndex(start, direction);
-    if (next >= 0) {
-      setHighlightedIndex(next);
-    }
+    if (current >= 0 && !local.options[current]?.disabled) return current;
+    return firstEnabledIndex();
   };
 
-  const selectOptionAt = (index: number, trigger: SelectChangeContext['trigger']) => {
+  const selectOptionAt = (
+    index: number,
+    trigger: SelectChangeContext['trigger'],
+    options?: { closeMenu?: boolean },
+  ) => {
     if (!canInteract()) return;
 
     const option = local.options[index];
@@ -396,7 +441,9 @@ const Select = (props: SelectProps) => {
     };
 
     local.onValue?.(option.value, ctx);
-    closeMenu();
+    if (options?.closeMenu ?? true) {
+      closeMenu();
+    }
   };
 
   const containerClass = () => {
@@ -461,6 +508,7 @@ const Select = (props: SelectProps) => {
     event,
   ) => {
     closeOnlyFromEdgeClick = false;
+    controlEl?.focus();
     if (disabled() || readOnly()) {
       callHandler(local.onClick, event);
       return;
@@ -526,13 +574,27 @@ const Select = (props: SelectProps) => {
 
     if (key === 'ArrowDown') {
       event.preventDefault();
-      moveHighlight(1);
+      const current = open() ? selectableHighlightedIndex() : selectedIndex();
+      const start = current >= 0 ? current : local.options.length - 1;
+      const next = nextEnabledIndex(start, 1);
+      if (next >= 0) {
+        if (!open()) openMenu();
+        setHighlightedIndex(next);
+        selectOptionAt(next, 'keyboard', { closeMenu: false });
+      }
       return;
     }
 
     if (key === 'ArrowUp') {
       event.preventDefault();
-      moveHighlight(-1);
+      const current = open() ? selectableHighlightedIndex() : selectedIndex();
+      const start = current >= 0 ? current : 0;
+      const next = nextEnabledIndex(start, -1);
+      if (next >= 0) {
+        if (!open()) openMenu();
+        setHighlightedIndex(next);
+        selectOptionAt(next, 'keyboard', { closeMenu: false });
+      }
       return;
     }
 
@@ -542,10 +604,9 @@ const Select = (props: SelectProps) => {
         openMenu();
         return;
       }
-      const index =
-        highlightedIndex() >= 0 ? highlightedIndex() : firstEnabledIndex();
+      const index = selectableHighlightedIndex();
       if (index >= 0) {
-        selectOptionAt(index, 'keyboard');
+        selectOptionAt(index, 'keyboard', { closeMenu: true });
       }
       return;
     }
@@ -556,10 +617,31 @@ const Select = (props: SelectProps) => {
         openMenu();
         return;
       }
-      const index =
-        highlightedIndex() >= 0 ? highlightedIndex() : firstEnabledIndex();
+      const index = selectableHighlightedIndex();
       if (index >= 0) {
-        selectOptionAt(index, 'keyboard');
+        selectOptionAt(index, 'keyboard', { closeMenu: true });
+      }
+      return;
+    }
+
+    if (key === 'Home') {
+      event.preventDefault();
+      const index = firstEnabledIndex();
+      if (index >= 0) {
+        if (!open()) openMenu();
+        setHighlightedIndex(index);
+        selectOptionAt(index, 'keyboard', { closeMenu: false });
+      }
+      return;
+    }
+
+    if (key === 'End') {
+      event.preventDefault();
+      const index = lastEnabledIndex();
+      if (index >= 0) {
+        if (!open()) openMenu();
+        setHighlightedIndex(index);
+        selectOptionAt(index, 'keyboard', { closeMenu: false });
       }
     }
   };
@@ -591,6 +673,7 @@ const Select = (props: SelectProps) => {
     if (!open()) return;
 
     updateMenuPos();
+    queueMicrotask(() => updateMenuPos());
 
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
@@ -854,9 +937,13 @@ const Select = (props: SelectProps) => {
                   top: `${menuPos().top}px`,
                   left: `${menuPos().left}px`,
                   width: `${menuPos().width}px`,
+                  'max-height': `${menuPos().maxHeight}px`,
                 }}
                 class={cx(
                   'z-[9999] max-h-60 overflow-auto rounded-xl border border-slate-200/80 bg-white/95 py-1 shadow-lg shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
+                  menuPos().placement === 'top'
+                    ? 'origin-bottom'
+                    : 'origin-top',
                   local.menuClass,
                 )}
               >
