@@ -77,6 +77,9 @@ const getCurrentProps = (
     row: parsed.kind === "number" ? parsed.rowNumber : undefined,
     size: firstField?.size,
     variant: firstField?.variant,
+    ringEnabled: firstField?.ringEnabled,
+    animateRingOnFocus: firstField?.animateRingOnFocus,
+    ringVariant: firstField?.ringVariant,
   };
 };
 

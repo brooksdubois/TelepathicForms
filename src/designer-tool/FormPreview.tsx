@@ -1,7 +1,6 @@
 import {
   Show,
   createEffect,
-  createMemo,
   createSignal,
   onCleanup,
   type Component,
@@ -20,22 +19,13 @@ type PreviewRuntime = {
 const FormPreview: Component<FormPreviewProps> = (props) => {
   const [runtime, setRuntime] = createSignal<PreviewRuntime | null>(null);
 
-  const formSpecSignature = createMemo(() =>
-    props.formSpec.fields
-      .map(
-        (field) =>
-          `${field.id}|${field.kind}|${field.row ?? "unassigned"}|${field.label ?? ""}|${field.placeholder ?? ""}|${field.helperText ?? ""}`,
-      )
-      .join("::"),
-  );
-
   createEffect(() => {
-    formSpecSignature();
+    const nextFormSpec = props.formSpec;
     const { graph, handlesById: nextHandlesById } = buildGraphFromFormSpec(
-      props.formSpec,
+      nextFormSpec,
     );
     setRuntime({
-      formSpec: props.formSpec,
+      formSpec: nextFormSpec,
       handlesById: nextHandlesById,
     });
     onCleanup(() => graph.destroy());

@@ -101,7 +101,7 @@ const descriptorToFieldSpec = (
     initialValue: resolveInitialValue(descriptor, currentProps, target),
     ringEnabled: true,
     animateRingOnFocus: true,
-    ringVariant: "expanse",
+    ringVariant: "laser",
     validate: regexValidator,
   };
 
