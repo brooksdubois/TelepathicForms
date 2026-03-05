@@ -302,7 +302,10 @@ const DesignerPage: Component = () => {
       onRemoveRow={removeRow}
       onRemoveField={removeField}
       showTriggers={showTriggers()}
-      onShowTriggersChange={setShowTriggers}
+      onPasteFormSpec={(next) => {
+        setFormSpec(next);
+        setSelected(null);
+      }}
     />
   );
 
@@ -316,7 +319,11 @@ const DesignerPage: Component = () => {
   );
 
   const PreviewPanel: Component = () => (
-    <FormPreview formSpec={formSpec()} showTriggers={showTriggers()} />
+    <FormPreview
+      formSpec={formSpec()}
+      showTriggers={showTriggers()}
+      onShowTriggersChange={setShowTriggers}
+    />
   );
 
   return (

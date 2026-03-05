@@ -1,5 +1,6 @@
 import {
   Show,
+  createMemo,
   createEffect,
   createSignal,
   onCleanup,
@@ -349,8 +350,24 @@ const FormPropsForm: Component<FormPropsFormProps> = (props) => {
   const [handlesById, setHandlesById] = createSignal<Map<string, FieldHandle> | null>(
     null,
   );
+  const editorRebuildKey = createMemo(() => {
+    const currentSelection = props.selected;
+    if (!currentSelection) return "none";
+
+    const rowValuesKey = buildSensibleRowValues(props.formSpec).join(",");
+
+    if (currentSelection.kind === "field") {
+      const currentField = props.formSpec.fields.find(
+        (candidate) => candidate.id === currentSelection.id,
+      );
+      return `field:${currentSelection.id}:${currentField?.kind ?? "missing"}:${rowValuesKey}`;
+    }
+
+    return `row:${currentSelection.id}:${rowValuesKey}`;
+  });
 
   createEffect(() => {
+    editorRebuildKey();
     const currentSelection = props.selected;
 
     if (!currentSelection) {
