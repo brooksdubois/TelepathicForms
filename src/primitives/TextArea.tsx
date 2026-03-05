@@ -135,6 +135,26 @@ const clampRows = (value: number | undefined, fallback: number) => {
   return Math.max(1, Math.floor(value));
 };
 
+const parseBoolean = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+  return undefined;
+};
+
+const parseRingVariant = (value: unknown): LaserRingVariant | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'default') return 'default';
+  if (normalized === 'laser') return 'laser';
+  if (normalized === 'expanse') return 'expanse';
+  if (normalized === 'scanner') return 'scanner';
+  return undefined;
+};
+
 const TextArea = (props: TextAreaProps) => {
   const merged = mergeProps(props);
 
@@ -185,8 +205,9 @@ const TextArea = (props: TextAreaProps) => {
 
   let textAreaEl: HTMLTextAreaElement | undefined;
 
-  const ringEnabled = () => local.ringEnabled ?? true;
-  const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
+  const ringEnabled = () => parseBoolean(local.ringEnabled) ?? true;
+  const animateRingOnFocus = () => parseBoolean(local.animateRingOnFocus) ?? true;
+  const ringVariant = () => parseRingVariant(local.ringVariant);
   const {
     ringBox,
     ringPathD,
@@ -200,7 +221,7 @@ const TextArea = (props: TextAreaProps) => {
   } = useRingAnimation({
     enabled: ringEnabled,
     radius: () => (variant() === 'standard' ? 2 : 16),
-    variant: () => local.ringVariant,
+    variant: ringVariant,
   });
 
   const required = () => Boolean(local.required);
@@ -232,8 +253,6 @@ const TextArea = (props: TextAreaProps) => {
     if (!el) return;
 
     if (!autosize()) {
-      el.style.height = '';
-      el.style.overflowY = '';
       return;
     }
 
@@ -265,14 +284,24 @@ const TextArea = (props: TextAreaProps) => {
       maxHeight !== undefined && nextHeight > maxHeight + 0.5 ? 'auto' : 'hidden';
   };
 
-  createEffect(() => {
-    autosize();
+  createEffect((wasAutosize) => {
+    const nextAutosize = autosize();
     minRows();
     maxRows();
     currentValue();
 
-    queueMicrotask(() => resizeToContent());
-  });
+    const el = textAreaEl;
+    if (wasAutosize && !nextAutosize && el) {
+      el.style.height = '';
+      el.style.overflowY = '';
+    }
+
+    if (nextAutosize) {
+      queueMicrotask(() => resizeToContent());
+    }
+
+    return nextAutosize;
+  }, autosize());
 
   createEffect(() => {
     setCharacterCount(currentValue().length);
