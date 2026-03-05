@@ -219,8 +219,7 @@ export const demoFormSpec: FormSpec = {
       maxLength: 120,
       size: "lg",
       variant: "filled",
-      startAdornment: "@",
-      endAdornment: "required for email",
+      startAdornment: "📧",
       ringEnabled: true,
       animateRingOnFocus: true,
       validate: (v) => {
