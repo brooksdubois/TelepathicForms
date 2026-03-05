@@ -90,7 +90,7 @@ export const TelepathicFormDemo: Component = () => {
             <PlaygroundNav currentPath="/form-demo" />
             <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
               This demo renders a form from `formSpec` and applies runtime trigger wiring for
-              visibility, disabled state, and derived values. <strong class="text-emerald-600 dark:text-emerald-400">AI-ready</strong> via WebMCP + embedded Claude chatbot (🤖 bottom-right).
+              visibility, disabled state, and derived values. <strong class="text-emerald-600 dark:text-emerald-400">AI-ready</strong> via WebMCP.
             </p>
           </header>
 

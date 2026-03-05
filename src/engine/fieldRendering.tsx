@@ -65,6 +65,20 @@ export type FieldSlotProps = {
 
 export const FieldSlot: Component<FieldSlotProps> = (p) => {
   const hidden = fromObservable(p.handle.hidden$, false);
+  const ENTER_MS = 180;
+  const EXIT_MS = 140;
+  const ENTER_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+  const EXIT_EASING = "cubic-bezier(0.4, 0, 1, 1)";
+
+  const clearSlotInlineStyles = (el: HTMLElement) => {
+    el.style.transition = "";
+    el.style.overflow = "";
+    el.style.opacity = "";
+    el.style.maxHeight = "";
+    el.style.transform = "";
+    el.style.willChange = "";
+  };
+
   const renderContent = () => {
     const f = p.f;
     const handle = p.handle;
@@ -131,58 +145,39 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
     <Transition
       onEnter={(rawEl, done) => {
         const el = rawEl as HTMLElement;
-        // Ensure the base class is present (the child div uses tf-slot)
-        // Animate via max-height / max-width + opacity (no transforms) to avoid stacking-context issues.
-        const DURATION_MS = 160;
+        const targetHeight = Math.max(1, Math.ceil(el.getBoundingClientRect().height));
 
-        // Start collapsed
         el.style.overflow = "hidden";
+        el.style.maxHeight = "0px";
         el.style.opacity = "0";
-        el.style.maxHeight = "0px";
-        el.style.maxWidth = "0px";
+        el.style.transform = "translateY(-4px) scale(0.985)";
+        el.style.willChange = "max-height, opacity, transform";
 
-        // Force initial layout
         el.getBoundingClientRect();
 
-        // Measure natural size
-        el.style.maxHeight = "none";
-        el.style.maxWidth = "none";
-        const targetH = el.scrollHeight;
-        const targetW = el.getBoundingClientRect().width; // respect layout (flex/row) rather than scrollWidth
+        el.style.transition = [
+          `max-height ${ENTER_MS}ms ${ENTER_EASING}`,
+          `opacity ${ENTER_MS}ms ${ENTER_EASING}`,
+          `transform ${ENTER_MS}ms ${ENTER_EASING}`,
+        ].join(", ");
 
-        // Reset to collapsed before animating
-        el.style.maxHeight = "0px";
-        el.style.maxWidth = "0px";
-        el.getBoundingClientRect();
-
-        // Animate to target
-        el.style.transition = `max-height ${DURATION_MS}ms ease-out, max-width ${DURATION_MS}ms ease-out, opacity ${DURATION_MS}ms ease-out`;
         requestAnimationFrame(() => {
           el.style.opacity = "1";
-          el.style.maxHeight = `${targetH}px`;
-          el.style.maxWidth = `${Math.max(0, Math.ceil(targetW))}px`;
+          el.style.maxHeight = `${targetHeight}px`;
+          el.style.transform = "translateY(0) scale(1)";
         });
 
-        const cleanup = () => {
-          el.style.transition = "";
-          el.style.overflow = "";
-          el.style.opacity = "";
-          el.style.maxHeight = "";
-          el.style.maxWidth = "";
-        };
-
-        // Transitionend can fire multiple times (one per property). Use a timer as the single source of truth.
         const timer = window.setTimeout(() => {
-          cleanup();
+          clearSlotInlineStyles(el);
           done();
-        }, DURATION_MS + 40);
+        }, ENTER_MS + 40);
 
         el.addEventListener(
           "transitionend",
           (e) => {
             if (e.target !== el) return;
             window.clearTimeout(timer);
-            cleanup();
+            clearSlotInlineStyles(el);
             done();
           },
           { once: true },
@@ -190,33 +185,40 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
       }}
       onExit={(rawEl, done) => {
         const el = rawEl as HTMLElement;
-        const DURATION_MS = 140;
-
-        // Lock current size so we can animate collapse
         const rect = el.getBoundingClientRect();
+        const height = Math.max(1, Math.ceil(rect.height));
+
         el.style.overflow = "hidden";
+        el.style.maxHeight = `${height}px`;
         el.style.opacity = "1";
-        el.style.maxHeight = `${Math.ceil(rect.height)}px`;
-        el.style.maxWidth = `${Math.ceil(rect.width)}px`;
+        el.style.transform = "translateY(0) scale(1)";
+        el.style.willChange = "max-height, opacity, transform";
 
         el.getBoundingClientRect();
 
-        el.style.transition = `max-height ${DURATION_MS}ms ease-in, max-width ${DURATION_MS}ms ease-in, opacity ${DURATION_MS}ms ease-in`;
+        el.style.transition = [
+          `max-height ${EXIT_MS}ms ${EXIT_EASING}`,
+          `opacity ${EXIT_MS}ms ${EXIT_EASING}`,
+          `transform ${EXIT_MS}ms ${EXIT_EASING}`,
+        ].join(", ");
+
         requestAnimationFrame(() => {
           el.style.opacity = "0";
           el.style.maxHeight = "0px";
-          el.style.maxWidth = "0px";
+          el.style.transform = "translateY(-4px) scale(0.985)";
         });
 
         const timer = window.setTimeout(() => {
+          clearSlotInlineStyles(el);
           done();
-        }, DURATION_MS + 40);
+        }, EXIT_MS + 40);
 
         el.addEventListener(
           "transitionend",
           (e) => {
             if (e.target !== el) return;
             window.clearTimeout(timer);
+            clearSlotInlineStyles(el);
             done();
           },
           { once: true },
