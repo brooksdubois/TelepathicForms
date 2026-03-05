@@ -254,10 +254,13 @@ const Checkbox = (props: CheckboxProps) => {
     );
   };
 
+  const hasLabel = () => Boolean(local.renderLabel) || Boolean(local.label);
+
   const rootClass = () =>
     cx(
       inline() ? 'flex items-center gap-3' : 'flex flex-col gap-1.5',
       fullWidth() ? 'w-full' : 'inline-flex',
+      size() === 'lg' ? 'pt-9' : size() === 'sm' ? 'pt-8' : 'pt-8',
       local.class,
       local.rootClass,
     );
@@ -265,11 +268,9 @@ const Checkbox = (props: CheckboxProps) => {
   const controlRowClass = () =>
     cx(
       'min-w-0',
-      inline() ? 'flex min-w-0 flex-1 items-center gap-3' : 'flex items-start',
+      inline() ? 'flex min-w-0 flex-1 items-center gap-3' : 'flex items-center',
       sizeStyles[size()].gap,
     );
-
-  const hasLabel = () => Boolean(local.renderLabel) || Boolean(local.label);
 
   createEffect(() => {
     const focus = () => inputEl?.focus();

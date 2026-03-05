@@ -449,7 +449,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
       {/* Input trigger */}
       <div
         class={cx(
-          'tf-input-container relative flex w-full items-center gap-1 rounded-xl border bg-white/90 px-3 py-2.5 shadow-sm transition dark:bg-slate-900/60',
+          'tf-input-container relative flex w-full items-center gap-1 rounded-xl border bg-white/90 px-3.5 py-2.5 shadow-sm transition dark:bg-slate-900/60',
           errorActive()
             ? 'border-rose-500/80 focus-within:border-rose-500'
             : 'border-slate-300/80 focus-within:border-emerald-400 dark:border-slate-700 dark:focus-within:border-emerald-400',
@@ -541,7 +541,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
         <Show when={showClear()}>
           <button
             type="button"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
             aria-label="Clear date range"
             onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClear(); inputEl?.focus(); }}
@@ -555,7 +555,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
         {/* Calendar icon */}
         <button
           type="button"
-          class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          class="inline-flex h-5 w-5 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
           aria-label={open() ? 'Close calendar' : 'Open calendar'}
           onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (canInteract()) { setOpen(!open()); inputEl?.focus(); } }}

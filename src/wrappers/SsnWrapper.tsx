@@ -50,15 +50,8 @@ export const SsnWrapper: Component<SsnWrapperProps> = (p) => {
           type="button"
           onClick={() => setShow((s) => !s)}
           disabled={disabled()}
-          style={{
-            padding: "6px 9px",
-            "border-radius": "8px",
-            border: "1px solid rgba(0,0,0,0.25)",
-            "background-color": "white",
-            "font-size": "12px",
-            cursor: "pointer",
-            opacity: disabled() ? 0.6 : 1,
-          }}
+          class="inline-flex h-5 min-h-5 shrink-0 items-center rounded-md border border-slate-300 bg-white px-2 text-[11px] leading-none text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800/80"
+          classList={{ "opacity-60": !!disabled(), "cursor-pointer": !disabled(), "cursor-not-allowed": disabled() }}
         >
           {show() ? "Hide" : "Show"}
         </button>

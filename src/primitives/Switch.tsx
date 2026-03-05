@@ -254,6 +254,7 @@ const Switch = (props: SwitchProps) => {
     cx(
       inline() ? 'flex items-center gap-3' : 'flex flex-col gap-1.5',
       fullWidth() ? 'w-full' : 'inline-flex',
+      size() === 'lg' ? 'pt-7' : size() === 'sm' ? 'pt-5' : 'pt-6',
       local.class,
       local.rootClass,
     );
