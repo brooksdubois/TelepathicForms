@@ -1,5 +1,6 @@
 import type {BehaviorSubject, Observable} from "rxjs";
 import type {LaserRingVariant} from "../utils/laserRingVariants";
+import type {AccentTheme} from "../theme/theme";
 
 export type ValidationContext = {
   getValue: (fieldId: string) => string;
@@ -167,6 +168,7 @@ export type TriggerSpec =
 
 export type FormSpec = {
   id: string;
+  theme?: AccentTheme;
   fields: FieldSpec[];
 };
 

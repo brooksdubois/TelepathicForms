@@ -10,6 +10,157 @@
     --font-display: "Space Grotesk", sans-serif;
 }
 
+:root,
+[data-tf-theme="green"] {
+    --tf-accent-50: #ecfdf5;
+    --tf-accent-100: #d1fae5;
+    --tf-accent-200: #a7f3d0;
+    --tf-accent-300: #6ee7b7;
+    --tf-accent-400: #34d399;
+    --tf-accent-500: #10b981;
+    --tf-accent-600: #059669;
+    --tf-accent-700: #047857;
+    --tf-accent-soft-bg: rgba(16, 185, 129, 0.10);
+    --tf-accent-soft-bg-strong: rgba(16, 185, 129, 0.16);
+    --tf-accent-soft-bg-dark: rgba(52, 211, 153, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(52, 211, 153, 0.22);
+    --tf-accent-border-soft: rgba(16, 185, 129, 0.22);
+    --tf-accent-border-soft-strong: rgba(52, 211, 153, 0.50);
+    --tf-accent-ring: rgba(52, 211, 153, 0.40);
+    --tf-accent-ring-strong: rgba(52, 211, 153, 0.62);
+    --tf-accent-ring-soft: rgba(110, 231, 183, 0.36);
+    --tf-accent-shadow-soft: rgba(110, 231, 183, 0.35);
+    --tf-accent-shadow-strong: rgba(52, 211, 153, 0.45);
+    --tf-page-bg: #f3faf7;
+    --tf-page-bg-dark: #071410;
+    --tf-designer-bg: #eef8f4;
+}
+
+[data-tf-theme="purple"] {
+    --tf-accent-50: #faf5ff;
+    --tf-accent-100: #f3e8ff;
+    --tf-accent-200: #e9d5ff;
+    --tf-accent-300: #d8b4fe;
+    --tf-accent-400: #c084fc;
+    --tf-accent-500: #a855f7;
+    --tf-accent-600: #9333ea;
+    --tf-accent-700: #7e22ce;
+    --tf-accent-soft-bg: rgba(168, 85, 247, 0.10);
+    --tf-accent-soft-bg-strong: rgba(168, 85, 247, 0.16);
+    --tf-accent-soft-bg-dark: rgba(192, 132, 252, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(192, 132, 252, 0.22);
+    --tf-accent-border-soft: rgba(168, 85, 247, 0.22);
+    --tf-accent-border-soft-strong: rgba(192, 132, 252, 0.50);
+    --tf-accent-ring: rgba(192, 132, 252, 0.40);
+    --tf-accent-ring-strong: rgba(192, 132, 252, 0.62);
+    --tf-accent-ring-soft: rgba(216, 180, 254, 0.36);
+    --tf-accent-shadow-soft: rgba(216, 180, 254, 0.35);
+    --tf-accent-shadow-strong: rgba(192, 132, 252, 0.45);
+    --tf-page-bg: #faf6ff;
+    --tf-page-bg-dark: #140c1f;
+    --tf-designer-bg: #f6f0ff;
+}
+
+[data-tf-theme="blue"] {
+    --tf-accent-50: #eff6ff;
+    --tf-accent-100: #dbeafe;
+    --tf-accent-200: #bfdbfe;
+    --tf-accent-300: #93c5fd;
+    --tf-accent-400: #60a5fa;
+    --tf-accent-500: #3b82f6;
+    --tf-accent-600: #2563eb;
+    --tf-accent-700: #1d4ed8;
+    --tf-accent-soft-bg: rgba(59, 130, 246, 0.10);
+    --tf-accent-soft-bg-strong: rgba(59, 130, 246, 0.16);
+    --tf-accent-soft-bg-dark: rgba(96, 165, 250, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(96, 165, 250, 0.22);
+    --tf-accent-border-soft: rgba(59, 130, 246, 0.22);
+    --tf-accent-border-soft-strong: rgba(96, 165, 250, 0.50);
+    --tf-accent-ring: rgba(96, 165, 250, 0.40);
+    --tf-accent-ring-strong: rgba(96, 165, 250, 0.62);
+    --tf-accent-ring-soft: rgba(147, 197, 253, 0.36);
+    --tf-accent-shadow-soft: rgba(147, 197, 253, 0.35);
+    --tf-accent-shadow-strong: rgba(96, 165, 250, 0.45);
+    --tf-page-bg: #f4f8ff;
+    --tf-page-bg-dark: #081321;
+    --tf-designer-bg: #eef5ff;
+}
+
+[data-tf-theme="orange"] {
+    --tf-accent-50: #fff7ed;
+    --tf-accent-100: #ffedd5;
+    --tf-accent-200: #fed7aa;
+    --tf-accent-300: #fdba74;
+    --tf-accent-400: #fb923c;
+    --tf-accent-500: #f97316;
+    --tf-accent-600: #ea580c;
+    --tf-accent-700: #c2410c;
+    --tf-accent-soft-bg: rgba(249, 115, 22, 0.10);
+    --tf-accent-soft-bg-strong: rgba(249, 115, 22, 0.16);
+    --tf-accent-soft-bg-dark: rgba(251, 146, 60, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(251, 146, 60, 0.22);
+    --tf-accent-border-soft: rgba(249, 115, 22, 0.22);
+    --tf-accent-border-soft-strong: rgba(251, 146, 60, 0.50);
+    --tf-accent-ring: rgba(251, 146, 60, 0.40);
+    --tf-accent-ring-strong: rgba(251, 146, 60, 0.62);
+    --tf-accent-ring-soft: rgba(253, 186, 116, 0.36);
+    --tf-accent-shadow-soft: rgba(253, 186, 116, 0.35);
+    --tf-accent-shadow-strong: rgba(251, 146, 60, 0.45);
+    --tf-page-bg: #fff8f1;
+    --tf-page-bg-dark: #1a0d05;
+    --tf-designer-bg: #fff4eb;
+}
+
+[data-tf-theme="gray"] {
+    --tf-accent-50: #f8fafc;
+    --tf-accent-100: #f1f5f9;
+    --tf-accent-200: #e2e8f0;
+    --tf-accent-300: #cbd5e1;
+    --tf-accent-400: #94a3b8;
+    --tf-accent-500: #64748b;
+    --tf-accent-600: #475569;
+    --tf-accent-700: #334155;
+    --tf-accent-soft-bg: rgba(100, 116, 139, 0.10);
+    --tf-accent-soft-bg-strong: rgba(100, 116, 139, 0.16);
+    --tf-accent-soft-bg-dark: rgba(148, 163, 184, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(148, 163, 184, 0.22);
+    --tf-accent-border-soft: rgba(100, 116, 139, 0.22);
+    --tf-accent-border-soft-strong: rgba(148, 163, 184, 0.50);
+    --tf-accent-ring: rgba(148, 163, 184, 0.40);
+    --tf-accent-ring-strong: rgba(148, 163, 184, 0.62);
+    --tf-accent-ring-soft: rgba(203, 213, 225, 0.36);
+    --tf-accent-shadow-soft: rgba(203, 213, 225, 0.35);
+    --tf-accent-shadow-strong: rgba(148, 163, 184, 0.45);
+    --tf-page-bg: #f7fafc;
+    --tf-page-bg-dark: #0f172a;
+    --tf-designer-bg: #f2f6fa;
+}
+
+[data-tf-theme="navy"] {
+    --tf-accent-50: #eff6ff;
+    --tf-accent-100: #dbeafe;
+    --tf-accent-200: #bfdbfe;
+    --tf-accent-300: #93c5fd;
+    --tf-accent-400: #60a5fa;
+    --tf-accent-500: #1d4ed8;
+    --tf-accent-600: #1e40af;
+    --tf-accent-700: #1e3a8a;
+    --tf-accent-soft-bg: rgba(29, 78, 216, 0.10);
+    --tf-accent-soft-bg-strong: rgba(29, 78, 216, 0.16);
+    --tf-accent-soft-bg-dark: rgba(96, 165, 250, 0.14);
+    --tf-accent-soft-bg-dark-strong: rgba(96, 165, 250, 0.22);
+    --tf-accent-border-soft: rgba(29, 78, 216, 0.22);
+    --tf-accent-border-soft-strong: rgba(96, 165, 250, 0.50);
+    --tf-accent-ring: rgba(96, 165, 250, 0.40);
+    --tf-accent-ring-strong: rgba(96, 165, 250, 0.62);
+    --tf-accent-ring-soft: rgba(147, 197, 253, 0.36);
+    --tf-accent-shadow-soft: rgba(147, 197, 253, 0.35);
+    --tf-accent-shadow-strong: rgba(96, 165, 250, 0.45);
+    --tf-page-bg: #f1f6ff;
+    --tf-page-bg-dark: #050c19;
+    --tf-designer-bg: #ecf3ff;
+}
+
 .dark {
     color-scheme: dark;
 }
@@ -22,6 +173,253 @@ body,
 
 body {
     font-family: var(--font-body);
+}
+
+.tf-native-accent {
+    accent-color: var(--tf-accent-500);
+}
+
+.relative.min-h-screen.bg-slate-50 {
+    background-color: var(--tf-page-bg) !important;
+}
+
+.h-screen.w-full.overflow-auto.bg-slate-100 {
+    background-color: var(--tf-designer-bg) !important;
+}
+
+.dark .relative.min-h-screen.dark\:bg-slate-950 {
+    background-color: var(--tf-page-bg-dark) !important;
+}
+
+.text-emerald-500 {
+    color: var(--tf-accent-500) !important;
+}
+
+.text-emerald-600 {
+    color: var(--tf-accent-600) !important;
+}
+
+.text-emerald-700 {
+    color: var(--tf-accent-700) !important;
+}
+
+.dark .dark\:text-emerald-200 {
+    color: var(--tf-accent-200) !important;
+}
+
+.dark .dark\:text-emerald-300 {
+    color: var(--tf-accent-300) !important;
+}
+
+.dark .dark\:text-emerald-400 {
+    color: var(--tf-accent-400) !important;
+}
+
+.bg-emerald-50 {
+    background-color: var(--tf-accent-50) !important;
+}
+
+.bg-emerald-100 {
+    background-color: var(--tf-accent-100) !important;
+}
+
+.bg-emerald-100\/60 {
+    background-color: color-mix(in srgb, var(--tf-accent-100) 60%, transparent) !important;
+}
+
+.bg-emerald-200\/60 {
+    background-color: color-mix(in srgb, var(--tf-accent-200) 60%, transparent) !important;
+}
+
+.bg-emerald-500 {
+    background-color: var(--tf-accent-500) !important;
+}
+
+.bg-emerald-500\/10 {
+    background-color: var(--tf-accent-soft-bg) !important;
+}
+
+.bg-amber-200\/50 {
+    background-color: color-mix(in srgb, var(--tf-accent-200) 48%, white) !important;
+}
+
+.bg-sky-200\/50 {
+    background-color: color-mix(in srgb, var(--tf-accent-300) 38%, white) !important;
+}
+
+.dark .dark\:bg-emerald-400\/10 {
+    background-color: var(--tf-accent-soft-bg-dark) !important;
+}
+
+.dark .dark\:bg-emerald-400 {
+    background-color: var(--tf-accent-400) !important;
+}
+
+.dark .dark\:bg-emerald-500\/10 {
+    background-color: var(--tf-accent-soft-bg-dark) !important;
+}
+
+.dark .dark\:bg-emerald-500\/15 {
+    background-color: color-mix(in srgb, var(--tf-accent-400) 15%, transparent) !important;
+}
+
+.dark .dark\:bg-emerald-500\/30 {
+    background-color: var(--tf-accent-soft-bg-dark-strong) !important;
+}
+
+.dark .dark\:bg-emerald-900\/40 {
+    background-color: color-mix(in srgb, var(--tf-accent-700) 26%, transparent) !important;
+}
+
+.dark .dark\:bg-amber-500\/10 {
+    background-color: color-mix(in srgb, var(--tf-accent-400) 12%, transparent) !important;
+}
+
+.dark .dark\:bg-sky-500\/10 {
+    background-color: color-mix(in srgb, var(--tf-accent-300) 12%, transparent) !important;
+}
+
+.border-emerald-200 {
+    border-color: var(--tf-accent-200) !important;
+}
+
+.border-emerald-200\/70 {
+    border-color: color-mix(in srgb, var(--tf-accent-200) 70%, transparent) !important;
+}
+
+.border-emerald-200\/80 {
+    border-color: color-mix(in srgb, var(--tf-accent-200) 80%, transparent) !important;
+}
+
+.border-emerald-300 {
+    border-color: var(--tf-accent-300) !important;
+}
+
+.border-emerald-300\/70 {
+    border-color: color-mix(in srgb, var(--tf-accent-300) 70%, transparent) !important;
+}
+
+.border-emerald-500 {
+    border-color: var(--tf-accent-500) !important;
+}
+
+.dark .dark\:border-emerald-400 {
+    border-color: var(--tf-accent-400) !important;
+}
+
+.dark .dark\:border-emerald-400\/50 {
+    border-color: var(--tf-accent-border-soft-strong) !important;
+}
+
+.dark .dark\:border-emerald-500\/30 {
+    border-color: color-mix(in srgb, var(--tf-accent-500) 30%, transparent) !important;
+}
+
+.dark .dark\:border-emerald-500\/60 {
+    border-color: color-mix(in srgb, var(--tf-accent-500) 60%, transparent) !important;
+}
+
+.hover\:border-emerald-300:hover {
+    border-color: var(--tf-accent-300) !important;
+}
+
+.focus\:border-emerald-400:focus,
+.focus-within\:border-emerald-400:focus-within {
+    border-color: var(--tf-accent-400) !important;
+}
+
+.dark .dark\:focus-within\:border-emerald-400:focus-within {
+    border-color: var(--tf-accent-400) !important;
+}
+
+.hover\:text-emerald-600:hover {
+    color: var(--tf-accent-600) !important;
+}
+
+.hover\:text-emerald-700:hover {
+    color: var(--tf-accent-700) !important;
+}
+
+.dark .dark\:hover\:text-emerald-300:hover {
+    color: var(--tf-accent-300) !important;
+}
+
+.hover\:bg-emerald-50:hover {
+    background-color: var(--tf-accent-50) !important;
+}
+
+.hover\:bg-emerald-100:hover {
+    background-color: var(--tf-accent-100) !important;
+}
+
+.hover\:bg-emerald-200\/80:hover {
+    background-color: color-mix(in srgb, var(--tf-accent-200) 80%, transparent) !important;
+}
+
+.hover\:bg-emerald-500\/10:hover {
+    background-color: var(--tf-accent-soft-bg) !important;
+}
+
+.hover\:bg-emerald-500:hover {
+    background-color: var(--tf-accent-500) !important;
+}
+
+.hover\:bg-emerald-600:hover {
+    background-color: var(--tf-accent-600) !important;
+}
+
+.dark .dark\:hover\:bg-emerald-400:hover {
+    background-color: var(--tf-accent-400) !important;
+}
+
+.dark .dark\:hover\:bg-emerald-500:hover {
+    background-color: var(--tf-accent-500) !important;
+}
+
+.dark .dark\:hover\:bg-emerald-500\/10:hover {
+    background-color: var(--tf-accent-soft-bg-dark) !important;
+}
+
+.dark .dark\:hover\:bg-emerald-500\/30:hover {
+    background-color: var(--tf-accent-soft-bg-dark-strong) !important;
+}
+
+.focus\:ring-emerald-400:focus,
+.focus\:ring-emerald-400\/40:focus {
+    --tw-ring-color: var(--tf-accent-ring) !important;
+}
+
+.focus-visible\:ring-emerald-400\/60:focus-visible,
+.focus-visible\:ring-emerald-500\/50:focus-visible {
+    --tw-ring-color: var(--tf-accent-ring-strong) !important;
+}
+
+.ring-emerald-300\/60,
+.ring-emerald-400\/60,
+.ring-emerald-400\/70 {
+    --tw-ring-color: var(--tf-accent-ring-strong) !important;
+}
+
+.peer:focus ~ .peer-focus\:ring-emerald-500\/35,
+.peer:focus-visible ~ .peer-focus-visible\:ring-emerald-500\/35 {
+    --tw-ring-color: var(--tf-accent-ring) !important;
+}
+
+.dark .peer:focus ~ .dark\:peer-focus\:ring-emerald-400\/45,
+.dark .peer:focus-visible ~ .dark\:peer-focus-visible\:ring-emerald-400\/45 {
+    --tw-ring-color: var(--tf-accent-ring-strong) !important;
+}
+
+.shadow-emerald-300\/35 {
+    --tw-shadow-color: var(--tf-accent-shadow-soft) !important;
+}
+
+.shadow-emerald-400\/45 {
+    --tw-shadow-color: var(--tf-accent-shadow-strong) !important;
+}
+
+.accent-emerald-500 {
+    accent-color: var(--tf-accent-500) !important;
 }
 
 h1,

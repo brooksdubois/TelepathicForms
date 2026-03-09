@@ -13,7 +13,7 @@ type SerializationContext =
 
 const INDENT = "  ";
 
-const ROOT_KEY_ORDER = ["id", "fields"];
+const ROOT_KEY_ORDER = ["id", "theme", "fields"];
 
 const FIELD_KEY_ORDER = [
   "id",

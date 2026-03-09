@@ -1,15 +1,18 @@
 import { createMemo, createSignal, For, onCleanup, onMount, type Component } from "solid-js";
 import {FieldSlot, groupFieldsByRow} from "./fieldRendering";
 import type {FieldHandle, FormSpec} from "./types";
+import type {AccentTheme} from "../theme/theme";
 
 export type FormRendererProps = {
   form: FormSpec;
   handlesById: Map<string, FieldHandle>;
+  theme?: AccentTheme;
 };
 
 export const FormRenderer: Component<FormRendererProps> = (p) => {
   const groupedRows = createMemo(() => groupFieldsByRow(p.form.fields));
   const [isMobileViewport, setIsMobileViewport] = createSignal(false);
+  const resolvedTheme = createMemo(() => p.theme ?? p.form.theme);
 
   onMount(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -26,7 +29,10 @@ export const FormRenderer: Component<FormRendererProps> = (p) => {
   };
 
   return (
-    <div style={{display: "flex", "flex-direction": "column", gap: "20px", width: "100%"}}>
+    <div
+      data-tf-theme={resolvedTheme()}
+      style={{display: "flex", "flex-direction": "column", gap: "20px", width: "100%"}}
+    >
       <For each={groupedRows()}>
         {(row) =>
           row.sharedRow ? (

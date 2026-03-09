@@ -13,6 +13,8 @@ import { fromObservable } from "../utils/fromObservable";
 import { groupFormSpecRows } from "../designer/rowUtils";
 import { serializeFormSpecToTS } from "../designer/serializeFormSpec";
 import type { DesignerSelection, FormSpec } from "../designer/types";
+import Select from "../primitives/Select";
+import { setTheme, theme, themeOptions, type AccentTheme } from "../theme/theme";
 import { TextAreaWrapper } from "../wrappers";
 import { FieldKind, TriggerOperators, type TriggerSpec } from "../engine/types";
 import { FieldRuntimeNode, type FieldHandle, type FieldSpec } from "../engine/generators";
@@ -32,6 +34,7 @@ type TreeCodeViewerProps = {
   onAddAfterField: (fieldId: string) => void;
   onRemoveRow: (rowId: string) => void;
   onRemoveField: (fieldId: string) => void;
+  onThemeChange: (next: AccentTheme) => void;
   showTriggers: boolean;
   onPasteFormSpec?: (next: FormSpec) => void;
 };
@@ -295,6 +298,7 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
   const serializedCode = createMemo(() => serializeFormSpecToTS(props.formSpec));
   const pasteValue = fromObservable(pasteSpecHandle.value$, "");
   const pasteErrors = fromObservable(pasteSpecHandle.errors$, []);
+  const activeTheme = createMemo(() => props.formSpec.theme ?? theme());
   const fieldsById = createMemo(() => {
     const next = new Map<string, string>();
     props.formSpec.fields.forEach((field) =>
@@ -417,14 +421,29 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
           </button>
         </div>
 
-        <button
-          type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-sky-600 text-lg font-semibold leading-none text-white transition hover:bg-sky-700"
-          aria-label="Add row"
-          onClick={props.onAddRow}
-        >
-          +
-        </button>
+        <div class="flex items-center gap-2">
+          <div class="w-36">
+            <Select
+              value={activeTheme()}
+              options={themeOptions}
+              size="sm"
+              fullWidth
+              onValue={(next) => {
+                const nextTheme = next as AccentTheme;
+                setTheme(nextTheme);
+                props.onThemeChange(nextTheme);
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-sky-600 text-lg font-semibold leading-none text-white transition hover:bg-sky-700"
+            aria-label="Add row"
+            onClick={props.onAddRow}
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <Show
