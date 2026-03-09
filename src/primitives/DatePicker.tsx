@@ -323,10 +323,11 @@ const DatePicker = (props: DatePickerProps) => {
   let yearMenuRootEl: HTMLDivElement | undefined;
   let yearListEl: HTMLDivElement | undefined;
 
-  const locale = createMemo(() =>
-    props.locale ??
-    (typeof navigator !== 'undefined' ? navigator.language : 'en-US'),
-  );
+  const locale = createMemo(() => {
+    const configured = props.locale?.trim();
+    if (configured) return configured;
+    return typeof navigator !== 'undefined' ? navigator.language : 'en-US';
+  });
 
   const calendar = createMemo<Temporal.CalendarLike>(
     () => props.calendar ?? 'iso8601',

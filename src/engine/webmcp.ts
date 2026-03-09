@@ -61,6 +61,13 @@ export function deriveToolSchema(spec: FormSpec): ToolSchema {
         prop.description += " (numeric string)";
         if (f.maxDigits) prop.description += `, max ${f.maxDigits} digits`;
         break;
+      case FieldKind.slider:
+        prop.type = "string";
+        prop.description +=
+          f.mode === "range"
+            ? " (slider range as JSON tuple, e.g. \"[10, 50]\")"
+            : " (slider numeric value as string)";
+        break;
       case FieldKind.phone:
         prop.type = "string";
         prop.description += " (10-digit US phone, digits only)";
@@ -81,6 +88,10 @@ export function deriveToolSchema(spec: FormSpec): ToolSchema {
         prop.type = "string";
         if (f.minLength) prop.description += `, min ${f.minLength} chars`;
         if (f.maxLength) prop.description += `, max ${f.maxLength} chars`;
+        break;
+      case FieldKind.time:
+        prop.type = "string";
+        prop.description += f.hasSeconds === false ? " (time as HH:mm)" : " (time as HH:mm:ss)";
         break;
       default:
         prop.type = "string";

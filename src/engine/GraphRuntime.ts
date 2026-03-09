@@ -9,6 +9,10 @@ export class GraphRuntime {
   private pendingPatches = new Map<NodeId, NodePatch<any>>();
   private flushScheduled = false;
 
+  hasNode(id: NodeId) {
+    return this.nodes.has(id);
+  }
+
   private enqueuePatch(targetId: NodeId, patch: NodePatch<any>) {
     const prev = this.pendingPatches.get(targetId) ?? {};
     this.pendingPatches.set(targetId, {...prev, ...patch});
@@ -28,7 +32,8 @@ export class GraphRuntime {
     this.pendingPatches.clear();
 
     toApply.forEach(([id, patch]) => {
-      const node = this.get<any>(id);
+      const node = this.nodes.get(id);
+      if (!node) return;
       node.applyPatch(patch);
     });
   }

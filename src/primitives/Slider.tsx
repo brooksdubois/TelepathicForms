@@ -25,6 +25,7 @@ export type SliderProps = {
   min?: number;
   max?: number;
   step?: number;
+  magneticPoints?: number[];
   mode?: SliderMode;
 
   // Display
@@ -113,6 +114,7 @@ const Slider = (props: SliderProps) => {
       min: 0,
       max: 100,
       step: 1,
+      magneticPoints: [],
       mode: 'single' as SliderMode,
       size: 'md' as SliderSize,
       variant: 'outlined' as SliderVariant,
@@ -131,6 +133,7 @@ const Slider = (props: SliderProps) => {
     'min',
     'max',
     'step',
+    'magneticPoints',
     'mode',
     'label',
     'helperText',
@@ -180,6 +183,8 @@ const Slider = (props: SliderProps) => {
   const [isDragging, setIsDragging] = createSignal(false);
   const [activeThumb, setActiveThumb] = createSignal<'min' | 'max' | 'single'>('single');
   const [inputValue, setInputValue] = createSignal<string>('');
+  const [hoveredThumb, setHoveredThumb] = createSignal<'min' | 'max' | 'single' | null>(null);
+  const [focusedThumb, setFocusedThumb] = createSignal<'min' | 'max' | 'single' | null>(null);
   
   // FIXED: Add real-time drag value signals
   const [dragMinValue, setDragMinValue] = createSignal<number | null>(null);
@@ -199,6 +204,7 @@ const Slider = (props: SliderProps) => {
   };
 
   const snapToStep = (val: number): number => {
+    if (!Number.isFinite(step()) || step() <= 0) return val;
     const steps = Math.round((val - min()) / step());
     return min() + steps * step();
   };
@@ -252,6 +258,56 @@ const Slider = (props: SliderProps) => {
 
   const minPercent = () => getPercent(getMinValue());
   const maxPercent = () => getPercent(getMaxValue());
+  const isDiscreteStep = () => Number.isFinite(step()) && step() > 0;
+
+  const normalizedMagneticPoints = (): number[] => {
+    if (!local.magneticPoints || local.magneticPoints.length === 0) return [];
+
+    const points = local.magneticPoints
+      .map((point) => Number(point))
+      .filter(Number.isFinite)
+      .map(clamp)
+      .filter((point) => point >= min() && point <= max())
+      .sort((left, right) => left - right);
+
+    if (points.length === 0) return [];
+
+    const unique: number[] = [];
+    for (const point of points) {
+      if (unique.length === 0 || point !== unique[unique.length - 1]) {
+        unique.push(point);
+      }
+    }
+    return unique;
+  };
+
+  const magneticSnapRadius = () => {
+    const span = Math.abs(max() - min());
+    if (!Number.isFinite(span) || span <= 0) return 0;
+    return Math.max(0.02, Math.min(span / 40, 3));
+  };
+
+  const applyMagneticSnap = (value: number): number => {
+    const points = normalizedMagneticPoints();
+    if (isDiscreteStep() || points.length === 0) return value;
+
+    const radius = magneticSnapRadius();
+    if (!(radius > 0)) return value;
+
+    const nearest = points.reduce((candidate, point) => {
+      const nextDistance = Math.abs(value - point);
+      const currentDistance = Math.abs(value - candidate);
+      return nextDistance < currentDistance ? point : candidate;
+    }, points[0]);
+
+    return Math.abs(value - nearest) <= radius ? nearest : value;
+  };
+
+  const fallbackFineStep = () => {
+    const span = Math.abs(max() - min());
+    if (!Number.isFinite(span) || span <= 0) return 0.01;
+    return Math.max(span / 1000, 0.01);
+  };
 
   createEffect(() => {
     setInputValue(String(getSingleValue()));
@@ -264,7 +320,8 @@ const Slider = (props: SliderProps) => {
     const x = e.clientX - rect.left;
     const percent = Math.max(0, Math.min(1, x / rect.width));
     const rawValue = min() + percent * (max() - min());
-    const newValue = snapToStep(rawValue);
+    const snappedValue = snapToStep(rawValue);
+    const newValue = applyMagneticSnap(snappedValue);
 
     if (mode() === 'range') {
       const [currentMin, currentMax] = getCurrentValue() as [number, number];
@@ -319,7 +376,7 @@ const Slider = (props: SliderProps) => {
     const deltaPercent = deltaX / rect.width;
     const deltaValue = deltaPercent * (max() - min());
     let newValue = clamp(startValue + deltaValue);
-    newValue = snapToStep(newValue);
+    newValue = applyMagneticSnap(snapToStep(newValue));
 
     if (mode() === 'range') {
       const [currentMin, currentMax] = getCurrentValue() as [number, number];
@@ -364,8 +421,10 @@ const Slider = (props: SliderProps) => {
     if (disabled() || readOnly()) return;
     
     const current = getSingleValue();
-    const steps = Math.round((current - min()) / step());
-    const newValue = clamp(min() + (steps + delta) * step());
+    const currentStep = isDiscreteStep() ? step() : fallbackFineStep();
+    const steps = Math.round((current - min()) / currentStep);
+    const steppedValue = clamp(min() + (steps + delta) * currentStep);
+    const newValue = applyMagneticSnap(steppedValue);
     
     local.onValue?.(newValue);
     local.onChange?.(newValue);
@@ -379,7 +438,8 @@ const Slider = (props: SliderProps) => {
     
     if (!isNaN(value)) {
       const clamped = clamp(value);
-      const stepped = snapToStep(clamped);
+      const snapped = snapToStep(clamped);
+      const stepped = applyMagneticSnap(snapped);
       local.onValue?.(stepped);
     }
   };
@@ -400,14 +460,29 @@ const Slider = (props: SliderProps) => {
     local.trackClass
   );
 
-  const thumbClasses = () => cx(
+  const isThumbActive = (thumb: 'min' | 'max' | 'single') =>
+    isDragging() && activeThumb() === thumb;
+
+  const isThumbHovered = (thumb: 'min' | 'max' | 'single') =>
+    hoveredThumb() === thumb;
+
+  const isThumbFocused = (thumb: 'min' | 'max' | 'single') =>
+    focusedThumb() === thumb;
+
+  const thumbClasses = (thumb: 'min' | 'max' | 'single') => cx(
     'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full transition-shadow',
     sizeStyles[local.size].thumb,
     'border-2 border-emerald-500 bg-white dark:bg-slate-900',
     disabled() && 'cursor-not-allowed',
     readOnly() && 'cursor-default',
     !disabled() && !readOnly() && 'cursor-grab active:cursor-grabbing',
-    isDragging() && 'shadow-lg',
+    'transition-transform',
+    (isThumbHovered(thumb) || isThumbActive(thumb) || isThumbFocused(thumb)) && 'scale-110',
+    isThumbActive(thumb)
+      ? 'shadow-xl shadow-emerald-400/45 ring-2 ring-emerald-300/60'
+      : isThumbHovered(thumb) || isThumbFocused(thumb)
+      ? 'shadow-md shadow-emerald-300/35'
+      : 'shadow-sm',
     local.thumbClass
   );
 
@@ -552,9 +627,20 @@ const Slider = (props: SliderProps) => {
               {mode() === 'range' && (
                 <div
                   ref={minThumbRef}
-                  class={thumbClasses()}
+                  class={thumbClasses('min')}
                   style={{ left: `${minPercent()}%` }}
                   onMouseDown={(e) => handleThumbMouseDown(e, 'min')}
+                  onMouseEnter={() => setHoveredThumb('min')}
+                  onMouseLeave={() => {
+                    if (hoveredThumb() === 'min') setHoveredThumb(null);
+                  }}
+                  onFocus={() => {
+                    setFocusedThumb('min');
+                    if (local.ringEnabled && local.animateRingOnFocus) {
+                      pulseRing();
+                    }
+                  }}
+                  onBlur={() => setFocusedThumb(null)}
                   role="slider"
                   aria-label="Minimum value"
                   aria-valuemin={min()}
@@ -569,9 +655,27 @@ const Slider = (props: SliderProps) => {
               {/* Max/Single Thumb */}
               <div
                 ref={mode() === 'range' ? maxThumbRef : thumbRef}
-                class={thumbClasses()}
+                class={thumbClasses(mode() === 'range' ? 'max' : 'single')}
                 style={{ left: `${maxPercent()}%` }}
-                onMouseDown={(e) => handleThumbMouseDown(e, mode() === 'range' ? 'max' : 'single')}
+                onMouseDown={(e) =>
+                  handleThumbMouseDown(e, mode() === 'range' ? 'max' : 'single')
+                }
+                onMouseEnter={() =>
+                  setHoveredThumb(mode() === 'range' ? 'max' : 'single')
+                }
+                onMouseLeave={() => {
+                  if (hoveredThumb() === (mode() === 'range' ? 'max' : 'single')) {
+                    setHoveredThumb(null);
+                  }
+                }}
+                onFocus={() => {
+                  const currentThumb = mode() === 'range' ? 'max' : 'single';
+                  setFocusedThumb(currentThumb);
+                  if (local.ringEnabled && local.animateRingOnFocus) {
+                    pulseRing();
+                  }
+                }}
+                onBlur={() => setFocusedThumb(null)}
                 role="slider"
                 aria-label={mode() === 'range' ? 'Maximum value' : 'Value'}
                 aria-valuemin={min()}
@@ -634,7 +738,7 @@ const Slider = (props: SliderProps) => {
                 disabled={disabled() || readOnly()}
                 min={min()}
                 max={max()}
-                step={step()}
+                step={isDiscreteStep() ? step() : undefined}
                 class={cx(
                   'w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 outline-none transition',
                   'focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40',

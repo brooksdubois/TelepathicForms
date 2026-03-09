@@ -1,4 +1,10 @@
-import { FieldKind, type FieldSpec, type FormSpec } from "../engine/types";
+import {
+  FieldKind,
+  TriggerOperators,
+  type FieldSpec,
+  type FormSpec,
+  WhenOperators,
+} from "../engine/types";
 import {
   defaultPropsByTarget,
   editorPropsByTarget,
@@ -74,12 +80,48 @@ const resolveInitialValue = (
   }
 };
 
+const magneticPointsNotes = (base: string | undefined) =>
+  base
+    ? `${base} (requires step = 0 or null for magnetic behavior)`
+    : "Comma-separated values, e.g. 25, 50, 75 (requires step = 0 or null)";
+
+const magneticPointsTriggers = () => [
+  {
+    when: {
+      any: [
+        { fieldIds: ["prop:step"], operator: WhenOperators.equals, value: "0" },
+        { fieldIds: ["prop:step"], operator: WhenOperators.equals, value: "" },
+      ],
+    },
+    operation: {
+      fieldIds: ["prop:magneticPoints"],
+      operator: TriggerOperators.setDisabled,
+      value: false,
+    },
+  },
+  {
+    when: {
+      all: [
+        { fieldIds: ["prop:step"], operator: WhenOperators.notEquals, value: "0" },
+        { fieldIds: ["prop:step"], operator: WhenOperators.notEquals, value: "" },
+      ],
+    },
+    operation: {
+      fieldIds: ["prop:magneticPoints"],
+      operator: TriggerOperators.setDisabled,
+      value: true,
+    },
+  },
+];
+
 const descriptorToFieldSpec = (
   descriptor: PropDescriptor,
   target: EditorTarget,
   currentProps: Record<string, unknown>,
   rowNumber: number,
 ): FieldSpec => {
+  const isMagneticPoints = target === "field:slider" && descriptor.key === "magneticPoints";
+
   const regexValidator = descriptor.isRegex
     ? (value: string) => {
         if (!value.trim()) return [];
@@ -97,13 +139,23 @@ const descriptorToFieldSpec = (
     kind: FieldKind.text,
     label: descriptor.label,
     row: rowNumber,
-    helperText: descriptor.helper,
+    helperText: isMagneticPoints
+      ? magneticPointsNotes(descriptor.helper)
+      : descriptor.helper,
     initialValue: resolveInitialValue(descriptor, currentProps, target),
     ringEnabled: true,
     animateRingOnFocus: true,
     ringVariant: "laser",
     validate: regexValidator,
   };
+
+  if (isMagneticPoints) {
+    return {
+      ...common,
+      kind: FieldKind.text,
+      triggers: magneticPointsTriggers(),
+    };
+  }
 
   if (descriptor.kind === "number") {
     return {

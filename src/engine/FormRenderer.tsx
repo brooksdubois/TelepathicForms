@@ -42,7 +42,7 @@ export const FormRenderer: Component<FormRendererProps> = (p) => {
               <For each={row.fields}>
                 {(f) => {
                   const handle = p.handlesById.get(f.id);
-                  if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
+                  if (!handle) return null;
                   return <FieldSlot f={f} handle={handle} fullWidth={true} wrapInRow={true} />;
                 }}
               </For>
@@ -51,7 +51,7 @@ export const FormRenderer: Component<FormRendererProps> = (p) => {
             (() => {
               const f = row.fields[0];
               const handle = p.handlesById.get(f.id);
-              if (!handle) throw new Error(`Missing FieldHandle for ${f.id}`);
+              if (!handle) return null;
               return <FieldSlot f={f} handle={handle} />;
             })()
           )

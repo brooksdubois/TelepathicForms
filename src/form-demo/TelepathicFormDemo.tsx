@@ -333,18 +333,18 @@ export const TelepathicFormDemo: Component = () => {
                   </span>
                 </div>
               </div>
-              <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                <span>Dark</span>
-                <input
-                  type="checkbox"
-                  class={controlCheckboxClass}
-                  checked={darkMode()}
-                  onInput={(event) => setDarkMode(event.currentTarget.checked)}
-                />
-              </label>
-            </div>
-            <div class="w-full min-w-0">
-              <PlaygroundNav currentPath="/form-demo" class="w-full min-w-0 overflow-hidden" />
+              <div class="flex flex-col items-end gap-2">
+                <PlaygroundNav currentPath="/form-demo" />
+                <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <span>Dark</span>
+                  <input
+                    type="checkbox"
+                    class={controlCheckboxClass}
+                    checked={darkMode()}
+                    onInput={(event) => setDarkMode(event.currentTarget.checked)}
+                  />
+                </label>
+              </div>
             </div>
             <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
               <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">

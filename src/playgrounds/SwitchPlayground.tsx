@@ -244,7 +244,6 @@ const SwitchPlayground: Component = () => {
                 Reset
               </button>
             </div>
-            <PlaygroundNav currentPath="/switch" />
           </header>
 
           <main class="flex flex-col gap-6">
@@ -256,15 +255,18 @@ const SwitchPlayground: Component = () => {
                     {configVariant()} / {configSize()}
                   </div>
                 </div>
-                <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  <span>Dark</span>
-                  <input
-                    type="checkbox"
-                    class={controlCheckboxClass}
-                    checked={darkMode()}
-                    onInput={(event) => setDarkMode(event.currentTarget.checked)}
-                  />
-                </label>
+                <div class="flex flex-col items-end gap-2">
+                  <PlaygroundNav currentPath="/switch" />
+                  <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <span>Dark</span>
+                    <input
+                      type="checkbox"
+                      class={controlCheckboxClass}
+                      checked={darkMode()}
+                      onInput={(event) => setDarkMode(event.currentTarget.checked)}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">

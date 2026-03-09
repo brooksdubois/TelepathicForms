@@ -459,12 +459,20 @@ const FormPreview: Component<FormPreviewProps> = (props) => {
 
   createEffect(() => {
     const nextFormSpec = props.formSpec;
-    const { graph, handlesById: nextHandlesById } = buildGraphFromFormSpec(nextFormSpec);
-    setRuntime({
-      formSpec: nextFormSpec,
-      handlesById: nextHandlesById,
-    });
-    onCleanup(() => graph.destroy());
+    try {
+      const { graph, handlesById: nextHandlesById } = buildGraphFromFormSpec(nextFormSpec);
+      setRuntime({
+        formSpec: nextFormSpec,
+        handlesById: nextHandlesById,
+      });
+      onCleanup(() => graph.destroy());
+    } catch (error) {
+      console.error("Unable to build form preview runtime:", error);
+      setRuntime({
+        formSpec: nextFormSpec,
+        handlesById: new Map(),
+      });
+    }
   });
 
   createEffect(() => {

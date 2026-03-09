@@ -1,4 +1,4 @@
-import {combineLatest, distinctUntilChanged, map, type Observable} from "rxjs";
+import {combineLatest, distinctUntilChanged, map, of, type Observable} from "rxjs";
 import {GraphRuntime} from "./GraphRuntime";
 import {FieldRuntimeNode} from "./FieldRuntimeNode";
 import {
@@ -21,6 +21,33 @@ import {
   normalizePhone,
   validatePhone,
 } from "../utils/fieldHelpers";
+
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return fallback;
+};
+
+const normalizeSliderMode = (mode: FieldSpec["mode"]) =>
+  mode === "range" || mode === "stepper" ? mode : "single";
+
+const normalizeSliderValueForMode = (
+  spec: FieldSpec,
+  mode: NonNullable<FieldSpec["mode"]>,
+  initial: string,
+) => {
+  const configuredMin = toFiniteNumber(spec.min, 0);
+  const configuredMax = toFiniteNumber(spec.max, 100);
+  const min = Math.min(configuredMin, configuredMax);
+  const max = Math.max(configuredMin, configuredMax);
+
+  if (mode === "range") {
+    if (typeof initial === "string" && initial.length > 0) return initial;
+    return `[${min}, ${max}]`;
+  }
+
+  if (typeof initial === "string" && initial.length > 0) return initial;
+  return String(min);
+};
 
 function createNodeFromSpec(
   spec: FieldSpec,
@@ -151,6 +178,24 @@ function createNodeFromSpec(
       });
     }
 
+    case FieldKind.slider: {
+      const sliderMode = normalizeSliderMode(spec.mode);
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: normalizeSliderValueForMode(spec, sliderMode, initial),
+        validate: spec.validate ?? (() => []),
+        ...extras,
+      });
+    }
+
+    case FieldKind.time:
+      return new FieldRuntimeNode<string>({
+        id: spec.id,
+        initialValue: initial || "",
+        validate: spec.validate ?? (() => []),
+        ...extras,
+      });
+
     case FieldKind.select:
     case FieldKind.multiSelect:
     case FieldKind.radio:
@@ -207,6 +252,10 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
   const triggers = field.triggers ?? [];
 
   const predStreamFor = (id: string, op: WhenOperators, value?: string) => {
+    if (!graph.hasNode(id)) {
+      return of(false);
+    }
+
     const n = graph.get<any>(id);
 
     if (op === WhenOperators.isEmpty) {
@@ -239,6 +288,11 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
 
     if ("operator" in when) {
       const pred = when as WhenPredicate;
+      const sourceIds = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
+      if (sourceIds.some((id) => !graph.hasNode(id))) {
+        return of(false);
+      }
+
       const ids = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
       const streams = ids.map((id) =>
         predStreamFor(id, pred.operator, "value" in pred ? pred.value : undefined)
@@ -258,6 +312,11 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
     if (!clause) return predStreamFor(sourceId, WhenOperators.isValid);
 
     const predicates = Array.isArray(clause) ? clause : [clause];
+    const hasMissingNode = predicates.some((pred) => {
+      const ids = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
+      return ids.some((id) => !graph.hasNode(id));
+    });
+    if (hasMissingNode) return of(false);
 
     const streams = predicates.flatMap((pred) => {
       const ids = pred.fieldIds && pred.fieldIds.length > 0 ? pred.fieldIds : [sourceId];
@@ -282,15 +341,24 @@ function applyTriggersFromSpec(graph: GraphRuntime, field: FieldSpec) {
     ops.forEach((op) => {
       switch (op.operator) {
         case TriggerOperators.setDisabled:
-          op.fieldIds.forEach((targetId) => graph.wireDisabledWhen(targetId, pred$, op.value));
+          op.fieldIds.forEach((targetId) => {
+            if (!graph.hasNode(targetId)) return;
+            graph.wireDisabledWhen(targetId, pred$, op.value);
+          });
           break;
 
         case TriggerOperators.setValue:
-          op.fieldIds.forEach((targetId) => graph.wireValueWhen(targetId, pred$, op.value));
+          op.fieldIds.forEach((targetId) => {
+            if (!graph.hasNode(targetId)) return;
+            graph.wireValueWhen(targetId, pred$, op.value);
+          });
           break;
 
         case TriggerOperators.setHidden:
-          op.fieldIds.forEach((targetId) => graph.wireHiddenWhen(targetId, pred$, op.value));
+          op.fieldIds.forEach((targetId) => {
+            if (!graph.hasNode(targetId)) return;
+            graph.wireHiddenWhen(targetId, pred$, op.value);
+          });
           break;
       }
     });

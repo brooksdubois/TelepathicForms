@@ -37,8 +37,14 @@ export type {CurrencyWrapperProps} from "./CurrencyWrapper";
 export {PercentWrapper} from "./PercentWrapper";
 export type {PercentWrapperProps} from "./PercentWrapper";
 
+export {SliderWrapper} from "./SliderWrapper";
+export type {SliderWrapperProps} from "./SliderWrapper";
+
 export {PasswordWrapper} from "./PasswordWrapper";
 export type {PasswordWrapperProps} from "./PasswordWrapper";
 
 export {DatePickerWrapper} from "./DatePickerWrapper";
 export type {DatePickerWrapperProps} from "./DatePickerWrapper";
+
+export {TimePickerWrapper} from "./TimePickerWrapper";
+export type {TimePickerWrapperProps} from "./TimePickerWrapper";

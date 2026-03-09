@@ -6,6 +6,8 @@ import {
   DatePickerWrapper,
   DateRangePickerWrapper,
   MultiSelectWrapper,
+  TimePickerWrapper,
+  SliderWrapper,
   NumberWrapper,
   PasswordWrapper,
   PercentWrapper,
@@ -131,6 +133,12 @@ export const FieldSlot: Component<FieldSlotProps> = (p) => {
 
       case FieldKind.zip:
         return <ZipWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.slider:
+        return <SliderWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
+
+      case FieldKind.time:
+        return <TimePickerWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;
 
       case FieldKind.password:
         return <PasswordWrapper spec={f} field={handle} fullWidth={p.fullWidth} />;

@@ -137,7 +137,11 @@ const DateRangePicker = (props: DateRangePickerProps) => {
   let inputEl: HTMLInputElement | undefined;
   let popoverEl: HTMLDivElement | undefined;
 
-  const locale = createMemo(() => props.locale ?? (typeof navigator !== 'undefined' ? navigator.language : 'en-US'));
+  const locale = createMemo(() => {
+    const configured = props.locale?.trim();
+    if (configured) return configured;
+    return typeof navigator !== 'undefined' ? navigator.language : 'en-US';
+  });
   const weekStartsOn = createMemo(() => {
     if (typeof props.weekStartsOn === 'number') return props.weekStartsOn;
     return resolveWeekStart(locale());

@@ -14,6 +14,7 @@ export type EditorTarget =
   | "field:text"
   | "field:textArea"
   | "field:number"
+  | "field:slider"
   | "field:currency"
   | "field:percent"
   | "field:phone"
@@ -27,11 +28,13 @@ export type EditorTarget =
   | "field:switch"
   | "field:radio"
   | "field:inlineRadio"
+  | "field:time"
   | "field:date"
   | "field:dateRange";
 
 const sizeEnum = ["sm", "md", "lg"];
 const variantEnum = ["outlined", "filled", "standard"];
+const sliderModeEnum = ["single", "range", "stepper"];
 const ringVariantEnum = ["laser", "expanse", "scanner"];
 
 const rowProp: PropDescriptor = {
@@ -96,6 +99,41 @@ const optionsProp: PropDescriptor = {
   label: "Options",
   helper: "Comma-separated values, e.g. one, two, three",
 };
+const sliderMinProp: PropDescriptor = { key: "min", kind: "number", label: "Min Value" };
+const sliderMaxProp: PropDescriptor = { key: "max", kind: "number", label: "Max Value" };
+const sliderStepProp: PropDescriptor = { key: "step", kind: "number", label: "Step" };
+const sliderMagneticPointsProp: PropDescriptor = {
+  key: "magneticPoints",
+  kind: "string",
+  label: "Magnetic Points",
+  helper: "Comma-separated values, e.g. 25, 50, 75",
+};
+const sliderModeProp: PropDescriptor = {
+  key: "mode",
+  kind: "enum",
+  label: "Mode",
+  enumValues: sliderModeEnum,
+};
+const timeHour12Prop: PropDescriptor = {
+  key: "hour12",
+  kind: "boolean",
+  label: "12 Hour",
+};
+const timeHasSecondsProp: PropDescriptor = {
+  key: "hasSeconds",
+  kind: "boolean",
+  label: "Show Seconds",
+};
+const sliderShowValueProp: PropDescriptor = {
+  key: "showValue",
+  kind: "boolean",
+  label: "Show Value",
+};
+const sliderShowInputProp: PropDescriptor = {
+  key: "showInput",
+  kind: "boolean",
+  label: "Show Input",
+};
 
 const textLikeCommon: PropDescriptor[] = [
   rowProp,
@@ -143,6 +181,25 @@ export const editorPropsByTarget: Record<EditorTarget, PropDescriptor[]> = {
     ...textLikeCommon,
     { key: "maxDigits", kind: "number", label: "Max Digits" },
     { key: "inputMask", kind: "string", label: "Input Mask" },
+  ],
+  "field:slider": [
+    rowProp,
+    labelProp,
+    helperTextProp,
+    requiredProp,
+    readOnlyProp,
+    sliderMinProp,
+    sliderMaxProp,
+    sliderStepProp,
+    sliderMagneticPointsProp,
+    sliderModeProp,
+    sliderShowValueProp,
+    sliderShowInputProp,
+    sizeProp,
+    variantProp,
+    ringEnabledProp,
+    animateRingProp,
+    ringVariantProp,
   ],
   "field:currency": [
     ...textLikeCommon,
@@ -331,6 +388,20 @@ export const editorPropsByTarget: Record<EditorTarget, PropDescriptor[]> = {
     animateRingProp,
     ringVariantProp,
   ],
+  "field:time": [
+    rowProp,
+    labelProp,
+    helperTextProp,
+    requiredProp,
+    readOnlyProp,
+    timeHour12Prop,
+    timeHasSecondsProp,
+    sizeProp,
+    variantProp,
+    ringEnabledProp,
+    animateRingProp,
+    ringVariantProp,
+  ],
   "field:date": [
     rowProp,
     labelProp,
@@ -505,6 +576,25 @@ export const defaultPropsByTarget: Record<EditorTarget, Record<string, unknown>>
     ringVariant: "laser",
     maxDigits: 6,
     inputMask: "",
+  },
+  "field:slider": {
+    row: 1,
+    label: "",
+    helperText: "",
+    required: false,
+    readOnly: false,
+    min: 0,
+    max: 100,
+    step: 1,
+    magneticPoints: [],
+    mode: "single",
+    showValue: true,
+    showInput: false,
+    size: "md",
+    variant: "outlined",
+    ringEnabled: true,
+    animateRingOnFocus: true,
+    ringVariant: "laser",
   },
   "field:currency": {
     row: 1,
@@ -736,6 +826,20 @@ export const defaultPropsByTarget: Record<EditorTarget, Record<string, unknown>>
     closeOnSelect: true,
     locale: "",
     weekStartsOn: 0,
+    ringEnabled: true,
+    animateRingOnFocus: true,
+    ringVariant: "laser",
+  },
+  "field:time": {
+    row: 1,
+    label: "",
+    helperText: "",
+    required: false,
+    readOnly: false,
+    hour12: false,
+    hasSeconds: true,
+    size: "md",
+    variant: "outlined",
     ringEnabled: true,
     animateRingOnFocus: true,
     ringVariant: "laser",

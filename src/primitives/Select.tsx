@@ -88,10 +88,12 @@ export type SelectProps = NativeControlProps & {
 
   rootClass?: string;
   labelClass?: string;
+  containerClass?: string;
   inputClass?: string;
   helperClass?: string;
   menuClass?: string;
   optionClass?: string;
+  menuWidth?: number | string;
 };
 
 const sizeStyles: Record<
@@ -177,10 +179,12 @@ const Select = (props: SelectProps) => {
     'renderHelper',
     'rootClass',
     'labelClass',
+    'containerClass',
     'inputClass',
     'helperClass',
     'menuClass',
     'optionClass',
+    'menuWidth',
     'id',
     'name',
     'onClick',
@@ -220,11 +224,19 @@ const Select = (props: SelectProps) => {
     const rect = anchor.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const explicitMenuWidth =
+      local.menuWidth == null
+        ? NaN
+        : typeof local.menuWidth === 'number'
+          ? local.menuWidth
+          : Number.parseFloat(local.menuWidth);
 
-    const width = Math.min(
-      Math.max(1, rect.width),
-      Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2),
-    );
+    const width = Number.isFinite(explicitMenuWidth)
+      ? Math.min(Math.max(1, explicitMenuWidth), Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2))
+      : Math.min(
+          Math.max(1, rect.width),
+          Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2),
+        );
     const left = Math.max(
       VIEWPORT_MARGIN_PX,
       Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
@@ -468,6 +480,7 @@ const Select = (props: SelectProps) => {
           ? 'cursor-default'
           : 'cursor-pointer',
       readOnly() && !disabled() ? 'bg-slate-50/80 dark:bg-slate-900/40' : '',
+      local.containerClass,
     );
   };
 

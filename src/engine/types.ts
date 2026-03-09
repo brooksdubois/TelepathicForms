@@ -11,7 +11,7 @@ export type Normalizer = (raw: string) => string;
 
 
 export enum FieldKind {
-    dateRange = "dateRange",
+  dateRange = "dateRange",
   date = "date",
   textArea = "textArea",
   phone = "phone",
@@ -19,6 +19,8 @@ export enum FieldKind {
   number = "number",
   currency = "currency",
   percent = "percent",
+  slider = "slider",
+  time = "time",
   select = "select",
   multiSelect = "multiSelect",
   checkbox = "checkbox",
@@ -79,6 +81,15 @@ export type FieldSpec = {
   maxSelected?: number;
   indeterminate?: boolean;
   inline?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  magneticPoints?: number[];
+  mode?: "single" | "range" | "stepper";
+  hour12?: boolean;
+  hasSeconds?: boolean;
+  showValue?: boolean;
+  showInput?: boolean;
   maxDigits?: number;
   required?: boolean;
   initialValue?: string;

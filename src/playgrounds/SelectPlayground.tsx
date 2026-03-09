@@ -539,7 +539,6 @@ const SelectPlayground: Component = () => {
                 Reset
               </button>
             </div>
-            <PlaygroundNav currentPath="/select" />
             <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
               Live-edit a SolidJS Select and inspect state, options, and behavior.
             </p>
@@ -554,15 +553,18 @@ const SelectPlayground: Component = () => {
                     {configVariant()} / {configSize()}
                   </div>
                 </div>
-                <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  <span>Dark</span>
-                  <input
-                    type="checkbox"
-                    class={controlCheckboxClass}
-                    checked={darkMode()}
-                    onInput={(event) => setDarkMode(event.currentTarget.checked)}
-                  />
-                </label>
+                <div class="flex flex-col items-end gap-2">
+                  <PlaygroundNav currentPath="/select" />
+                  <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <span>Dark</span>
+                    <input
+                      type="checkbox"
+                      class={controlCheckboxClass}
+                      checked={darkMode()}
+                      onInput={(event) => setDarkMode(event.currentTarget.checked)}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">

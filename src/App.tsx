@@ -12,6 +12,7 @@ import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
 import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
 import SliderPlayground from "./playgrounds/SliderPlayground";
 import DateRangePickerPlayground from "./playgrounds/DateRangePickerPlayground";
+import TimePickerPlayground from "./playgrounds/TimePickerPlayground";
 import DesignerPage from "./designer-tool/DesignerPage";
 
 const normalizePath = (p: string) => {
@@ -32,6 +33,7 @@ const routes: Record<string, Component> = {
   "/date": DatePickerPlayground,
   "/slider": SliderPlayground,
   "/date-range": DateRangePickerPlayground,
+  "/time": TimePickerPlayground,
   "/designer": DesignerPage,
 };
 
@@ -51,7 +53,8 @@ const NotFound: Component = () => (
       <a href="/textarea" onClick={(e) => { e.preventDefault(); navigateTo("/textarea"); }}>/textarea</a>,{" "}
       <a href="/date" onClick={(e) => { e.preventDefault(); navigateTo("/date"); }}>/date</a>,{" "}
       <a href="/slider" onClick={(e) => { e.preventDefault(); navigateTo("/slider"); }}>/slider</a>,{" "}
-      <a href="/date-range" onClick={(e) => { e.preventDefault(); navigateTo("/date-range"); }}>/date-range</a>.
+      <a href="/date-range" onClick={(e) => { e.preventDefault(); navigateTo("/date-range"); }}>/date-range</a>,{" "}
+      <a href="/time" onClick={(e) => { e.preventDefault(); navigateTo("/time"); }}>/time</a>.
     </p>
   </div>
 );

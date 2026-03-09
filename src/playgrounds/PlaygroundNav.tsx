@@ -1,4 +1,4 @@
-import { For, createSignal, onCleanup } from 'solid-js';
+import { For, createEffect, createSignal, onCleanup } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import { cx } from '../utils/cx';
@@ -16,228 +16,172 @@ const labs = [
   { href: '/date', label: 'DatePicker Lab' },
   { href: '/slider', label: 'Slider Lab' },
   { href: '/date-range', label: 'Date Range Lab' },
+  { href: '/time', label: 'TimePicker Lab' },
 ];
 
 const normalizePath = (p: string) => p.replace(/\/+$/, '') || '/';
 
-const DRAG_THRESHOLD = 5;
-
-const navItemClass =
-  'rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-slate-700 transition-all duration-200 hover:border-emerald-300 hover:text-emerald-600 hover:scale-105 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200';
-
 const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (props) => {
   const activePath = () => normalizePath(props.currentPath ?? path());
   const isDesignerActive = () => activePath() === '/designer';
-  const [currentIndex, setCurrentIndex] = createSignal(0);
-  const [isDragging, setIsDragging] = createSignal(false);
-  const [startX, setStartX] = createSignal(0);
-  const [dragOffset, setDragOffset] = createSignal(0);
-  const [startIndex, setStartIndex] = createSignal(0);
-  const [didDrag, setDidDrag] = createSignal(false);
-  
-  const itemsPerPage = 7;
-  const maxIndex = labs.length - itemsPerPage;
-  let containerRef: HTMLDivElement | undefined;
+  const [isOpen, setIsOpen] = createSignal(false);
+  const [closeTimer, setCloseTimer] = createSignal<number | undefined>(undefined);
+  let menuRootRef: HTMLDivElement | undefined;
 
-  const nextSlide = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleDragStart = (e: MouseEvent | TouchEvent) => {
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    setStartX(clientX);
-    setStartIndex(currentIndex());
-    setIsDragging(false);
-    setDidDrag(false);
-    setDragOffset(0);
-    setupDragListeners();
-  };
-
-  const handleDragMove = (e: MouseEvent | TouchEvent) => {
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const diff = clientX - startX();
-    
-    if (!isDragging() && Math.abs(diff) > DRAG_THRESHOLD) {
-      setIsDragging(true);
-      setDidDrag(true);
-    }
-    
-    if (isDragging()) {
-      e.preventDefault();
-      setDragOffset(diff);
+  const clearCloseTimer = () => {
+    const timer = closeTimer();
+    if (timer !== undefined) {
+      window.clearTimeout(timer);
+      setCloseTimer(undefined);
     }
   };
 
-  const handleDragEnd = () => {
-    if (isDragging()) {
-      const itemWidth = containerRef ? containerRef.clientWidth / itemsPerPage : 0;
-      const dragDistance = dragOffset();
-      const itemsMoved = Math.round(dragDistance / itemWidth);
-      const newIndex = Math.max(0, Math.min(startIndex() - itemsMoved, maxIndex));
-      setCurrentIndex(newIndex);
-    }
-    
-    setIsDragging(false);
-    setDragOffset(0);
-    removeDragListeners();
+  const scheduleClose = () => {
+    clearCloseTimer();
+    setCloseTimer(window.setTimeout(() => setIsOpen(false), 120));
   };
 
-  const setupDragListeners = () => {
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('mouseup', handleDragEnd);
-    document.addEventListener('touchmove', handleDragMove, { passive: false });
-    document.addEventListener('touchend', handleDragEnd);
-    document.addEventListener('touchcancel', handleDragEnd);
-  };
+  createEffect(() => {
+    if (!isOpen()) return;
 
-  const removeDragListeners = () => {
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
-    document.removeEventListener('touchmove', handleDragMove);
-    document.removeEventListener('touchend', handleDragEnd);
-    document.removeEventListener('touchcancel', handleDragEnd);
-  };
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target || menuRootRef?.contains(target)) return;
+      setIsOpen(false);
+    };
 
-  onCleanup(() => {
-    removeDragListeners();
+    document.addEventListener('mousedown', handlePointerDown);
+    onCleanup(() => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    });
   });
 
-  const getTransformValue = () => {
-    if (!containerRef) return `translateX(-${currentIndex() * (100 / itemsPerPage)}%)`;
-    
-    const itemWidth = containerRef.clientWidth / itemsPerPage;
-    const baseTransform = -currentIndex() * itemWidth;
-    
-    if (isDragging()) {
-      return `translateX(${baseTransform + dragOffset()}px)`;
-    } else {
-      return `translateX(-${currentIndex() * (100 / itemsPerPage)}%)`;
-    }
+  onCleanup(() => clearCloseTimer());
+
+  const closeMenu = () => {
+    clearCloseTimer();
+    setIsOpen(false);
   };
 
-  const handleNavClick = (e: MouseEvent, href: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!didDrag()) {
-      navigateTo(href);
-    }
-    setDidDrag(false);
+  const handleNavigate = (href: string) => {
+    closeMenu();
+    navigateTo(href);
   };
 
   return (
-    <div class={cx('flex items-center gap-1', props.class)}>
-      {/* Left Arrow */}
-      <button
-        onClick={prevSlide}
-        disabled={currentIndex() === 0}
-        class={cx(
-          'flex-shrink-0 w-8 h-8 rounded-full',
-          'flex items-center justify-center',
-          'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
-          'transition-all duration-200',
-          'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600',
-          'dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30',
-          'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
-          'z-10'
-        )}
-        aria-label="Previous items"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-
-      {/* Slider Container */}
-      <div 
-        ref={containerRef}
-        class="overflow-hidden flex-1 select-none"
-        onMouseDown={handleDragStart}
-        onTouchStart={handleDragStart}
-        style={{ 
-          cursor: isDragging() ? 'grabbing' : 'pointer',
-          "-webkit-user-select": 'none',
-          "user-select": 'none'
-        }}
-      >
+    <div
+      ref={menuRootRef}
+      class={cx('relative flex items-center gap-3', props.class)}
+      onMouseEnter={() => clearCloseTimer()}
+      onMouseLeave={() => scheduleClose()}
+    >
+      <div class="relative">
         <div
-          class="flex items-center gap-2"
-          classList={{
-            'transition-transform duration-300 ease-out': !isDragging(),
-          }}
-          style={{ 
-            transform: getTransformValue(),
-            "-webkit-transform": getTransformValue(),
-            "will-change": 'transform',
-          }}
+          class={cx(
+            'inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.18em]',
+            'border border-slate-200/80 bg-white/85 text-slate-700 shadow-sm backdrop-blur-sm transition-all duration-200',
+            'hover:border-emerald-300 hover:text-emerald-700 focus-within:border-emerald-300 focus-within:text-emerald-700',
+            'dark:border-slate-700 dark:bg-slate-900/65 dark:text-slate-100 dark:hover:border-emerald-400/50 dark:hover:text-emerald-300 dark:focus-within:border-emerald-400/50 dark:focus-within:text-emerald-300',
+            isOpen() ? 'border-emerald-300 text-emerald-700 dark:border-emerald-400/50 dark:text-emerald-300' : '',
+          )}
         >
-          <For each={labs}>
-            {(item) => (
-              <div 
-                class="flex-shrink-0" 
-                style={{ 
-                  width: `calc(${100 / itemsPerPage}% - 4px)`,
-                  "-webkit-flex-shrink": 0
-                }}
-              >
-                {normalizePath(item.href) === activePath() ? (
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 focus:outline-none"
+            aria-expanded={isOpen() ? 'true' : 'false'}
+            aria-haspopup="menu"
+            onClick={() => {
+              clearCloseTimer();
+              setIsOpen((open) => !open);
+            }}
+            onFocus={() => {
+              clearCloseTimer();
+              setIsOpen(true);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                closeMenu();
+              }
+              if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                clearCloseTimer();
+                setIsOpen(true);
+              }
+            }}
+          >
+            <span>PLAYGROUNDS</span>
+            <svg
+              class={cx('h-3.5 w-3.5 transition-transform duration-200', isOpen() ? 'rotate-180' : '')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        <div
+          class={cx(
+            'absolute right-0 top-full z-[81] mt-1 w-64 origin-top-right rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150',
+            'dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-slate-950/60',
+            isOpen()
+              ? 'pointer-events-auto translate-y-0 opacity-100'
+              : 'pointer-events-none -translate-y-1 opacity-0',
+          )}
+          role="menu"
+          onMouseEnter={() => clearCloseTimer()}
+          onMouseLeave={() => scheduleClose()}
+        >
+          <div class="mb-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+            Playground Labs
+          </div>
+          <div class="flex max-h-[26rem] flex-col gap-1 overflow-y-auto pr-1">
+            <For each={labs}>
+              {(item) => {
+                const isActive = () => normalizePath(item.href) === activePath();
+
+                return isActive() ? (
                   <span
                     aria-current="page"
                     class={cx(
-                      'block w-full text-center truncate',
-                      'rounded-full border border-emerald-300/70 bg-emerald-500/10 px-3 py-1.5',
-                      'text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-300',
-                      'transition-all duration-200'
+                      'block rounded-xl px-3 py-2 text-sm font-medium',
+                      'bg-emerald-500/10 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.22)]',
+                      'dark:bg-emerald-400/10 dark:text-emerald-300 dark:shadow-[inset_0_0_0_1px_rgba(52,211,153,0.22)]',
                     )}
                   >
                     {item.label}
                   </span>
                 ) : (
-                  <a
-                    href={item.href}
-                    onClick={(e) => handleNavClick(e, item.href)}
-                    class={cx(navItemClass, 'block w-full text-center truncate cursor-pointer')}
-                    title={item.label}
-                    draggable={false}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class={cx(
+                      'block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-all duration-150',
+                      'hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50',
+                      'dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300',
+                    )}
+                    onClick={() => handleNavigate(item.href)}
                   >
                     {item.label}
-                  </a>
-                )}
-              </div>
-            )}
-          </For>
+                  </button>
+                );
+              }}
+            </For>
+          </div>
         </div>
       </div>
 
-      {/* Right Arrow */}
-      <button
-        onClick={nextSlide}
-        disabled={currentIndex() >= maxIndex}
-        class={cx(
-          'flex-shrink-0 w-8 h-8 rounded-full',
-          'flex items-center justify-center',
-          'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
-          'transition-all duration-200',
-          'disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-600',
-          'dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-950/30',
-          'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
-          'z-10'
-        )}
-        aria-label="Next items"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-
       <button
         type="button"
-        onClick={() => navigateTo('/designer')}
+        onClick={() => {
+          closeMenu();
+          navigateTo('/designer');
+        }}
         class={cx(
-          'ml-2 flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em]',
+          'flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em]',
           'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2',
           'dark:focus:ring-offset-slate-950',
           isDesignerActive()
