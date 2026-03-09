@@ -2,6 +2,7 @@ import {
   For,
   Show,
   createEffect,
+  createMemo,
   createSignal,
   createUniqueId,
   mergeProps,
@@ -59,6 +60,7 @@ export type SelectProps = NativeControlProps & {
   value?: string;
   options?: SelectOption[];
   placeholder?: string;
+  searchable?: boolean;
   startAdornment?: JSX.Element;
   endAdornment?: JSX.Element;
   ringEnabled?: boolean;
@@ -171,6 +173,7 @@ const Select = (props: SelectProps) => {
     'value',
     'options',
     'placeholder',
+    'searchable',
     'startAdornment',
     'endAdornment',
     'onValue',
@@ -199,6 +202,7 @@ const Select = (props: SelectProps) => {
 
   let rootEl: HTMLDivElement | undefined;
   let controlEl: HTMLButtonElement | undefined;
+  let searchInputEl: HTMLInputElement | undefined;
   const optionEls: Array<HTMLDivElement | undefined> = [];
 
   let menuEl: HTMLDivElement | undefined;
@@ -275,6 +279,7 @@ const Select = (props: SelectProps) => {
   };
 
   const [open, setOpen] = createSignal(false);
+  const [query, setQuery] = createSignal('');
   const [highlightedIndex, setHighlightedIndex] = createSignal(-1);
   let suppressOpen = false;
   let closeOnlyFromEdgeClick = false;
@@ -283,6 +288,7 @@ const Select = (props: SelectProps) => {
   const disabled = () => Boolean(local.disabled);
   const readOnly = () => Boolean(local.readOnly);
   const fullWidth = () => Boolean(local.fullWidth);
+  const searchable = () => Boolean(local.searchable);
   const canInteract = () => !disabled() && !readOnly();
   const ringEnabled = () => local.ringEnabled ?? true;
   const animateRingOnFocus = () => local.animateRingOnFocus ?? true;
@@ -370,6 +376,24 @@ const Select = (props: SelectProps) => {
     return index >= 0 ? local.options[index] : undefined;
   };
 
+  const filteredOptions = createMemo(() => {
+    const normalizedQuery = query().trim().toLowerCase();
+
+    return local.options
+      .map((option, index) => ({ option, index }))
+      .filter(({ option }) => {
+        if (!searchable() || normalizedQuery.length === 0) return true;
+
+        return (
+          option.label.toLowerCase().includes(normalizedQuery) ||
+          option.value.toLowerCase().includes(normalizedQuery)
+        );
+      });
+  });
+
+  const selectedFilteredIndex = () =>
+    filteredOptions().findIndex(({ index }) => index === selectedIndex());
+
   const isPlaceholder = () => !selectedOption() && (local.value ?? '') === '';
 
   const displayLabel = () => {
@@ -379,28 +403,30 @@ const Select = (props: SelectProps) => {
   };
 
   const firstEnabledIndex = () =>
-    local.options.findIndex((option) => !option.disabled);
+    filteredOptions().findIndex(({ option }) => !option.disabled);
 
   const lastEnabledIndex = () => {
-    for (let i = local.options.length - 1; i >= 0; i -= 1) {
-      if (!local.options[i]?.disabled) return i;
+    const options = filteredOptions();
+    for (let i = options.length - 1; i >= 0; i -= 1) {
+      if (!options[i]?.option.disabled) return i;
     }
     return -1;
   };
 
   const nextEnabledIndex = (start: number, direction: 1 | -1) => {
-    if (!local.options.length) return -1;
-    for (let i = 0; i < local.options.length; i += 1) {
-      const index = (start + direction + local.options.length) % local.options.length;
-      if (!local.options[index]?.disabled) return index;
+    const options = filteredOptions();
+    if (!options.length) return -1;
+    for (let i = 0; i < options.length; i += 1) {
+      const index = (start + direction + options.length) % options.length;
+      if (!options[index]?.option.disabled) return index;
       start = index;
     }
     return -1;
   };
 
   const syncHighlightToSelection = () => {
-    const current = selectedIndex();
-    if (current >= 0 && !local.options[current]?.disabled) {
+    const current = selectedFilteredIndex();
+    if (current >= 0 && !filteredOptions()[current]?.option.disabled) {
       setHighlightedIndex(current);
       return;
     }
@@ -410,6 +436,7 @@ const Select = (props: SelectProps) => {
   const closeMenu = () => {
     if (!open()) return;
     setOpen(false);
+    setQuery('');
     setHighlightedIndex(-1);
     suppressOpen = true;
     queueMicrotask(() => {
@@ -423,7 +450,14 @@ const Select = (props: SelectProps) => {
     updateMenuPos();
     queueMicrotask(() => updateMenuPos());
     requestAnimationFrame(() => updateMenuPos());
-    queueMicrotask(() => controlEl?.focus());
+    queueMicrotask(() => {
+      if (searchable()) {
+        searchInputEl?.focus();
+        searchInputEl?.select();
+        return;
+      }
+      controlEl?.focus();
+    });
     syncHighlightToSelection();
   };
 
@@ -440,7 +474,8 @@ const Select = (props: SelectProps) => {
   ) => {
     if (!canInteract()) return;
 
-    const option = local.options[index];
+    const entry = filteredOptions()[index];
+    const option = entry?.option;
     if (!option || option.disabled) return;
 
     const prevValue = local.value ?? '';
@@ -448,13 +483,64 @@ const Select = (props: SelectProps) => {
       prevValue,
       nextValue: option.value,
       option,
-      optionIndex: index,
+      optionIndex: entry.index,
       trigger,
     };
 
     local.onValue?.(option.value, ctx);
     if (options?.closeMenu ?? true) {
       closeMenu();
+    }
+  };
+
+  const handleSearchInput: JSX.EventHandlerUnion<HTMLInputElement, InputEvent> = (
+    event,
+  ) => {
+    setQuery(event.currentTarget.value);
+    setHighlightedIndex(firstEnabledIndex());
+  };
+
+  const handleSearchInputKeyDown: JSX.EventHandlerUnion<HTMLInputElement, KeyboardEvent> = (
+    event,
+  ) => {
+    const key = event.key;
+
+    if (key === 'Tab') {
+      closeMenu();
+      return;
+    }
+
+    if (key === 'Escape') {
+      event.preventDefault();
+      closeMenu();
+      controlEl?.focus();
+      return;
+    }
+
+    if (key === 'ArrowDown') {
+      event.preventDefault();
+      const current = selectableHighlightedIndex();
+      const start = current >= 0 ? current : filteredOptions().length - 1;
+      const next = nextEnabledIndex(start, 1);
+      if (next >= 0) setHighlightedIndex(next);
+      return;
+    }
+
+    if (key === 'ArrowUp') {
+      event.preventDefault();
+      const current = selectableHighlightedIndex();
+      const start = current >= 0 ? current : 0;
+      const next = nextEnabledIndex(start, -1);
+      if (next >= 0) setHighlightedIndex(next);
+      return;
+    }
+
+    if (key === 'Enter') {
+      event.preventDefault();
+      const index = selectableHighlightedIndex();
+      if (index >= 0) {
+        selectOptionAt(index, 'keyboard', { closeMenu: true });
+      }
     }
   };
 
@@ -587,8 +673,8 @@ const Select = (props: SelectProps) => {
 
     if (key === 'ArrowDown') {
       event.preventDefault();
-      const current = open() ? selectableHighlightedIndex() : selectedIndex();
-      const start = current >= 0 ? current : local.options.length - 1;
+      const current = open() ? selectableHighlightedIndex() : selectedFilteredIndex();
+      const start = current >= 0 ? current : filteredOptions().length - 1;
       const next = nextEnabledIndex(start, 1);
       if (next >= 0) {
         if (!open()) openMenu();
@@ -600,7 +686,7 @@ const Select = (props: SelectProps) => {
 
     if (key === 'ArrowUp') {
       event.preventDefault();
-      const current = open() ? selectableHighlightedIndex() : selectedIndex();
+      const current = open() ? selectableHighlightedIndex() : selectedFilteredIndex();
       const start = current >= 0 ? current : 0;
       const next = nextEnabledIndex(start, -1);
       if (next >= 0) {
@@ -960,16 +1046,30 @@ const Select = (props: SelectProps) => {
                   local.menuClass,
                 )}
               >
+                <Show when={searchable()}>
+                  <div class="px-2 pb-2">
+                    <input
+                      ref={searchInputEl}
+                      type="text"
+                      value={query()}
+                      placeholder="Search options"
+                      class="w-full rounded-lg border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100"
+                      onInput={handleSearchInput}
+                      onKeyDown={handleSearchInputKeyDown}
+                    />
+                  </div>
+                </Show>
                 <Show
-                  when={local.options.length > 0}
+                  when={filteredOptions().length > 0}
                   fallback={
                     <div class="px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
-                      No options
+                      No options found
                     </div>
                   }
                 >
-                  <For each={local.options}>
-                    {(option, index) => {
+                  <For each={filteredOptions()}>
+                    {(entry, index) => {
+                      const option = entry.option;
                       const selected = () => option.value === (local.value ?? '');
                       const highlighted = () => index() === highlightedIndex();
                       const optionDisabled = () => Boolean(option.disabled);

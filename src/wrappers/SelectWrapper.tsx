@@ -34,6 +34,7 @@ export const SelectWrapper: Component<SelectWrapperProps> = (p) => {
       value={value()}
       options={options()}
       placeholder={p.spec.placeholder}
+      searchable={p.spec.searchable}
       helperText={p.spec.helperText}
       required={!!p.spec.required}
       disabled={disabled()}
