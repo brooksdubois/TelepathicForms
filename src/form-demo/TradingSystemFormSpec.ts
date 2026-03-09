@@ -8,13 +8,6 @@ import {
 } from "../engine/types";
 import type {DemoSection} from "./MedicalIntakeFormSpec";
 
-const exchangeOptions = [
-  {label: "CME", value: "cme"},
-  {label: "Nasdaq", value: "nasdaq"},
-  {label: "Cboe", value: "cboe"},
-  {label: "Binance", value: "binance"},
-];
-
 const marketOptionsByExchange: Record<string, {label: string; value: string}[]> = {
   cme: [
     {label: "CME E-mini S&P 500", value: "cme-es"},
@@ -46,72 +39,6 @@ const marketOptionsByExchange: Record<string, {label: string; value: string}[]> 
     {label: "XRP/USDT", value: "binance-xrpusdt"},
   ],
 };
-
-const orderTypes = [
-  {label: "Limit", value: "limit"},
-  {label: "Market", value: "market"},
-  {label: "Stop", value: "stop"},
-  {label: "Stop-Limit", value: "stop-limit"},
-  {label: "Post-Only", value: "post-only"},
-  {label: "Iceberg", value: "iceberg"},
-];
-
-const strategies = [
-  {label: "Momentum", value: "momentum"},
-  {label: "Mean Reversion", value: "mean-reversion"},
-  {label: "Spread", value: "spread"},
-  {label: "Pair Arbitrage", value: "pair-arb"},
-  {label: "Market Making", value: "mm"},
-];
-
-const riskModels = [
-  {label: "Conservative", value: "conservative"},
-  {label: "Balanced", value: "balanced"},
-  {label: "Aggressive", value: "aggressive"},
-  {label: "Volatility-Scaled", value: "vol-scaled"},
-];
-
-const timeInForceOptions = [
-  {label: "Day", value: "day"},
-  {label: "GTC", value: "gtc"},
-  {label: "IOC", value: "ioc"},
-  {label: "FOK", value: "fok"},
-  {label: "GTD", value: "gtd"},
-];
-
-const sessionOptions = [
-  {label: "Cash RTH", value: "rth"},
-  {label: "Extended", value: "extended"},
-  {label: "24x7", value: "24x7"},
-  {label: "Auction Window", value: "auction"},
-];
-
-const sideOptions = [
-  {label: "Buy", value: "buy"},
-  {label: "Sell", value: "sell"},
-  {label: "Buy to Cover", value: "buy-to-cover"},
-  {label: "Short Sell", value: "short"},
-];
-
-const routeOptions = [
-  {label: "Primary Venue", value: "primary"},
-  {label: "Dark Pool", value: "dark-pool"},
-  {label: "Cross-Exchange", value: "cross-exchange"},
-  {label: "Internalized", value: "internalized"},
-];
-
-const cboeOptionRoots = [
-  {label: "SPY", value: "spy"},
-  {label: "QQQ", value: "qqq"},
-  {label: "IWM", value: "iwm"},
-  {label: "TSLA", value: "tsla"},
-];
-
-const cmeSettlementTypes = [
-  {label: "Physical", value: "physical"},
-  {label: "Cash", value: "cash"},
-  {label: "EFP", value: "efp"},
-];
 
 const applyInitialValues = (
   fields: FieldSpec[],
@@ -180,7 +107,12 @@ export const buildTradingSystemSections = (
           label: "Exchanges",
           placeholder: "Select exchange",
           required: true,
-          options: exchangeOptions,
+          options: [
+            {label: "CME", value: "cme"},
+            {label: "Nasdaq", value: "nasdaq"},
+            {label: "Cboe", value: "cboe"},
+            {label: "Binance", value: "binance"},
+          ],
           size: "md",
           variant: "outlined",
           ringEnabled: true,
@@ -255,7 +187,13 @@ export const buildTradingSystemSections = (
           row: 1,
           label: "Strategy",
           placeholder: "Select strategy",
-          options: strategies,
+          options: [
+            {label: "Momentum", value: "momentum"},
+            {label: "Mean Reversion", value: "mean-reversion"},
+            {label: "Spread", value: "spread"},
+            {label: "Pair Arbitrage", value: "pair-arb"},
+            {label: "Market Making", value: "mm"},
+          ],
           required: true,
           size: "sm",
           variant: "outlined",
@@ -269,7 +207,12 @@ export const buildTradingSystemSections = (
           row: 1,
           label: "Risk Profile",
           placeholder: "Select risk model",
-          options: riskModels,
+          options: [
+            {label: "Conservative", value: "conservative"},
+            {label: "Balanced", value: "balanced"},
+            {label: "Aggressive", value: "aggressive"},
+            {label: "Volatility-Scaled", value: "vol-scaled"},
+          ],
           size: "sm",
           variant: "outlined",
           ringEnabled: true,
@@ -282,7 +225,12 @@ export const buildTradingSystemSections = (
           row: 1,
           label: "Session Template",
           placeholder: "Select session",
-          options: sessionOptions,
+          options: [
+            {label: "Cash RTH", value: "rth"},
+            {label: "Extended", value: "extended"},
+            {label: "24x7", value: "24x7"},
+            {label: "Auction Window", value: "auction"},
+          ],
           required: true,
           size: "sm",
           variant: "outlined",
@@ -317,7 +265,12 @@ export const buildTradingSystemSections = (
           row: 2,
           label: "Side",
           placeholder: "Select order side",
-          options: sideOptions,
+          options: [
+            {label: "Buy", value: "buy"},
+            {label: "Sell", value: "sell"},
+            {label: "Buy to Cover", value: "buy-to-cover"},
+            {label: "Short Sell", value: "short"},
+          ],
           required: true,
           size: "sm",
           variant: "outlined",
@@ -331,7 +284,14 @@ export const buildTradingSystemSections = (
           row: 2,
           label: "Order Type",
           placeholder: "Select order type",
-          options: orderTypes,
+          options: [
+            {label: "Limit", value: "limit"},
+            {label: "Market", value: "market"},
+            {label: "Stop", value: "stop"},
+            {label: "Stop-Limit", value: "stop-limit"},
+            {label: "Post-Only", value: "post-only"},
+            {label: "Iceberg", value: "iceberg"},
+          ],
           required: true,
           size: "sm",
           variant: "outlined",
@@ -346,7 +306,13 @@ export const buildTradingSystemSections = (
           row: 2,
           label: "Time in Force",
           placeholder: "Select TIF",
-          options: timeInForceOptions,
+          options: [
+            {label: "Day", value: "day"},
+            {label: "GTC", value: "gtc"},
+            {label: "IOC", value: "ioc"},
+            {label: "FOK", value: "fok"},
+            {label: "GTD", value: "gtd"},
+          ],
           size: "sm",
           variant: "outlined",
           ringEnabled: true,
@@ -360,7 +326,12 @@ export const buildTradingSystemSections = (
           row: 2,
           label: "Routing Lane",
           placeholder: "Select lane",
-          options: routeOptions,
+          options: [
+            {label: "Primary Venue", value: "primary"},
+            {label: "Dark Pool", value: "dark-pool"},
+            {label: "Cross-Exchange", value: "cross-exchange"},
+            {label: "Internalized", value: "internalized"},
+          ],
           size: "sm",
           variant: "outlined",
           ringEnabled: true,
@@ -721,7 +692,11 @@ export const buildTradingSystemSections = (
           row: 8,
           label: "CME Settlement Type",
           placeholder: "Select settlement",
-          options: cmeSettlementTypes,
+          options: [
+            {label: "Physical", value: "physical"},
+            {label: "Cash", value: "cash"},
+            {label: "EFP", value: "efp"},
+          ],
           size: "sm",
           variant: "outlined",
           ringEnabled: true,
@@ -900,7 +875,12 @@ export const buildTradingSystemSections = (
           row: 11,
           label: "Option Root",
           placeholder: "Select root",
-          options: cboeOptionRoots,
+          options: [
+            {label: "SPY", value: "spy"},
+            {label: "QQQ", value: "qqq"},
+            {label: "IWM", value: "iwm"},
+            {label: "TSLA", value: "tsla"},
+          ],
           size: "sm",
           variant: "outlined",
           ringEnabled: true,

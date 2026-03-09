@@ -29,34 +29,6 @@ const usStates = [
   "Washington",
 ].map((state) => ({label: state, value: state.toLowerCase()}));
 
-const loanPurposes = [
-  {label: "Purchase", value: "purchase"},
-  {label: "Refinance", value: "refinance"},
-  {label: "Construction", value: "construction"},
-  {label: "Home Equity", value: "home-equity"},
-];
-
-const propertyTypes = [
-  {label: "Single-Family Home", value: "single-family"},
-  {label: "Townhouse", value: "townhouse"},
-  {label: "Condominium", value: "condo"},
-  {label: "Multi-Family", value: "multi-family"},
-];
-
-const propertyUses = [
-  {label: "Primary Residence", value: "primary"},
-  {label: "Second Home", value: "secondary"},
-  {label: "Investment", value: "investment"},
-  {label: "Vacation", value: "vacation"},
-];
-
-const maritalStatuses = [
-  {label: "Single", value: "single"},
-  {label: "Married", value: "married"},
-  {label: "Separated", value: "separated"},
-  {label: "Divorced", value: "divorced"},
-];
-
 const applyInitialValues = (
   fields: FieldSpec[],
   initialValues?: Record<string, string>,
@@ -278,7 +250,12 @@ export const buildBorrowerIntakeSections = (
           label: "Marital Status",
           row: 2,
           placeholder: "Select status",
-          options: maritalStatuses,
+          options: [
+            {label: "Single", value: "single"},
+            {label: "Married", value: "married"},
+            {label: "Separated", value: "separated"},
+            {label: "Divorced", value: "divorced"},
+          ],
           required: true,
           size: "md",
           variant: "outlined",
@@ -339,7 +316,12 @@ export const buildBorrowerIntakeSections = (
           label: "Loan Purpose",
           row: 1,
           placeholder: "Select purpose",
-          options: loanPurposes,
+          options: [
+            {label: "Purchase", value: "purchase"},
+            {label: "Refinance", value: "refinance"},
+            {label: "Construction", value: "construction"},
+            {label: "Home Equity", value: "home-equity"},
+          ],
           required: true,
           size: "md",
           variant: "outlined",
@@ -352,7 +334,12 @@ export const buildBorrowerIntakeSections = (
           label: "Property Type",
           row: 1,
           placeholder: "Select property type",
-          options: propertyTypes,
+          options: [
+            {label: "Single-Family Home", value: "single-family"},
+            {label: "Townhouse", value: "townhouse"},
+            {label: "Condominium", value: "condo"},
+            {label: "Multi-Family", value: "multi-family"},
+          ],
           required: true,
           size: "md",
           variant: "outlined",
@@ -365,7 +352,12 @@ export const buildBorrowerIntakeSections = (
           label: "Property Use",
           row: 1,
           placeholder: "Select property use",
-          options: propertyUses,
+          options: [
+            {label: "Primary Residence", value: "primary"},
+            {label: "Second Home", value: "secondary"},
+            {label: "Investment", value: "investment"},
+            {label: "Vacation", value: "vacation"},
+          ],
           required: true,
           size: "md",
           variant: "outlined",

@@ -13,24 +13,6 @@ export type DemoSection = {
   fields: FieldSpec[];
 };
 
-const dosageUnits = [
-  {label: "Milligram (mg)", value: "mg"},
-  {label: "Gram (g)", value: "g"},
-  {label: "Microgram (mcg)", value: "mcg"},
-  {label: "Milliliter (mL)", value: "ml"},
-  {label: "Liter (L)", value: "l"},
-  {label: "Ounce (oz)", value: "oz"},
-  {label: "International Unit (IU)", value: "iu"},
-];
-
-const timeOfDayOptions = [
-  {label: "Morning", value: "morning"},
-  {label: "Midday", value: "midday"},
-  {label: "Evening", value: "evening"},
-  {label: "Bedtime", value: "bedtime"},
-  {label: "As Needed", value: "asNeeded"},
-];
-
 const normalizePhoneDigits = (value: string) => (value ?? "").replace(/\D/g, "");
 const normalizeEmail = (value: string) =>
   (value ?? "").trim().toLowerCase().replace(/\s+/g, "");
@@ -86,7 +68,15 @@ const buildPrescriptionFields = (index: number): FieldSpec[] => {
       row: rowBase,
       placeholder: "Select unit",
       helperText: "mg, oz, mL, etc.",
-      options: dosageUnits,
+      options: [
+        {label: "Milligram (mg)", value: "mg"},
+        {label: "Gram (g)", value: "g"},
+        {label: "Microgram (mcg)", value: "mcg"},
+        {label: "Milliliter (mL)", value: "ml"},
+        {label: "Liter (L)", value: "l"},
+        {label: "Ounce (oz)", value: "oz"},
+        {label: "International Unit (IU)", value: "iu"},
+      ],
       required: true,
       size: "sm",
       variant: "outlined",
@@ -100,7 +90,13 @@ const buildPrescriptionFields = (index: number): FieldSpec[] => {
       row: rowBase,
       placeholder: "Select time",
       helperText: "Daily timing preference",
-      options: timeOfDayOptions,
+      options: [
+        {label: "Morning", value: "morning"},
+        {label: "Midday", value: "midday"},
+        {label: "Evening", value: "evening"},
+        {label: "Bedtime", value: "bedtime"},
+        {label: "As Needed", value: "asNeeded"},
+      ],
       required: true,
       size: "md",
       variant: "outlined",
