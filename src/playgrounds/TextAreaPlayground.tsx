@@ -12,10 +12,17 @@ import {
   ringAnimationVariant,
   type RingAnimationSelection,
 } from './ringAnimationOptions';
+import {
+  PlaygroundControlPanel,
+  PlaygroundRingButtonClass,
+  type PlaygroundControlSection,
+} from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 
 const variants: TextAreaVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: TextAreaSize[] = ['sm', 'md', 'lg'];
+const variantsOptions = variants.map((value) => ({value, label: value}));
+const sizeOptions = sizes.map((value) => ({value, label: value}));
 
 const defaults = {
   variant: 'outlined' as TextAreaVariant,
@@ -181,12 +188,127 @@ const TextAreaPlayground: Component = () => {
     setEndAdornmentText(defaults.endAdornmentText);
   };
 
-  const controlLabelClass =
-    'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-  const controlInputClass =
-    'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
-  const controlCheckboxClass =
-    'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
+  const controlSections = (): readonly PlaygroundControlSection[] => [
+    {
+      heading: 'Appearance',
+      controls: [
+        {
+          kind: 'select',
+          label: 'Variant',
+          value: configVariant,
+          set: (next) => setConfigVariant(next as TextAreaVariant),
+          options: variantsOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Size',
+          value: configSize,
+          set: (next) => setConfigSize(next as TextAreaSize),
+          options: sizeOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Ring animation',
+          value: () => configRingAnimation(),
+          set: (next) => setConfigRingAnimation(next as RingAnimationSelection),
+          options: ringAnimationOptions,
+        },
+      ],
+    },
+    {
+      heading: 'Behavior',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Disabled',
+          value: configDisabled,
+          set: setConfigDisabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Read only',
+          value: configReadOnly,
+          set: setConfigReadOnly,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Required',
+          value: configRequired,
+          set: setConfigRequired,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Full width',
+          value: configFullWidth,
+          set: setConfigFullWidth,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Error',
+          value: configErrorFlag,
+          set: setConfigErrorFlag,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Autosize',
+          value: configAutosize,
+          set: setConfigAutosize,
+        },
+      ],
+    },
+    {
+      heading: 'Copy',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Label',
+          value: configLabel,
+          set: setConfigLabel,
+        },
+        {
+          kind: 'text',
+          label: 'Helper text',
+          value: configHelperText,
+          set: setConfigHelperText,
+        },
+        {
+          kind: 'text',
+          label: 'Error text',
+          value: configErrorText,
+          set: setConfigErrorText,
+        },
+        {
+          kind: 'text',
+          label: 'Placeholder',
+          value: configPlaceholder,
+          set: setConfigPlaceholder,
+        },
+        {
+          kind: 'text',
+          label: 'Auto complete',
+          value: configAutoComplete,
+          set: setConfigAutoComplete,
+        },
+      ],
+    },
+    {
+      heading: 'Adornments',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Start',
+          value: () => startAdornmentText(),
+          set: setStartAdornmentText,
+        },
+        {
+          kind: 'text',
+          label: 'End',
+          value: () => endAdornmentText(),
+          set: setEndAdornmentText,
+        },
+      ],
+    },
+  ];
 
   return (
     <div class={cx('min-h-screen', darkMode() ? 'dark' : '')}>
@@ -238,7 +360,7 @@ const TextAreaPlayground: Component = () => {
                     <span>Dark</span>
                     <input
                       type="checkbox"
-                      class={controlCheckboxClass}
+                      class="h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400"
                       checked={darkMode()}
                       onInput={(event) => setDarkMode(event.currentTarget.checked)}
                     />
@@ -283,284 +405,85 @@ const TextAreaPlayground: Component = () => {
                 </div>
 
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <div class="flex flex-col gap-4">
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Appearance</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Variant</span>
-                        <select
-                          class={controlInputClass}
-                          value={configVariant()}
-                          onInput={(event) =>
-                            setConfigVariant(
-                              event.currentTarget.value as TextAreaVariant,
-                            )
-                          }
-                        >
-                          <For each={variants}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
+                  <PlaygroundControlPanel sections={controlSections()} />
+                  <button
+                    type="button"
+                    class={PlaygroundRingButtonClass}
+                    disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
+                    onClick={() => ringApi()?.pulseAndFocus()}
+                  >
+                    Trigger ring
+                  </button>
 
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Size</span>
-                        <select
-                          class={controlInputClass}
-                          value={configSize()}
-                          onInput={(event) =>
-                            setConfigSize(event.currentTarget.value as TextAreaSize)
-                          }
-                        >
-                          <For each={sizes}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
+                  <div class="mt-4 grid gap-3">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Dimensions
                     </div>
-
-                    <div class="grid gap-2">
-                      <div class={controlLabelClass}>Behavior</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisabled()}
-                          onInput={(event) =>
-                            setConfigDisabled(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Read only</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configReadOnly()}
-                          onInput={(event) =>
-                            setConfigReadOnly(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Required</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRequired()}
-                          onInput={(event) =>
-                            setConfigRequired(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Full width</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configFullWidth()}
-                          onInput={(event) =>
-                            setConfigFullWidth(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Error</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configErrorFlag()}
-                          onInput={(event) =>
-                            setConfigErrorFlag(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Ring animation</span>
-                        <select
-                          class={controlInputClass}
-                          value={configRingAnimation()}
-                          onInput={(event) =>
-                            setConfigRingAnimation(
-                              event.currentTarget.value as RingAnimationSelection,
-                            )
-                          }
-                        >
-                          <For each={ringAnimationOptions}>
-                            {(item) => <option value={item.value}>{item.label}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <button
-                        type="button"
+                    <label class="flex flex-col gap-2">
+                      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Min rows
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        class="w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                        value={configMinRows()}
+                        onInput={(event) =>
+                          setConfigMinRows(
+                            Math.max(1, Number.parseInt(event.currentTarget.value, 10) || 1),
+                          )
+                        }
+                      />
+                    </label>
+                    <label class="flex flex-col gap-2">
+                      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Max rows (optional)
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        disabled={!configAutosize()}
                         class={cx(
-                          'mt-2 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
-                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
-                          'disabled:cursor-not-allowed disabled:opacity-50',
-                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
+                          'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
+                          !configAutosize() ? 'cursor-not-allowed opacity-60' : '',
                         )}
-                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
-                        onClick={() => ringApi()?.pulseAndFocus()}
-                      >
-                        Trigger ring
-                      </button>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Autosize</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Autosize</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configAutosize()}
-                          onInput={(event) =>
-                            setConfigAutosize(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Min rows</span>
-                        <input
-                          type="number"
-                          min="1"
-                          class={controlInputClass}
-                          value={configMinRows()}
-                          onInput={(event) =>
-                            setConfigMinRows(
-                              Math.max(1, Number.parseInt(event.currentTarget.value, 10) || 1),
-                            )
-                          }
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Max rows (optional)</span>
-                        <input
-                          type="number"
-                          min="1"
-                          disabled={!configAutosize()}
-                          class={cx(
-                            controlInputClass,
-                            !configAutosize() ? 'cursor-not-allowed opacity-60' : '',
-                          )}
-                          value={configMaxRowsInput()}
-                          placeholder="unset"
-                          onInput={(event) =>
-                            setConfigMaxRowsInput(event.currentTarget.value)
-                          }
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Rows (autosize off)</span>
-                        <input
-                          type="number"
-                          min="1"
-                          disabled={configAutosize()}
-                          class={cx(
-                            controlInputClass,
-                            configAutosize() ? 'cursor-not-allowed opacity-60' : '',
-                          )}
-                          value={resolvedRows()}
-                          onInput={(event) =>
-                            setConfigRows(
-                              Math.max(1, Number.parseInt(event.currentTarget.value, 10) || 1),
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Copy</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Label</span>
-                        <input
-                          class={controlInputClass}
-                          value={configLabel() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigLabel(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Helper text</span>
-                        <input
-                          class={controlInputClass}
-                          value={configHelperText() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigHelperText(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Error text</span>
-                        <input
-                          class={controlInputClass}
-                          value={configErrorText() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigErrorText(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Placeholder</span>
-                        <input
-                          class={controlInputClass}
-                          value={configPlaceholder() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigPlaceholder(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Auto complete</span>
-                        <input
-                          class={controlInputClass}
-                          value={configAutoComplete()}
-                          onInput={(event) =>
-                            setConfigAutoComplete(event.currentTarget.value)
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Adornments</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Start</span>
-                        <input
-                          class={controlInputClass}
-                          value={startAdornmentText()}
-                          onInput={(event) =>
-                            setStartAdornmentText(event.currentTarget.value)
-                          }
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>End</span>
-                        <input
-                          class={controlInputClass}
-                          value={endAdornmentText()}
-                          onInput={(event) =>
-                            setEndAdornmentText(event.currentTarget.value)
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-2">
-                      <div class={controlLabelClass}>Value</div>
+                        value={configMaxRowsInput()}
+                        placeholder="unset"
+                        onInput={(event) =>
+                          setConfigMaxRowsInput(event.currentTarget.value)
+                        }
+                      />
+                    </label>
+                    <label class="flex flex-col gap-2">
+                      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Rows (autosize off)
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        disabled={configAutosize()}
+                        class={cx(
+                          'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
+                          configAutosize() ? 'cursor-not-allowed opacity-60' : '',
+                        )}
+                        value={resolvedRows()}
+                        onInput={(event) =>
+                          setConfigRows(
+                            Math.max(1, Number.parseInt(event.currentTarget.value, 10) || 1),
+                          )
+                        }
+                      />
+                    </label>
+                    <label class="flex flex-col gap-2">
+                      <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Value
+                      </span>
                       <textarea
-                        class={cx(controlInputClass, 'min-h-28 resize-y')}
+                        class="min-h-28 w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 resize-y"
                         value={previewValue()}
                         onInput={(event) => setPreviewValue(event.currentTarget.value)}
                       />
-                    </div>
+                    </label>
                   </div>
                 </div>
               </div>

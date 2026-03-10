@@ -8,12 +8,19 @@ import Slider, {
   type SliderMode,
 } from '../primitives/Slider';
 import PlaygroundNav from './PlaygroundNav';
+import {
+  PlaygroundControlPanel,
+  type PlaygroundControlSection,
+} from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 import { darkModeStore } from '../darkModeStore';
 
 const variants: SliderVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: SliderSize[] = ['sm', 'md', 'lg'];
 const modes: SliderMode[] = ['single', 'range', 'stepper'];
+const variantOptions = variants.map((value) => ({value, label: value}));
+const sizeOptions = sizes.map((value) => ({value, label: value}));
+const modeOptions = modes.map((value) => ({value, label: value}));
 
 const defaults = {
   singleValue: 50,
@@ -124,6 +131,127 @@ const SliderPlayground: Component = () => {
       2,
     ),
   );
+
+  const controlSections = (): readonly PlaygroundControlSection[] => [
+    {
+      heading: 'Mode',
+      controls: [
+        {
+          kind: 'select',
+          label: 'Type',
+          value: configMode,
+          set: (next) => setConfigMode(next as SliderMode),
+          options: modeOptions,
+        },
+      ],
+    },
+    {
+      heading: 'Appearance',
+      controls: [
+        {
+          kind: 'select',
+          label: 'Variant',
+          value: configVariant,
+          set: (next) => setConfigVariant(next as SliderVariant),
+          options: variantOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Size',
+          value: configSize,
+          set: (next) => setConfigSize(next as SliderSize),
+          options: sizeOptions,
+        },
+      ],
+    },
+    {
+      heading: 'Configuration',
+      controls: [
+        {
+          kind: 'number',
+          label: 'Min',
+          value: configMin,
+          set: (next) => setConfigMin(next ?? defaults.min),
+        },
+        {
+          kind: 'number',
+          label: 'Max',
+          value: configMax,
+          set: (next) => setConfigMax(next ?? defaults.max),
+        },
+        {
+          kind: 'number',
+          label: 'Step',
+          value: configStep,
+          set: (next) => setConfigStep(next ?? defaults.step),
+        },
+      ],
+    },
+    {
+      heading: 'State',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Disabled',
+          value: configDisabled,
+          set: setConfigDisabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Read only',
+          value: configReadOnly,
+          set: setConfigReadOnly,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Required',
+          value: configRequired,
+          set: setConfigRequired,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Ring enabled',
+          value: configRingEnabled,
+          set: setConfigRingEnabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Show value',
+          value: configShowValue,
+          set: setConfigShowValue,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Show input',
+          value: configShowInput,
+          set: setConfigShowInput,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Full width',
+          value: configFullWidth,
+          set: setConfigFullWidth,
+        },
+      ],
+    },
+    {
+      heading: 'Copy',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Label',
+          value: configLabel,
+          set: setConfigLabel,
+        },
+        {
+          kind: 'text',
+          label: 'Helper text',
+          value: configHelperText,
+          set: setConfigHelperText,
+        },
+      ],
+    },
+  ];
 
   const resetControls = () => {
     setConfigMode(defaults.mode);
@@ -259,10 +387,6 @@ const SliderPlayground: Component = () => {
     },
   ];
 
-  const controlLabelClass =
-    'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-  const controlInputClass =
-    'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
   const controlCheckboxClass =
     'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
 
@@ -396,194 +520,7 @@ const SliderPlayground: Component = () => {
                 </div>
 
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <div class="flex flex-col gap-4">
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Mode</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Type</span>
-                        <select
-                          class={controlInputClass}
-                          value={configMode()}
-                          onInput={(event) =>
-                            setConfigMode(event.currentTarget.value as SliderMode)
-                          }
-                        >
-                          <For each={modes}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Appearance</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Variant</span>
-                        <select
-                          class={controlInputClass}
-                          value={configVariant()}
-                          onInput={(event) =>
-                            setConfigVariant(event.currentTarget.value as SliderVariant)
-                          }
-                        >
-                          <For each={variants}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Size</span>
-                        <select
-                          class={controlInputClass}
-                          value={configSize()}
-                          onInput={(event) =>
-                            setConfigSize(event.currentTarget.value as SliderSize)
-                          }
-                        >
-                          <For each={sizes}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Configuration</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Min</span>
-                        <input
-                          type="number"
-                          class={controlInputClass}
-                          value={configMin()}
-                          onInput={(e) => setConfigMin(parseInt(e.currentTarget.value))}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Max</span>
-                        <input
-                          type="number"
-                          class={controlInputClass}
-                          value={configMax()}
-                          onInput={(e) => setConfigMax(parseInt(e.currentTarget.value))}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Step</span>
-                        <input
-                          type="number"
-                          class={controlInputClass}
-                          value={configStep()}
-                          onInput={(e) => setConfigStep(parseInt(e.currentTarget.value))}
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-2">
-                      <div class={controlLabelClass}>State</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisabled()}
-                          onInput={(event) =>
-                            setConfigDisabled(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Read only</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configReadOnly()}
-                          onInput={(event) =>
-                            setConfigReadOnly(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Required</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRequired()}
-                          onInput={(event) =>
-                            setConfigRequired(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Ring enabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRingEnabled()}
-                          onInput={(event) =>
-                            setConfigRingEnabled(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Show value</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configShowValue()}
-                          onInput={(event) =>
-                            setConfigShowValue(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Show input</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configShowInput()}
-                          onInput={(event) =>
-                            setConfigShowInput(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Full width</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configFullWidth()}
-                          onInput={(event) =>
-                            setConfigFullWidth(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Copy</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Label</span>
-                        <input
-                          class={controlInputClass}
-                          value={configLabel()}
-                          onInput={(event) => {
-                            setConfigLabel(event.currentTarget.value);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Helper text</span>
-                        <input
-                          class={controlInputClass}
-                          value={configHelperText()}
-                          onInput={(event) => {
-                            setConfigHelperText(event.currentTarget.value);
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  <PlaygroundControlPanel sections={controlSections()} />
                 </div>
               </div>
             </section>

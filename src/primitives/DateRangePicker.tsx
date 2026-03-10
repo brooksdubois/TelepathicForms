@@ -3,7 +3,8 @@ import type { JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { Transition } from 'solid-transition-group';
 import { Temporal } from '@js-temporal/polyfill';
-import { useLaserAnimation as useLaserRing } from '../utils/useLaserAnimation';
+import type { LaserRingVariant } from '../utils/laserRingVariants';
+import { useRingAnimation } from '../utils/useRingAnimation';
 
 /* ── Types ── */
 export type DateRangeValue = { start: string; end: string } | null;
@@ -32,6 +33,7 @@ export type DateRangePickerProps = {
   clearable?: boolean;
   ringEnabled?: boolean;
   animateRingOnFocus?: boolean;
+  ringVariant?: LaserRingVariant;
 
   minDate?: string;
   maxDate?: string;
@@ -175,11 +177,16 @@ const DateRangePicker = (props: DateRangePickerProps) => {
     ringPathD,
     ringPulseKey,
     ringActive,
+    ringFadeAnimation,
     pulseRing,
     setRingHostEl,
     setRingMeasureEl,
     setRingLaserSegEl,
-  } = useLaserRing({ enabled: ringEnabled, radius: () => 16 });
+  } = useRingAnimation({
+    enabled: ringEnabled,
+    radius: () => 16,
+    variant: () => props.ringVariant,
+  });
 
   /* ── Sync from props ── */
   createEffect(() => {
@@ -479,6 +486,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
                 ? 'text-rose-500 dark:text-rose-400'
                 : 'text-emerald-500 dark:text-emerald-400',
             )}
+            style={ringActive() ? { animation: ringFadeAnimation() } : undefined}
           >
             <svg
               class="tf-focus-laser-ring-svg"

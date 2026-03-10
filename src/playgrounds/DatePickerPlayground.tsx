@@ -10,6 +10,11 @@ import {
   ringAnimationVariant,
   type RingAnimationSelection,
 } from './ringAnimationOptions';
+import {
+  PlaygroundControlPanel,
+  PlaygroundRingButtonClass,
+  type PlaygroundControlSection,
+} from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 
 type DateFormat = 'MM-DD-YYYY' | 'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'DD.MM.YYYY';
@@ -27,6 +32,7 @@ const formatPresets: DateFormat[] = [
   'MM/DD/YYYY',
   'DD.MM.YYYY',
 ];
+const formatOptions = formatPresets.map((value) => ({ value, label: value }));
 
 const disableModeOptions: Array<{ value: DisableMode; label: string }> = [
   { value: 'none', label: 'None' },
@@ -352,6 +358,159 @@ const DatePickerPlayground: Component = () => {
     ),
   );
 
+  const controlSections = (): readonly PlaygroundControlSection[] => [
+    {
+      heading: 'Data',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Current value',
+          value: () => configValue() ?? undefined,
+          set: (next) => setConfigValue(next ?? null),
+          placeholder: configValueFormat(),
+        },
+      ],
+    },
+    {
+      heading: 'Formatting',
+      controls: [
+        {
+          kind: 'select',
+          label: 'Value format',
+          value: () => configValueFormat(),
+          set: (next) => handleValueFormatChange(next as DateFormat),
+          options: formatOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Input format',
+          value: () => configInputFormat(),
+          set: (next) => handleInputFormatChange(next as DateFormat),
+          options: formatOptions,
+        },
+        {
+          kind: 'text',
+          label: 'Placeholder',
+          value: configPlaceholder,
+          set: (next) => {
+            setConfigPlaceholderTouched(true);
+            setConfigPlaceholder(next);
+          },
+          placeholder: configInputFormat(),
+        },
+      ],
+    },
+    {
+      heading: 'Constraints',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Min date',
+          value: configMinDate,
+          set: setConfigMinDate,
+          placeholder: configValueFormat(),
+        },
+        {
+          kind: 'text',
+          label: 'Max date',
+          value: configMaxDate,
+          set: setConfigMaxDate,
+          placeholder: configValueFormat(),
+        },
+        {
+          kind: 'select',
+          label: 'shouldDisableDate',
+          value: () => configShouldDisableMode(),
+          set: (next) => setConfigShouldDisableMode(next as DisableMode),
+          options: disableModeOptions,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable past',
+          value: configDisablePast,
+          set: setConfigDisablePast,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable future',
+          value: configDisableFuture,
+          set: setConfigDisableFuture,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable weekends',
+          value: configDisableWeekends,
+          set: setConfigDisableWeekends,
+        },
+      ],
+    },
+    {
+      heading: 'Behavior',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Open on focus',
+          value: configOpenOnFocus,
+          set: setConfigOpenOnFocus,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Close on select',
+          value: configCloseOnSelect,
+          set: setConfigCloseOnSelect,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Clearable',
+          value: configClearable,
+          set: setConfigClearable,
+        },
+        {
+          kind: 'select',
+          label: 'Ring animation',
+          value: () => configRingAnimation(),
+          set: (next) => setConfigRingAnimation(next as RingAnimationSelection),
+          options: ringAnimationOptions,
+        },
+      ],
+    },
+    {
+      heading: 'State',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Disabled',
+          value: configDisabled,
+          set: setConfigDisabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Read only',
+          value: configReadOnly,
+          set: setConfigReadOnly,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Required',
+          value: configRequired,
+          set: setConfigRequired,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Error',
+          value: configError,
+          set: setConfigError,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Full width',
+          value: configFullWidth,
+          set: setConfigFullWidth,
+        },
+      ],
+    },
+  ];
+
   const handlePreviewChange: DatePickerProps['onChange'] = (next, ctx) => {
     const parsed = next ? parseISO(next) ?? parseAny(next, [configInputFormat(), configValueFormat()]) : null;
     const normalized = parsed ? formatByFormat(parsed, configValueFormat()) : null;
@@ -513,8 +672,6 @@ const DatePickerPlayground: Component = () => {
 
   const controlLabelClass =
     'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-  const controlInputClass =
-    'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
   const controlCheckboxClass =
     'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
 
@@ -622,256 +779,25 @@ const DatePickerPlayground: Component = () => {
 
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                   <div class="flex flex-col gap-4">
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Data</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Current value</span>
-                        <input
-                          class={controlInputClass}
-                          value={configValue() ?? ''}
-                          onInput={(event) => {
-                            const next = event.currentTarget.value;
-                            setConfigValue(next ? next : null);
-                          }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        class={cx(
-                          'rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
-                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
-                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
-                        )}
-                        onClick={() => {
-                          setConfigValue(null);
-                          setLastChangeCtx({ source: 'clear', value: null });
-                        }}
-                      >
-                        Clear value
-                      </button>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Formatting</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>valueFormat</span>
-                        <select
-                          class={controlInputClass}
-                          value={configValueFormat()}
-                          onInput={(event) =>
-                            handleValueFormatChange(event.currentTarget.value as DateFormat)
-                          }
-                        >
-                          <For each={formatPresets}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>inputFormat</span>
-                        <select
-                          class={controlInputClass}
-                          value={configInputFormat()}
-                          onInput={(event) =>
-                            handleInputFormatChange(event.currentTarget.value as DateFormat)
-                          }
-                        >
-                          <For each={formatPresets}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Placeholder</span>
-                        <input
-                          class={controlInputClass}
-                          value={configPlaceholder() ?? ''}
-                          onInput={(event) => {
-                            const next = event.currentTarget.value;
-                            setConfigPlaceholderTouched(true);
-                            setConfigPlaceholder(next ? next : undefined);
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Constraints</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Min date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configMinDate() ?? ''}
-                          onInput={(event) => {
-                            const next = event.currentTarget.value;
-                            setConfigMinDate(next ? next : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Max date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configMaxDate() ?? ''}
-                          onInput={(event) => {
-                            const next = event.currentTarget.value;
-                            setConfigMaxDate(next ? next : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>shouldDisableDate</span>
-                        <select
-                          class={controlInputClass}
-                          value={configShouldDisableMode()}
-                          onInput={(event) =>
-                            setConfigShouldDisableMode(event.currentTarget.value as DisableMode)
-                          }
-                        >
-                          <For each={disableModeOptions}>
-                            {(item) => <option value={item.value}>{item.label}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable past</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisablePast()}
-                          onInput={(event) => setConfigDisablePast(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable future</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisableFuture()}
-                          onInput={(event) => setConfigDisableFuture(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable weekends</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisableWeekends()}
-                          onInput={(event) =>
-                            setConfigDisableWeekends(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Behavior</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Open on focus</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configOpenOnFocus()}
-                          onInput={(event) => setConfigOpenOnFocus(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Close on select</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configCloseOnSelect()}
-                          onInput={(event) => setConfigCloseOnSelect(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Clearable</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configClearable()}
-                          onInput={(event) => setConfigClearable(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Ring animation</span>
-                        <select
-                          class={controlInputClass}
-                          value={configRingAnimation()}
-                          onInput={(event) =>
-                            setConfigRingAnimation(
-                              event.currentTarget.value as RingAnimationSelection,
-                            )
-                          }
-                        >
-                          <For each={ringAnimationOptions}>
-                            {(item) => <option value={item.value}>{item.label}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <button
-                        type="button"
-                        class={cx(
-                          'mt-1 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
-                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
-                          'disabled:cursor-not-allowed disabled:opacity-50',
-                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
-                        )}
-                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
-                        onClick={() => ringApi()?.pulseAndFocus()}
-                      >
-                        Trigger ring
-                      </button>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>State</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisabled()}
-                          onInput={(event) => setConfigDisabled(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Read only</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configReadOnly()}
-                          onInput={(event) => setConfigReadOnly(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Required</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRequired()}
-                          onInput={(event) => setConfigRequired(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Error</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configError()}
-                          onInput={(event) => setConfigError(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Full width</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configFullWidth()}
-                          onInput={(event) => setConfigFullWidth(event.currentTarget.checked)}
-                        />
-                      </label>
-                    </div>
+                    <PlaygroundControlPanel sections={controlSections()} />
+                    <button
+                      type="button"
+                      class={cx(PlaygroundRingButtonClass, 'mt-0')}
+                      onClick={() => {
+                        setConfigValue(null);
+                        setLastChangeCtx({ source: 'clear', value: null });
+                      }}
+                    >
+                      Clear value
+                    </button>
+                    <button
+                      type="button"
+                      class={PlaygroundRingButtonClass}
+                      disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
+                      onClick={() => ringApi()?.pulseAndFocus()}
+                    >
+                      Trigger ring
+                    </button>
                   </div>
                 </div>
               </div>

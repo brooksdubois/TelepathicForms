@@ -1,9 +1,20 @@
-import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
+import { For, Show, createMemo, createSignal } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import DateRangePicker from '../primitives/DateRangePicker';
 import type { DateRangeValue } from '../primitives/DateRangePicker';
 import PlaygroundNav from '../playgrounds/PlaygroundNav';
+import {
+  ringAnimationEnabled,
+  ringAnimationOptions,
+  ringAnimationVariant,
+  type RingAnimationSelection,
+} from './ringAnimationOptions';
+import {
+  PlaygroundControlPanel,
+  PlaygroundRingButtonClass,
+  type PlaygroundControlSection,
+} from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 
 type ChangeCtx = {
@@ -19,6 +30,7 @@ const defaults = {
   required: false,
   error: false,
   clearable: true,
+  ringAnimation: 'laser' as RingAnimationSelection,
   openOnFocus: true,
   closeOnSelect: true,
   disablePast: false,
@@ -67,6 +79,9 @@ const DateRangePickerPlayground: Component = () => {
   const [configRequired, setConfigRequired] = createSignal(defaults.required);
   const [configError, setConfigError] = createSignal(defaults.error);
   const [configClearable, setConfigClearable] = createSignal(defaults.clearable);
+  const [configRingAnimation, setConfigRingAnimation] = createSignal<RingAnimationSelection>(
+    defaults.ringAnimation,
+  );
   const [configOpenOnFocus, setConfigOpenOnFocus] = createSignal(defaults.openOnFocus);
   const [configCloseOnSelect, setConfigCloseOnSelect] = createSignal(defaults.closeOnSelect);
   const [configDisablePast, setConfigDisablePast] = createSignal(defaults.disablePast);
@@ -91,6 +106,7 @@ const DateRangePickerPlayground: Component = () => {
     setConfigRequired(defaults.required);
     setConfigError(defaults.error);
     setConfigClearable(defaults.clearable);
+    setConfigRingAnimation(defaults.ringAnimation);
     setConfigOpenOnFocus(defaults.openOnFocus);
     setConfigCloseOnSelect(defaults.closeOnSelect);
     setConfigDisablePast(defaults.disablePast);
@@ -114,6 +130,8 @@ const DateRangePickerPlayground: Component = () => {
           required: configRequired(),
           error: configError(),
           clearable: configClearable(),
+          ringEnabled: ringAnimationEnabled(configRingAnimation()),
+          ringVariant: ringAnimationVariant(configRingAnimation()),
           openOnFocus: configOpenOnFocus(),
           closeOnSelect: configCloseOnSelect(),
           minDate: configMinDate(),
@@ -131,6 +149,148 @@ const DateRangePickerPlayground: Component = () => {
       2,
     ),
   );
+
+  const setRangeStart = (next: string | undefined) => {
+    const start = next?.trim() ?? '';
+    const end = configValue()?.end ?? '';
+
+    if (!start) {
+      setConfigValue(null);
+      return;
+    }
+
+    setConfigValue({ start, end: end || start });
+  };
+
+  const setRangeEnd = (next: string | undefined) => {
+    const end = next?.trim() ?? '';
+    const start = configValue()?.start ?? '';
+
+    if (!start || !end) {
+      setConfigValue(null);
+      return;
+    }
+
+    setConfigValue({ start, end });
+  };
+
+  const controlSections = (): readonly PlaygroundControlSection[] => [
+    {
+      heading: 'Data',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Start date',
+          value: () => configValue()?.start ?? undefined,
+          set: setRangeStart,
+          placeholder: 'YYYY-MM-DD',
+        },
+        {
+          kind: 'text',
+          label: 'End date',
+          value: () => configValue()?.end ?? undefined,
+          set: setRangeEnd,
+          placeholder: 'YYYY-MM-DD',
+        },
+      ],
+    },
+    {
+      heading: 'Constraints',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Min date',
+          value: configMinDate,
+          set: setConfigMinDate,
+          placeholder: 'YYYY-MM-DD',
+        },
+        {
+          kind: 'text',
+          label: 'Max date',
+          value: configMaxDate,
+          set: setConfigMaxDate,
+          placeholder: 'YYYY-MM-DD',
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable past',
+          value: configDisablePast,
+          set: setConfigDisablePast,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable future',
+          value: configDisableFuture,
+          set: setConfigDisableFuture,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disable weekends',
+          value: configDisableWeekends,
+          set: setConfigDisableWeekends,
+        },
+      ],
+    },
+    {
+      heading: 'Behavior',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Clearable',
+          value: configClearable,
+          set: setConfigClearable,
+        },
+        {
+          kind: 'select',
+          label: 'Ring animation',
+          value: () => configRingAnimation(),
+          set: (next) => setConfigRingAnimation(next as RingAnimationSelection),
+          options: ringAnimationOptions,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Open on focus',
+          value: configOpenOnFocus,
+          set: setConfigOpenOnFocus,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Close on select',
+          value: configCloseOnSelect,
+          set: setConfigCloseOnSelect,
+        },
+      ],
+    },
+    {
+      heading: 'State',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Disabled',
+          value: configDisabled,
+          set: setConfigDisabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Read only',
+          value: configReadOnly,
+          set: setConfigReadOnly,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Required',
+          value: configRequired,
+          set: setConfigRequired,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Error',
+          value: configError,
+          set: setConfigError,
+        },
+      ],
+    },
+  ];
 
   const examples: Array<{
     title: string;
@@ -195,8 +355,6 @@ const DateRangePickerPlayground: Component = () => {
     },
   ];
 
-  const controlLabelClass = 'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-  const controlInputClass = 'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
   const controlCheckboxClass = 'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
 
   return (
@@ -270,6 +428,8 @@ const DateRangePickerPlayground: Component = () => {
                       required={configRequired()}
                       error={configError()}
                       clearable={configClearable()}
+                      ringEnabled={ringAnimationEnabled(configRingAnimation())}
+                      ringVariant={ringAnimationVariant(configRingAnimation())}
                       openOnFocus={configOpenOnFocus()}
                       closeOnSelect={configCloseOnSelect()}
                       minDate={configMinDate()}
@@ -300,126 +460,17 @@ const DateRangePickerPlayground: Component = () => {
                 {/* Controls panel */}
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                   <div class="flex flex-col gap-4">
-                    {/* Data */}
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Data</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Start date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configValue()?.start ?? ''}
-                          onInput={(e) => {
-                            const start = e.currentTarget.value;
-                            const end = configValue()?.end ?? '';
-                            if (start && end) setConfigValue({ start, end });
-                            else if (start) setConfigValue({ start, end: start });
-                            else setConfigValue(null);
-                          }}
-                          placeholder="YYYY-MM-DD"
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>End date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configValue()?.end ?? ''}
-                          onInput={(e) => {
-                            const end = e.currentTarget.value;
-                            const start = configValue()?.start ?? '';
-                            if (start && end) setConfigValue({ start, end });
-                            else setConfigValue(null);
-                          }}
-                          placeholder="YYYY-MM-DD"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        class={cx(
-                          'rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
-                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
-                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
-                        )}
-                        onClick={() => {
-                          setConfigValue(null);
-                          setLastChangeCtx({ source: 'clear', value: null });
-                        }}
-                      >
-                        Clear value
-                      </button>
-                    </div>
-
-                    {/* Constraints */}
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Constraints</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Min date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configMinDate() ?? ''}
-                          onInput={(e) => setConfigMinDate(e.currentTarget.value || undefined)}
-                          placeholder="YYYY-MM-DD"
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Max date</span>
-                        <input
-                          class={controlInputClass}
-                          value={configMaxDate() ?? ''}
-                          onInput={(e) => setConfigMaxDate(e.currentTarget.value || undefined)}
-                          placeholder="YYYY-MM-DD"
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable past</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configDisablePast()} onInput={(e) => setConfigDisablePast(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable future</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configDisableFuture()} onInput={(e) => setConfigDisableFuture(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disable weekends</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configDisableWeekends()} onInput={(e) => setConfigDisableWeekends(e.currentTarget.checked)} />
-                      </label>
-                    </div>
-
-                    {/* Behavior */}
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Behavior</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Open on focus</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configOpenOnFocus()} onInput={(e) => setConfigOpenOnFocus(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Close on select</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configCloseOnSelect()} onInput={(e) => setConfigCloseOnSelect(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Clearable</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configClearable()} onInput={(e) => setConfigClearable(e.currentTarget.checked)} />
-                      </label>
-                    </div>
-
-                    {/* State */}
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>State</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disabled</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configDisabled()} onInput={(e) => setConfigDisabled(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Read only</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configReadOnly()} onInput={(e) => setConfigReadOnly(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Required</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configRequired()} onInput={(e) => setConfigRequired(e.currentTarget.checked)} />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Error</span>
-                        <input type="checkbox" class={controlCheckboxClass} checked={configError()} onInput={(e) => setConfigError(e.currentTarget.checked)} />
-                      </label>
-                    </div>
+                    <PlaygroundControlPanel sections={controlSections()} />
+                    <button
+                      type="button"
+                      class={cx(PlaygroundRingButtonClass, 'mt-0')}
+                      onClick={() => {
+                        setConfigValue(null);
+                        setLastChangeCtx({ source: 'clear', value: null });
+                      }}
+                    >
+                      Clear value
+                    </button>
                   </div>
                 </div>
               </div>

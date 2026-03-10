@@ -60,6 +60,7 @@ export const DateRangePickerWrapper: Component<DateRangePickerWrapperProps> = (p
       shouldDisableDate={p.spec.shouldDisableDate}
       ringEnabled={p.spec.ringEnabled}
       animateRingOnFocus={p.spec.animateRingOnFocus}
+      ringVariant={p.spec.ringVariant}
       openOnFocus={p.spec.openOnFocus}
       closeOnSelect={p.spec.closeOnSelect}
       class={p.fullWidth ? "w-full" : undefined}

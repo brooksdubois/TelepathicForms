@@ -13,6 +13,11 @@ import {
   ringAnimationVariant,
   type RingAnimationSelection,
 } from './ringAnimationOptions';
+import {
+  PlaygroundControlPanel,
+  PlaygroundRingButtonClass,
+  type PlaygroundControlSection,
+} from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 
 const variants: SwitchVariant[] = ['outlined', 'filled', 'standard'];
@@ -34,6 +39,84 @@ const defaults = {
   errorText: 'This setting must be enabled for alerts.',
   darkMode: false,
 };
+
+const variantsOptions = variants.map((value) => ({value, label: value}));
+const sizeOptions = sizes.map((value) => ({value, label: value}));
+const examples: Array<{
+  title: string;
+  props: Omit<SwitchProps, 'checked' | 'onChecked'>;
+  initialChecked?: boolean;
+}> = [
+  {
+    title: 'Default',
+    props: {
+      label: 'Enable weekly summary',
+      helperText: 'Sends a digest every Friday.',
+    },
+    initialChecked: true,
+  },
+  {
+    title: 'Required',
+    props: {
+      label: 'Enable security alerts',
+      required: true,
+      helperText: 'Required for admin accounts.',
+    },
+  },
+  {
+    title: 'Disabled',
+    props: {
+      label: 'Managed by policy',
+      disabled: true,
+      helperText: 'This setting is locked by your workspace.',
+    },
+    initialChecked: true,
+  },
+  {
+    title: 'Error state',
+    props: {
+      label: 'Enable incident paging',
+      error: true,
+      errorText: 'Turn this on before saving.',
+    },
+  },
+  {
+    title: 'Filled variant',
+    props: {
+      label: 'Auto-enable changelog posts',
+      variant: 'filled',
+      helperText: 'Posts updates to your team channel.',
+    },
+    initialChecked: true,
+  },
+  {
+    title: 'Standard variant',
+    props: {
+      label: 'Mute marketing emails',
+      variant: 'standard',
+    },
+  },
+  {
+    title: 'Read only',
+    props: {
+      label: 'Synced from billing',
+      readOnly: true,
+      helperText: 'Read-only at your current role.',
+    },
+    initialChecked: true,
+  },
+  {
+    title: 'Class overrides',
+    props: {
+      label: 'Accent styles',
+      helperText: 'Custom colors via class hooks.',
+      rootClass: 'rounded-2xl bg-amber-50/80 p-3 dark:bg-amber-500/10',
+      labelClass: 'text-amber-700 dark:text-amber-200',
+      helperClass: 'text-amber-600 dark:text-amber-300',
+    },
+    initialChecked: true,
+  },
+];
 
 const ExampleCard: Component<{
   title: string;
@@ -71,9 +154,7 @@ const SwitchPlayground: Component = () => {
   const [configInline, setConfigInline] = createSignal(defaults.inline);
   const [configVariant, setConfigVariant] = createSignal(defaults.variant);
   const [configSize, setConfigSize] = createSignal(defaults.size);
-  const [configLabel, setConfigLabel] = createSignal<string | undefined>(
-    defaults.label,
-  );
+  const [configLabel, setConfigLabel] = createSignal<string | undefined>(defaults.label);
   const [configHelperText, setConfigHelperText] = createSignal<string | undefined>(
     defaults.helperText,
   );
@@ -85,6 +166,105 @@ const SwitchPlayground: Component = () => {
     focus: () => void;
     pulseAndFocus: () => void;
   }>();
+
+  const controlSections = (): readonly PlaygroundControlSection[] => [
+    {
+      heading: 'Appearance',
+      controls: [
+        {
+          kind: 'select',
+          label: 'Variant',
+          value: configVariant,
+          set: (next) => setConfigVariant(next as SwitchVariant),
+          options: variantsOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Size',
+          value: configSize,
+          set: (next) => setConfigSize(next as SwitchSize),
+          options: sizeOptions,
+        },
+        {
+          kind: 'select',
+          label: 'Ring animation',
+          value: () => configRingAnimation(),
+          set: (next) => setConfigRingAnimation(next as RingAnimationSelection),
+          options: ringAnimationOptions,
+        },
+      ],
+    },
+    {
+      heading: 'State',
+      controls: [
+        {
+          kind: 'checkbox',
+          label: 'Checked',
+          value: configChecked,
+          set: setConfigChecked,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Disabled',
+          value: configDisabled,
+          set: setConfigDisabled,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Read only',
+          value: configReadOnly,
+          set: setConfigReadOnly,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Required',
+          value: configRequired,
+          set: setConfigRequired,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Error',
+          value: configError,
+          set: setConfigError,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Inline',
+          value: configInline,
+          set: setConfigInline,
+        },
+        {
+          kind: 'checkbox',
+          label: 'Full width',
+          value: configFullWidth,
+          set: setConfigFullWidth,
+        },
+      ],
+    },
+    {
+      heading: 'Copy',
+      controls: [
+        {
+          kind: 'text',
+          label: 'Label',
+          value: configLabel,
+          set: setConfigLabel,
+        },
+        {
+          kind: 'text',
+          label: 'Helper text',
+          value: configHelperText,
+          set: setConfigHelperText,
+        },
+        {
+          kind: 'text',
+          label: 'Error text',
+          value: configErrorText,
+          set: setConfigErrorText,
+        },
+      ],
+    },
+  ];
 
   const previewWrapperClass = createMemo(() =>
     cx('transition-all duration-200', configFullWidth() ? 'w-full' : 'max-w-lg'),
@@ -132,89 +312,6 @@ const SwitchPlayground: Component = () => {
     setConfigErrorText(defaults.errorText);
   };
 
-  const examples: Array<{
-    title: string;
-    props: Omit<SwitchProps, 'checked' | 'onChecked'>;
-    initialChecked?: boolean;
-  }> = [
-    {
-      title: 'Default',
-      props: {
-        label: 'Enable weekly summary',
-        helperText: 'Sends a digest every Friday.',
-      },
-      initialChecked: true,
-    },
-    {
-      title: 'Required',
-      props: {
-        label: 'Enable security alerts',
-        required: true,
-        helperText: 'Required for admin accounts.',
-      },
-    },
-    {
-      title: 'Disabled',
-      props: {
-        label: 'Managed by policy',
-        disabled: true,
-        helperText: 'This setting is locked by your workspace.',
-      },
-      initialChecked: true,
-    },
-    {
-      title: 'Error state',
-      props: {
-        label: 'Enable incident paging',
-        error: true,
-        errorText: 'Turn this on before saving.',
-      },
-    },
-    {
-      title: 'Filled variant',
-      props: {
-        label: 'Auto-enable changelog posts',
-        variant: 'filled',
-        helperText: 'Posts updates to your team channel.',
-      },
-      initialChecked: true,
-    },
-    {
-      title: 'Standard variant',
-      props: {
-        label: 'Mute marketing emails',
-        variant: 'standard',
-      },
-    },
-    {
-      title: 'Read only',
-      props: {
-        label: 'Synced from billing',
-        readOnly: true,
-        helperText: 'Read-only at your current role.',
-      },
-      initialChecked: true,
-    },
-    {
-      title: 'Class overrides',
-      props: {
-        label: 'Accent styles',
-        helperText: 'Custom colors via class hooks.',
-        rootClass: 'rounded-2xl bg-amber-50/80 p-3 dark:bg-amber-500/10',
-        labelClass: 'text-amber-700 dark:text-amber-200',
-        helperClass: 'text-amber-600 dark:text-amber-300',
-      },
-      initialChecked: true,
-    },
-  ];
-
-  const controlLabelClass =
-    'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
-  const controlInputClass =
-    'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
-  const controlCheckboxClass =
-    'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
-
   return (
     <div class={cx('min-h-screen', darkMode() ? 'dark' : '')}>
       <div class="relative min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
@@ -261,7 +358,7 @@ const SwitchPlayground: Component = () => {
                     <span>Dark</span>
                     <input
                       type="checkbox"
-                      class={controlCheckboxClass}
+                      class="h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400"
                       checked={darkMode()}
                       onInput={(event) => setDarkMode(event.currentTarget.checked)}
                     />
@@ -297,170 +394,15 @@ const SwitchPlayground: Component = () => {
                 </div>
 
                 <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <div class="flex flex-col gap-4">
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Appearance</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Variant</span>
-                        <select
-                          class={controlInputClass}
-                          value={configVariant()}
-                          onInput={(event) =>
-                            setConfigVariant(event.currentTarget.value as SwitchVariant)
-                          }
-                        >
-                          <For each={variants}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Size</span>
-                        <select
-                          class={controlInputClass}
-                          value={configSize()}
-                          onInput={(event) =>
-                            setConfigSize(event.currentTarget.value as SwitchSize)
-                          }
-                        >
-                          <For each={sizes}>
-                            {(item) => <option value={item}>{item}</option>}
-                          </For>
-                        </select>
-                      </label>
-                    </div>
-
-                    <div class="grid gap-2">
-                      <div class={controlLabelClass}>State</div>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Checked</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configChecked()}
-                          onInput={(event) => setConfigChecked(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Disabled</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configDisabled()}
-                          onInput={(event) =>
-                            setConfigDisabled(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Read only</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configReadOnly()}
-                          onInput={(event) =>
-                            setConfigReadOnly(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Required</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configRequired()}
-                          onInput={(event) =>
-                            setConfigRequired(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Error</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configError()}
-                          onInput={(event) => setConfigError(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Ring animation</span>
-                        <select
-                          class={controlInputClass}
-                          value={configRingAnimation()}
-                          onInput={(event) =>
-                            setConfigRingAnimation(
-                              event.currentTarget.value as RingAnimationSelection,
-                            )
-                          }
-                        >
-                          <For each={ringAnimationOptions}>
-                            {(item) => <option value={item.value}>{item.label}</option>}
-                          </For>
-                        </select>
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Inline</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configInline()}
-                          onInput={(event) => setConfigInline(event.currentTarget.checked)}
-                        />
-                      </label>
-                      <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                        <span>Full width</span>
-                        <input
-                          type="checkbox"
-                          class={controlCheckboxClass}
-                          checked={configFullWidth()}
-                          onInput={(event) =>
-                            setConfigFullWidth(event.currentTarget.checked)
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        class={cx(
-                          'mt-2 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition',
-                          'hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600',
-                          'disabled:cursor-not-allowed disabled:opacity-50',
-                          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200',
-                        )}
-                        disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
-                        onClick={() => ringApi()?.pulseAndFocus()}
-                      >
-                        Trigger ring
-                      </button>
-                    </div>
-
-                    <div class="grid gap-3">
-                      <div class={controlLabelClass}>Copy</div>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Label</span>
-                        <input
-                          class={controlInputClass}
-                          value={configLabel() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigLabel(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                      <label class="flex flex-col gap-2">
-                        <span class={controlLabelClass}>Helper text</span>
-                        <input
-                          class={controlInputClass}
-                          value={configHelperText() ?? ''}
-                          onInput={(event) => {
-                            const value = event.currentTarget.value;
-                            setConfigHelperText(value ? value : undefined);
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  <PlaygroundControlPanel sections={controlSections()} />
+                  <button
+                    type="button"
+                    class={PlaygroundRingButtonClass}
+                    disabled={!ringAnimationEnabled(configRingAnimation()) || !ringApi()}
+                    onClick={() => ringApi()?.pulseAndFocus()}
+                  >
+                    Trigger ring
+                  </button>
                 </div>
               </div>
             </section>
