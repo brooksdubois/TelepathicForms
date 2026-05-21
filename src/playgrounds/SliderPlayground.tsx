@@ -132,7 +132,10 @@ const SliderPlayground: Component = () => {
   }>();
 
   const previewWrapperClass = createMemo(() =>
-    cx('transition-all duration-200', configFullWidth() ? 'w-full' : 'max-w-lg'),
+    cx(
+      "tf-playground-preview-frame",
+      configFullWidth() ? "max-w-4xl" : "max-w-3xl",
+    ),
   );
 
   const getCurrentValue = () => {
@@ -531,22 +534,27 @@ const SliderPlayground: Component = () => {
 
         <div class="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-10">
           <header class="flex flex-col gap-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">
                   Solid Slider Lab
                 </div>
                 <h1 class="font-display text-3xl font-semibold sm:text-4xl">
-                  Flexible range sliders, rebuilt for Solid
+                  Slider, Rebuilt for Solid
                 </h1>
               </div>
-              <button
-                class="rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
-                type="button"
-                onClick={resetControls}
-              >
-                Reset
-              </button>
+              <div class="flex flex-col items-end gap-2">
+                <PlaygroundNav />
+                <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <span>Dark</span>
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400"
+                    checked={darkModeStore.isDarkMode()}
+                    onInput={(event) => darkModeStore.setDarkMode(event.currentTarget.checked)}
+                  />
+                </label>
+              </div>
             </div>
           </header>
 
@@ -554,22 +562,10 @@ const SliderPlayground: Component = () => {
             <section class="animate-rise rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 class="font-display text-lg font-semibold">Live preview</h2>
+                  <h2 class="font-display text-lg font-semibold">Live Preview</h2>
                   <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {configMode()} / {configVariant()} / {configSize()}
                   </div>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                  <PlaygroundNav />
-                  <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <span>Dark</span>
-                    <input
-                      type="checkbox"
-                      class={controlCheckboxClass}
-                      checked={darkModeStore.isDarkMode()}
-                      onInput={(event) => darkModeStore.setDarkMode(event.currentTarget.checked)}
-                    />
-                  </label>
                 </div>
               </div>
 

@@ -351,37 +351,45 @@ const TimePickerPlayground: Component = () => {
       <div class="relative min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
         <div class="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-10">
           <header class="flex flex-col gap-3">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">
                   Time Picker Lab
                 </div>
                 <h1 class="font-display text-3xl font-semibold sm:text-4xl">
-                  hh:mm:ss time picker, built for Solid
+                  TimePicker, Rebuilt for Solid
                 </h1>
               </div>
-              <button
-                class="rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
-                type="button"
-                onClick={resetControls}
-              >
-                Reset
-              </button>
+              <div class="flex flex-col items-end gap-2">
+                <PlaygroundNav />
+                <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <span>Dark</span>
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400"
+                    checked={darkMode()}
+                    onInput={(event) => setDarkModeAndPersist(event.currentTarget.checked)}
+                  />
+                </label>
+              </div>
             </div>
-
-            <PlaygroundNav />
           </header>
 
           <main class="flex flex-col gap-6">
             <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
               <div class="mb-6">
-                <h2 class="mb-1 text-lg font-semibold">Live preview</h2>
+                <h2 class="mb-1 text-lg font-semibold">Live Preview</h2>
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   {configHour12() ? '12-hour mode' : '24-hour mode'}
                 </p>
               </div>
 
-              <div class={cx('w-full', configFullWidth() ? 'max-w-none' : 'max-w-md')}>
+              <div
+                class={cx(
+                  'tf-playground-preview-frame',
+                  configFullWidth() ? 'max-w-4xl' : 'max-w-3xl',
+                )}
+              >
                 <TimePicker
                   {...previewConfig()}
                   onRingApi={setRingApi}
@@ -417,16 +425,6 @@ const TimePickerPlayground: Component = () => {
                 <div class="space-y-4">
                   <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                     <h2 class="mb-3 font-semibold">Configuration</h2>
-
-                    <label class="flex items-center justify-between">
-                      <span class={controlLabelClass}>Dark mode</span>
-                      <input
-                        class={controlCheckboxClass}
-                        type="checkbox"
-                        checked={darkMode()}
-                        onInput={(event) => setDarkModeAndPersist(event.currentTarget.checked)}
-                      />
-                    </label>
 
                     <div class="mt-3">
                       <PlaygroundControlPanel sections={controlSections()} />

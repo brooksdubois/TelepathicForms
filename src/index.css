@@ -175,6 +175,45 @@ body {
     font-family: var(--font-body);
 }
 
+.tf-playground-preview-frame {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-inline: auto;
+    padding: 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--tf-accent-400) 52%, transparent);
+    border-radius: 1.35rem;
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--tf-accent-100) 70%, white) 0%,
+            color-mix(in srgb, var(--tf-accent-300) 48%, white) 52%,
+            color-mix(in srgb, var(--tf-accent-600) 24%, #e0f2fe) 100%
+        );
+    box-shadow:
+        0 18px 38px color-mix(in srgb, var(--tf-accent-shadow-soft) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    transition:
+        background 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        max-width 180ms ease;
+}
+
+.dark .tf-playground-preview-frame {
+    border-color: color-mix(in srgb, var(--tf-accent-300) 36%, transparent);
+    background:
+        linear-gradient(
+            315deg,
+            color-mix(in srgb, var(--tf-accent-700) 46%, #020617) 0%,
+            color-mix(in srgb, var(--tf-accent-500) 30%, #0f172a) 54%,
+            color-mix(in srgb, var(--tf-accent-200) 16%, #111827) 100%
+        );
+    box-shadow:
+        0 18px 42px color-mix(in srgb, var(--tf-accent-shadow-strong) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 .tf-native-accent {
     accent-color: var(--tf-accent-500);
 }
