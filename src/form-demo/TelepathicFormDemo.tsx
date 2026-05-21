@@ -143,6 +143,7 @@ export const TelepathicFormDemo: Component = () => {
   const [tradingMarket, setTradingMarket] = createSignal("");
   const [lastRegisteredDemoState, setLastRegisteredDemoState] = createSignal("");
   const [formState, setFormState] = createSignal<DemoRuntimeState | null>(null);
+  const [formValues, setFormValues] = createSignal<Record<string, string>>({});
   let previousState: DemoRuntimeState | null = null;
 
   const demoSelectValue$ = new BehaviorSubject<string>(selectedDemo());
@@ -311,6 +312,15 @@ export const TelepathicFormDemo: Component = () => {
 
     previousState = nextState;
     setFormState(nextState);
+    setFormValues(collectValues(built.nodesById));
+
+    built.nodesById.forEach((node) => {
+      subscriptions.push(
+        node.value$.subscribe(() => {
+          setFormValues(collectValues(built.nodesById));
+        }),
+      );
+    });
 
     onCleanup(() => {
       built.graph.destroy();
@@ -377,6 +387,8 @@ export const TelepathicFormDemo: Component = () => {
 
     return `const formSpec: FormSpec = ${serializeCodeValue(state.spec)};`;
   });
+
+  const formValuesCode = createMemo(() => `const formData = ${serializeCodeValue(formValues())};`);
 
   return (
     <div class={cx("min-h-screen", darkMode() ? "dark" : "")}>
@@ -535,27 +547,16 @@ export const TelepathicFormDemo: Component = () => {
             </section>
 
             <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/70">
-              <h2 class="font-display text-lg font-semibold">Runtime signals</h2>
-              <div class="mt-4 font-mono text-xs text-slate-600 dark:text-slate-300">
-                <Show when={current()}>
-                  {(state) => (
-                    <>
-                      <div>activeDemo = {state().label}</div>
-                      <div>fieldCount = {state().spec.fields.length}</div>
-                      <Show when={state().key === "medical"}>
-                        <div>prescriptionRows = {prescriptionRows()}</div>
-                      </Show>
-                      <Show when={state().key === "borrower"}>
-                        <div>previousAddressRows = {previousAddressRows()}</div>
-                      </Show>
-                      <Show when={state().key === "trading"}>
-                        <div>tradingExchange = {tradingExchange() || "Not set"}</div>
-                        <div>tradingMarket = {tradingMarket() || "Not set"}</div>
-                      </Show>
-                    </>
-                  )}
-                </Show>
-              </div>
+              <h2 class="font-display text-lg font-semibold">Form State</h2>
+              <CodeViewer
+                code={formValuesCode()}
+                lang="js"
+                theme={darkMode() ? "github-dark" : "snazzy-light"}
+                class="mt-4 h-[360px]"
+                minHeightClass="min-h-[240px]"
+                maxHeightClass="max-h-[360px]"
+                showCopyButton={true}
+              />
             </section>
           </main>
         </div>
