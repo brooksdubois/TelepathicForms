@@ -65,14 +65,13 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
     closeMenu();
   };
 
-  const toggleMenu = (menu: Exclude<OpenMenu, null>) => {
-    clearCloseTimer();
-    setOpenMenu((current) => (current === menu ? null : menu));
-  };
-
   const openSpecificMenu = (menu: Exclude<OpenMenu, null>) => {
     clearCloseTimer();
     setOpenMenu(menu);
+  };
+
+  const ignoreTriggerClick = (event: MouseEvent) => {
+    event.preventDefault();
   };
 
   const triggerClass = (active: boolean) =>
@@ -101,8 +100,8 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
             class="inline-flex items-center gap-2 focus:outline-none"
             aria-expanded={isPlaygroundsOpen() ? "true" : "false"}
             aria-haspopup="menu"
-            onClick={() => toggleMenu("playgrounds")}
-            onFocus={() => openSpecificMenu("playgrounds")}
+            onMouseDown={ignoreTriggerClick}
+            onClick={ignoreTriggerClick}
             onKeyDown={(event) => {
               if (event.key === "Escape") {
                 event.preventDefault();
@@ -147,27 +146,21 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
               {(item) => {
                 const isActive = () => normalizePath(item.path) === activePath();
 
-                return isActive() ? (
-                  <span
-                    aria-current="page"
-                    class={cx(
-                      "block rounded-xl px-3 py-2 text-sm font-medium",
-                      "bg-emerald-500/10 text-emerald-700",
-                      "dark:bg-emerald-400/10 dark:text-emerald-300",
-                    )}
-                  >
-                    {item.label}
-                  </span>
-                ) : (
+                return (
                   <button
                     type="button"
                     role="menuitem"
+                    aria-current={isActive() ? "page" : undefined}
+                    disabled={isActive()}
                     class={cx(
-                      "block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-all duration-150",
-                      "hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
-                      "dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300",
+                      "block w-full rounded-xl px-3 py-2 text-left text-sm transition-all duration-150",
+                      isActive()
+                        ? "cursor-default bg-emerald-500/10 font-medium text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                        : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300",
                     )}
-                    onClick={() => handleNavigate(item.path)}
+                    onClick={() => {
+                      if (!isActive()) handleNavigate(item.path);
+                    }}
                   >
                     {item.label}
                   </button>
@@ -188,8 +181,8 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
             class="inline-flex items-center gap-2 focus:outline-none"
             aria-expanded={isThemeOpen() ? "true" : "false"}
             aria-haspopup="menu"
-            onClick={() => toggleMenu("theme")}
-            onFocus={() => openSpecificMenu("theme")}
+            onMouseDown={ignoreTriggerClick}
+            onClick={ignoreTriggerClick}
             onKeyDown={(event) => {
               if (event.key === "Escape") {
                 event.preventDefault();
@@ -234,19 +227,17 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
               {(option) => {
                 const isActive = () => option.value === theme();
 
-                return isActive() ? (
-                  <span
-                    aria-current="true"
-                    class="block rounded-xl bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-                  >
-                    {option.label}
-                  </span>
-                ) : (
+                return (
                   <button
                     type="button"
                     role="menuitemradio"
                     aria-checked={isActive() ? "true" : "false"}
-                    class="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-all duration-150 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+                    class={cx(
+                      "block w-full rounded-xl px-3 py-2 text-left text-sm transition-all duration-150",
+                      isActive()
+                        ? "bg-emerald-500/10 font-medium text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                        : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300",
+                    )}
                     onClick={() => handleThemeChange(option.value)}
                   >
                     {option.label}
