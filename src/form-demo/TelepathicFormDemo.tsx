@@ -76,6 +76,12 @@ const buildLegacySections = (initialValues?: Record<string, string>): DemoSectio
 
 const formatCodeObjectKey = (key: string) => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key));
 
+const indentMultilineCode = (code: string, indent: string) =>
+  code
+    .split("\n")
+    .map((line, index) => (index === 0 ? line : `${indent}${line}`))
+    .join("\n");
+
 const serializeCodeValue = (value: unknown, level = 0): string => {
   const indent = "  ".repeat(level);
   const childIndent = "  ".repeat(level + 1);
@@ -93,7 +99,7 @@ const serializeCodeValue = (value: unknown, level = 0): string => {
   }
 
   if (typeof value === "function") {
-    return `undefined /* ${value.name ? `function ${value.name}` : "function"} omitted from demo source */`;
+    return indentMultilineCode(value.toString(), childIndent);
   }
 
   if (Array.isArray(value)) {
