@@ -130,6 +130,9 @@ const variantStyles: Record<MultiSelectVariant, string> = {
   standard: 'border-b bg-transparent',
 };
 
+const MENU_GAP_PX = 8;
+const VIEWPORT_MARGIN_PX = 8;
+
 const MultiSelect = (props: MultiSelectProps) => {
   const merged = mergeProps(
     {
@@ -187,9 +190,17 @@ const MultiSelect = (props: MultiSelectProps) => {
   const updateMenuPos = () => {
     const anchor = fieldEl;
     if (!anchor) return;
+
     const rect = anchor.getBoundingClientRect();
-    // 8px gap (matches `mt-2`)
-    setMenuPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+    const viewportWidth = window.innerWidth;
+    const maxWidth = Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2);
+    const width = Math.min(Math.max(1, rect.width), maxWidth);
+    const left = Math.max(
+      VIEWPORT_MARGIN_PX,
+      Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+    );
+
+    setMenuPos({ top: rect.bottom + MENU_GAP_PX, left, width });
   };
 
   const [open, setOpen] = createSignal(false);

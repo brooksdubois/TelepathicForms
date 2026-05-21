@@ -201,6 +201,7 @@ const Select = (props: SelectProps) => {
   ]);
 
   let rootEl: HTMLDivElement | undefined;
+  let menuAnchorEl: HTMLDivElement | undefined;
   let controlEl: HTMLButtonElement | undefined;
   let searchInputEl: HTMLInputElement | undefined;
   const optionEls: Array<HTMLDivElement | undefined> = [];
@@ -222,7 +223,7 @@ const Select = (props: SelectProps) => {
   });
 
   const updateMenuPos = () => {
-    const anchor = controlEl;
+    const anchor = menuAnchorEl;
     if (!anchor) return;
 
     const rect = anchor.getBoundingClientRect();
@@ -838,7 +839,7 @@ const Select = (props: SelectProps) => {
             </label>
           )}
 
-      <div class="relative">
+      <div ref={menuAnchorEl} class="relative">
         <Show when={local.name}>
           <input
             type="hidden"

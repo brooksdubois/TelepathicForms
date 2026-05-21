@@ -58,6 +58,10 @@ export type DateRangePickerProps = {
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
 
+const POPOVER_GAP_PX = 8;
+const VIEWPORT_MARGIN_PX = 8;
+const DESKTOP_POPOVER_WIDTH_PX = 580;
+
 const pad2 = (n: number) => n.toString().padStart(2, '0');
 
 const toIsoDateString = (date: Temporal.PlainDate) =>
@@ -214,7 +218,15 @@ const DateRangePicker = (props: DateRangePickerProps) => {
   const updatePopoverPos = () => {
     if (!rootEl) return;
     const r = rootEl.getBoundingClientRect();
-    setPopoverPos({ top: r.bottom + 8, left: r.left, width: Math.max(r.width, 580) });
+    const viewportWidth = window.innerWidth;
+    const maxWidth = Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2);
+    const width = Math.min(Math.max(r.width, DESKTOP_POPOVER_WIDTH_PX), maxWidth);
+    const left = Math.max(
+      VIEWPORT_MARGIN_PX,
+      Math.min(r.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+    );
+
+    setPopoverPos({ top: r.bottom + POPOVER_GAP_PX, left, width });
   };
 
   createEffect(() => {
@@ -619,7 +631,6 @@ const DateRangePicker = (props: DateRangePickerProps) => {
                 top: `${popoverPos().top}px`,
                 left: `${popoverPos().left}px`,
                 width: `${popoverPos().width}px`,
-                'max-width': '600px',
               }}
               class={cx(
                 'z-[9999] origin-top rounded-xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-200/60 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-900/60',
@@ -641,7 +652,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
                   </svg>
                 </button>
 
-                <div class="flex items-center gap-6">
+                <div class="hidden items-center gap-6 sm:flex">
                   <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {monthLabel(leftMonth())}
                   </span>
@@ -663,9 +674,9 @@ const DateRangePicker = (props: DateRangePickerProps) => {
               </div>
 
               {/* Dual calendar grid */}
-              <div class="flex gap-4 px-4 pb-3 pt-2">
+              <div class="flex flex-col gap-4 px-4 pb-3 pt-2 sm:flex-row">
                 {renderMonthPanel(leftMonth(), leftGrid())}
-                <div class="w-px self-stretch bg-slate-200/80 dark:bg-slate-700" />
+                <div class="h-px bg-slate-200/80 dark:bg-slate-700 sm:h-auto sm:w-px sm:self-stretch" />
                 {renderMonthPanel(rightMonth(), rightGrid())}
               </div>
 

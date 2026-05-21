@@ -87,6 +87,9 @@ type DayCell = {
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
 
+const POPOVER_GAP_PX = 8;
+const VIEWPORT_MARGIN_PX = 8;
+
 const pad2 = (value: number) => value.toString().padStart(2, '0');
 const escapeRegExp = (text: string) =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -558,11 +561,18 @@ const DatePicker = (props: DatePickerProps) => {
     const anchor = rootEl;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const maxWidth = Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2);
+    const width = Math.min(Math.max(1, rect.width), maxWidth);
+    const left = Math.max(
+      VIEWPORT_MARGIN_PX,
+      Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+    );
 
     setPopoverPos({
-      top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
+      top: rect.bottom + POPOVER_GAP_PX,
+      left,
+      width,
     });
   };
 

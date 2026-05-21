@@ -41,6 +41,27 @@ const FIELD_TYPE_OPTIONS = (Object.keys(editorPropsByTarget) as EditorTarget[])
     };
   });
 
+const DESIGNER_DESKTOP_QUERY = "(min-width: 1024px)";
+
+const MobileDesignerBlocker: Component = () => (
+  <main class="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-slate-100">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="designer-mobile-block-title"
+      class="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-5 text-center shadow-2xl shadow-slate-950/60"
+    >
+      <h1 id="designer-mobile-block-title" class="text-lg font-semibold">
+        Not intended for mobile (use desktop)
+      </h1>
+      <p class="mt-3 text-sm leading-6 text-slate-300">
+        The form designer requires a desktop viewport for the resizable panels,
+        tree editor, property editor, and live preview.
+      </p>
+    </div>
+  </main>
+);
+
 const cloneFormSpec = (spec: FormSpec): FormSpec => ({
   ...spec,
   fields: spec.fields.map((field) => ({
@@ -153,6 +174,7 @@ const DesignerPage: Component = () => {
   const [formSpec, setFormSpec] = createSignal<FormSpec>(cloneFormSpec(demoFormSpec));
   const [selected, setSelected] = createSignal<DesignerSelection>(null);
   const [showTriggers, setShowTriggers] = createSignal(false);
+  const [isDesktopDesignerViewport, setIsDesktopDesignerViewport] = createSignal(true);
   const [isAddFieldModalOpen, setIsAddFieldModalOpen] = createSignal(false);
   const [pendingFieldKind, setPendingFieldKind] = createSignal<FieldKind>(
     FIELD_TYPE_OPTIONS[0]?.kind ?? FieldKind.text,
@@ -163,6 +185,16 @@ const DesignerPage: Component = () => {
 
   onMount(() => {
     document.documentElement.classList.remove("dark");
+
+    const mediaQuery = window.matchMedia(DESIGNER_DESKTOP_QUERY);
+    const syncDesignerViewport = () => setIsDesktopDesignerViewport(mediaQuery.matches);
+    syncDesignerViewport();
+
+    mediaQuery.addEventListener("change", syncDesignerViewport);
+
+    onCleanup(() => {
+      mediaQuery.removeEventListener("change", syncDesignerViewport);
+    });
   });
 
   onCleanup(() => {
@@ -340,9 +372,14 @@ const DesignerPage: Component = () => {
 
   return (
     <>
-      <FormDesignerLayout leftTop={TreePanel} leftBottom={PropsPanel} right={PreviewPanel} />
+      <Show
+        when={isDesktopDesignerViewport()}
+        fallback={<MobileDesignerBlocker />}
+      >
+        <FormDesignerLayout leftTop={TreePanel} leftBottom={PropsPanel} right={PreviewPanel} />
+      </Show>
 
-      <Show when={isAddFieldModalOpen()}>
+      <Show when={isDesktopDesignerViewport() && isAddFieldModalOpen()}>
         <div
           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4"
           onClick={(event) => {
