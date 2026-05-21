@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal } from 'solid-js';
+import { createEffect, createMemo, createSignal, onMount } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import TimePicker, {
@@ -19,32 +19,12 @@ import {
 } from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
 import CodeViewer from '../components/CodeViewer';
+import { darkModeStore } from '../darkModeStore';
 
 type TimePickerVariant = NonNullable<TimePickerProps['variant']>;
 type TimePickerSize = NonNullable<TimePickerProps['size']>;
 
-const DARK_MODE_STORAGE_KEY = 'darkMode';
-
-const readStoredDarkMode = (fallback: boolean) => {
-  if (typeof window === 'undefined') return fallback;
-  const stored = window.localStorage.getItem(DARK_MODE_STORAGE_KEY);
-
-  if (stored === null) return fallback;
-
-  try {
-    return Boolean(JSON.parse(stored));
-  } catch {
-    return fallback;
-  }
-};
-
-const writeStoredDarkMode = (next: boolean) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, JSON.stringify(next));
-  }
-};
-
-const INSPECTOR_AS_PROPS_STORAGE_KEY = 'tf-code-viewer-as-props';
+const INSPECTOR_AS_PROPS_STORAGE_KEY = 'telepathic-forms-code-viewer-as-props';
 
 const readStoredInspectorAsProps = () => {
   if (typeof window === 'undefined') return false;
@@ -65,7 +45,7 @@ const writeStoredInspectorAsProps = (next: boolean) => {
   }
 };
 
-const INSPECTOR_CODE_VIEW_STORAGE_KEY = 'tf-code-viewer-object-json-view';
+const INSPECTOR_CODE_VIEW_STORAGE_KEY = 'telepathic-forms-code-viewer-object-json-view';
 
 const readStoredInspectorCodeView = () => {
   if (typeof window === 'undefined') return 'object';
@@ -101,11 +81,10 @@ const variantOptions = variantValues.map((value) => ({ value, label: value }));
 const sizeOptions = sizeValues.map((value) => ({ value, label: value }));
 
 const TimePickerPlayground: Component = () => {
-  const [darkMode, setDarkMode] = createSignal(readStoredDarkMode(defaults.darkMode));
-  const setDarkModeAndPersist = (next: boolean) => {
-    setDarkMode(next);
-    writeStoredDarkMode(next);
-  };
+  const darkMode = darkModeStore.isDarkMode;
+  const setDarkModeAndPersist = darkModeStore.setDarkMode;
+
+  onMount(() => darkModeStore.initializeDarkMode());
   const [configValue, setConfigValue] = createSignal(defaults.value);
   const [configDisabled, setConfigDisabled] = createSignal(defaults.disabled);
   const [configReadOnly, setConfigReadOnly] = createSignal(defaults.readOnly);

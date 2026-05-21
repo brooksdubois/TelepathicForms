@@ -1,4 +1,4 @@
-import { For, createEffect, createMemo, createSignal } from 'solid-js';
+import { For, createMemo, createSignal, onMount } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import Slider, {
@@ -16,7 +16,7 @@ import { cx } from '../utils/cx';
 import { darkModeStore } from '../darkModeStore';
 import CodeViewer from '../components/CodeViewer';
 
-const INSPECTOR_AS_PROPS_STORAGE_KEY = 'tf-code-viewer-as-props';
+const INSPECTOR_AS_PROPS_STORAGE_KEY = 'telepathic-forms-code-viewer-as-props';
 
 const readStoredInspectorAsProps = () => {
   if (typeof window === 'undefined') return false;
@@ -37,7 +37,7 @@ const writeStoredInspectorAsProps = (next: boolean) => {
   }
 };
 
-const INSPECTOR_CODE_VIEW_STORAGE_KEY = 'tf-code-viewer-object-json-view';
+const INSPECTOR_CODE_VIEW_STORAGE_KEY = 'telepathic-forms-code-viewer-object-json-view';
 
 const readStoredInspectorCodeView = () => {
   if (typeof window === 'undefined') return 'object';
@@ -105,9 +105,7 @@ const ExampleCard: Component<{
 };
 
 const SliderPlayground: Component = () => {
-  createEffect(() => {
-    darkModeStore.initializeDarkMode();
-  });
+  onMount(() => darkModeStore.initializeDarkMode());
 
   const [configMode, setConfigMode] = createSignal(defaults.mode);
   const [configSingleValue, setConfigSingleValue] = createSignal(defaults.singleValue);

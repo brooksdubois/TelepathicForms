@@ -4,6 +4,7 @@ import {
   createSignal,
   For,
   onCleanup,
+  onMount,
   Show,
   type Component,
 } from "solid-js";
@@ -17,6 +18,7 @@ import {FieldKind, type FieldHandle} from "../engine/types";
 import {registerWebMCPTool, getWebMCPFormAttributes} from "../engine/webmcp";
 import Checkbox from "../components/Checkbox";
 import CodeViewer from "../components/CodeViewer";
+import { darkModeStore } from "../darkModeStore";
 import PlaygroundNav from "../playgrounds/PlaygroundNav";
 import {cx} from "../utils/cx";
 import {SelectWrapper} from "../wrappers";
@@ -36,27 +38,6 @@ type DemoRuntimeState = {
   graph: ReturnType<typeof buildGraphFromFormSpec>["graph"];
   nodesById: Map<string, {value$: {getValue: () => string}}>;
   handlesById: ReturnType<typeof buildGraphFromFormSpec>["handlesById"];
-};
-
-const DARK_MODE_STORAGE_KEY = "darkMode";
-
-const readStoredDarkMode = (fallback: boolean) => {
-  if (typeof window === "undefined") return fallback;
-  const stored = window.localStorage.getItem(DARK_MODE_STORAGE_KEY);
-
-  if (stored === null) return fallback;
-
-  try {
-    return Boolean(JSON.parse(stored));
-  } catch {
-    return fallback;
-  }
-};
-
-const writeStoredDarkMode = (next: boolean) => {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, JSON.stringify(next));
-  }
 };
 
 const buildLegacySections = (initialValues?: Record<string, string>): DemoSection[] => {
@@ -374,12 +355,11 @@ export const TelepathicFormDemo: Component = () => {
   const controlCheckboxClass =
     "h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400";
 
-  const [darkMode, setDarkMode] = createSignal(readStoredDarkMode(false));
   const [showCode, setShowCode] = createSignal(false);
-  const setDarkModeAndPersist = (next: boolean) => {
-    setDarkMode(next);
-    writeStoredDarkMode(next);
-  };
+  const darkMode = darkModeStore.isDarkMode;
+  const setDarkModeAndPersist = darkModeStore.setDarkMode;
+
+  onMount(() => darkModeStore.initializeDarkMode());
 
   const demoConfigCode = createMemo(() => {
     const state = current();

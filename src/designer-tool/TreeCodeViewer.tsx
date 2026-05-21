@@ -27,7 +27,7 @@ enum ViewerTab {
   Code = "code",
 }
 
-const CODE_VIEW_STORAGE_KEY = "tf-code-viewer-object-json-view";
+const CODE_VIEW_STORAGE_KEY = "telepathic-forms-code-viewer-object-json-view";
 
 const readStoredCodeView = () => {
   if (typeof window === "undefined") return "object";

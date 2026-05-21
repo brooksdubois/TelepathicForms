@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 
 export type AccentTheme = "purple" | "blue" | "green" | "orange" | "gray" | "navy";
 
-const STORAGE_KEY = "tf-accent-theme";
+const STORAGE_KEY = "telepathic-forms-accent-theme";
 
 export const themeOptions: Array<{ value: AccentTheme; label: string }> = [
   { value: "purple", label: "Purple" },
