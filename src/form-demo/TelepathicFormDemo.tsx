@@ -334,7 +334,7 @@ export const TelepathicFormDemo: Component = () => {
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2">
-                <PlaygroundNav currentPath="/form-demo" />
+                <PlaygroundNav />
                 <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   <span>Dark</span>
                   <input

@@ -2,23 +2,9 @@ import { For, createEffect, createSignal, onCleanup } from "solid-js";
 import type { Component } from "solid-js";
 
 import { navigateTo, path } from "../router";
+import { playgroundRoutes, routePathByComponent } from "../routes";
 import { setTheme, theme, themeOptions, type AccentTheme } from "../theme/theme";
 import { cx } from "../utils/cx";
-
-const labs = [
-  { href: "/form-demo", label: "Form Demo" },
-  { href: "/text-field", label: "TextField Lab" },
-  { href: "/select", label: "Select Lab" },
-  { href: "/multi-select", label: "MultiSelect Lab" },
-  { href: "/checkbox", label: "Checkbox Lab" },
-  { href: "/radio-group", label: "RadioGroup Lab" },
-  { href: "/switch", label: "Switch Lab" },
-  { href: "/textarea", label: "TextArea Lab" },
-  { href: "/date", label: "DatePicker Lab" },
-  { href: "/slider", label: "Slider Lab" },
-  { href: "/date-range", label: "Date Range Lab" },
-  { href: "/time", label: "TimePicker Lab" },
-];
 
 type OpenMenu = "playgrounds" | "theme" | null;
 
@@ -26,7 +12,7 @@ const normalizePath = (p: string) => p.replace(/\/+$/, "") || "/";
 
 const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (props) => {
   const activePath = () => normalizePath(props.currentPath ?? path());
-  const isDesignerActive = () => activePath() === "/designer";
+  const isDesignerActive = () => activePath() === routePathByComponent.designer;
   const [openMenu, setOpenMenu] = createSignal<OpenMenu>(null);
   const [closeTimer, setCloseTimer] = createSignal<number | undefined>(undefined);
   let menuRootRef: HTMLDivElement | undefined;
@@ -157,9 +143,9 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
             Playground Labs
           </div>
           <div class="flex max-h-[26rem] flex-col gap-1 overflow-y-auto pr-1">
-            <For each={labs}>
+            <For each={playgroundRoutes}>
               {(item) => {
-                const isActive = () => normalizePath(item.href) === activePath();
+                const isActive = () => normalizePath(item.path) === activePath();
 
                 return isActive() ? (
                   <span
@@ -181,7 +167,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
                       "hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
                       "dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300",
                     )}
-                    onClick={() => handleNavigate(item.href)}
+                    onClick={() => handleNavigate(item.path)}
                   >
                     {item.label}
                   </button>
@@ -276,7 +262,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
         type="button"
         onClick={() => {
           closeMenu();
-          navigateTo("/designer");
+          navigateTo(routePathByComponent.designer);
         }}
         class={cx(
           "flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em]",

@@ -19,6 +19,8 @@ import {
   type PlaygroundControlSection,
 } from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
+import { navigateTo, routeHref } from '../router';
+import { routePathByComponent } from '../routes';
 
 const variants: TextFieldVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: TextFieldSize[] = ['sm', 'md', 'lg'];
@@ -531,7 +533,7 @@ const TextFieldPlayground: Component = () => {
                   </div>
                 </div>
                 <div class="flex flex-col items-end gap-2">
-                  <PlaygroundNav currentPath="/text-field" />
+                  <PlaygroundNav />
                   <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <span>Dark</span>
                     <input
@@ -602,7 +604,11 @@ const TextFieldPlayground: Component = () => {
                   </p>
                 </div>
                 <a
-                  href="/select"
+                  href={routeHref(routePathByComponent.select)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateTo(routePathByComponent.select);
+                  }}
                   class="rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
                 >
                   Open Select Lab

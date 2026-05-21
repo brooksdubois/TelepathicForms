@@ -1,4 +1,9 @@
-import { createHighlighter } from "shiki/dist/index.mjs";
+import { createHighlighterCore } from "shiki/core";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import javascript from "shiki/dist/langs/javascript.mjs";
+import json from "shiki/dist/langs/json.mjs";
+import typescript from "shiki/dist/langs/typescript.mjs";
+import githubDark from "shiki/dist/themes/github-dark.mjs";
 
 export type Lang = string;
 export type Theme = string;
@@ -15,26 +20,27 @@ type LegacyCodeToHtmlOptions = {
   theme?: Theme;
 };
 
-let defaultTheme: Theme = "github-dark";
+const bundledLanguages = [typescript, javascript, json];
+const bundledThemes = [githubDark];
+const fallbackTheme: Theme = "github-dark";
+const supportedThemes = new Set<Theme>([fallbackTheme]);
+
+let defaultTheme: Theme = fallbackTheme;
+
+const resolveTheme = (theme: Theme | undefined) =>
+  theme && supportedThemes.has(theme) ? theme : fallbackTheme;
 
 export const setCDN = (_cdnRoot: string) => {
   // Shiki v3 no longer uses setCDN; keep for solid-codeblock compatibility.
 };
 
 export const getHighlighter = async (options: LegacyGetHighlighterOptions = {}) => {
-  const themes = options.theme
-    ? [options.theme]
-    : options.themes && options.themes.length > 0
-      ? options.themes
-      : [defaultTheme];
+  defaultTheme = resolveTheme(options.theme ?? options.themes?.[0] ?? defaultTheme);
 
-  if (options.theme) {
-    defaultTheme = options.theme;
-  }
-
-  const highlighter = await createHighlighter({
-    langs: options.langs as never,
-    themes: themes as never,
+  const highlighter = await createHighlighterCore({
+    engine: createJavaScriptRegexEngine(),
+    langs: bundledLanguages,
+    themes: bundledThemes,
   });
 
   return {
@@ -43,9 +49,7 @@ export const getHighlighter = async (options: LegacyGetHighlighterOptions = {}) 
     codeToHtml: (code: string, renderOptions: LegacyCodeToHtmlOptions) =>
       highlighter.codeToHtml(code, {
         lang: renderOptions.lang as never,
-        theme: (renderOptions.theme ?? defaultTheme) as never,
+        theme: resolveTheme(renderOptions.theme ?? defaultTheme) as never,
       }),
   };
 };
-
-export * from "shiki/dist/index.mjs";

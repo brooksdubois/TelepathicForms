@@ -238,7 +238,7 @@ const TimePickerPlayground: Component = () => {
               </button>
             </div>
 
-            <PlaygroundNav currentPath="/time" />
+            <PlaygroundNav />
           </header>
 
           <main class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
