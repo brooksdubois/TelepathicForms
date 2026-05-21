@@ -2,6 +2,7 @@ import { createMemo, createSignal, For, onCleanup, onMount, type Component } fro
 import {FieldSlot, groupFieldsByRow} from "./fieldRendering";
 import type {FieldHandle, FormSpec} from "./types";
 import type {AccentTheme} from "../theme/theme";
+import { theme as activeTheme } from "../theme/theme";
 
 export type FormRendererProps = {
   form: FormSpec;
@@ -12,7 +13,7 @@ export type FormRendererProps = {
 export const FormRenderer: Component<FormRendererProps> = (p) => {
   const groupedRows = createMemo(() => groupFieldsByRow(p.form.fields));
   const [isMobileViewport, setIsMobileViewport] = createSignal(false);
-  const resolvedTheme = createMemo(() => p.theme ?? p.form.theme);
+  const resolvedTheme = createMemo(() => p.theme ?? activeTheme() ?? p.form.theme);
 
   onMount(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");

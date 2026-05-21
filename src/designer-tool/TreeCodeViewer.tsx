@@ -1,4 +1,3 @@
-import { Codeblock, CodeblockProvider, useCodeblockContext } from "solid-codeblock";
 import {
   For,
   Show,
@@ -18,11 +17,30 @@ import { setTheme, theme, themeOptions, type AccentTheme } from "../theme/theme"
 import { TextAreaWrapper } from "../wrappers";
 import { FieldKind, TriggerOperators, type TriggerSpec } from "../engine/types";
 import { FieldRuntimeNode, type FieldHandle, type FieldSpec } from "../engine/generators";
+import CodeViewer, {
+  preloadCodeViewerViews,
+  type CodeViewerView,
+} from "../components/CodeViewer";
 
 enum ViewerTab {
   Tree = "tree",
   Code = "code",
 }
+
+const CODE_VIEW_STORAGE_KEY = "tf-code-viewer-object-json-view";
+
+const readStoredCodeView = () => {
+  if (typeof window === "undefined") return "object";
+  const stored = window.localStorage.getItem(CODE_VIEW_STORAGE_KEY);
+  return stored === "json" || stored === "object" ? stored : "object";
+};
+
+const writeStoredCodeView = (next: string) => {
+  if (next !== "json" && next !== "object") return;
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(CODE_VIEW_STORAGE_KEY, next);
+  }
+};
 
 type TreeCodeViewerProps = {
   formSpec: FormSpec;
@@ -37,42 +55,6 @@ type TreeCodeViewerProps = {
   onThemeChange: (next: AccentTheme) => void;
   showTriggers: boolean;
   onPasteFormSpec?: (next: FormSpec) => void;
-};
-
-type CodeTabContentProps = {
-  code: string;
-};
-
-const CodeTabContent: Component<CodeTabContentProps> = (props) => {
-  const codeblock = useCodeblockContext();
-  const lineCount = createMemo(() => props.code.split("\n").length);
-
-  return (
-    <Show
-      when={!codeblock.loading}
-      fallback={
-        <div class="flex min-h-[180px] items-center justify-center rounded-md border border-slate-700 bg-slate-950/80 px-4 py-6 text-xs text-slate-400">
-          Highlighting...
-        </div>
-      }
-    >
-      <div
-        class="relative z-10 min-h-0 w-full max-w-full flex-1 overflow-x-auto overflow-y-scroll rounded-md border border-slate-700 bg-slate-950"
-        style={{ "scrollbar-gutter": "stable both-edges" }}
-      >
-        <div class="flex w-max min-w-full items-start">
-          <div class="sticky left-0 self-stretch border-r border-slate-800 bg-slate-900/95 px-3 py-3 text-right text-xs leading-6 text-slate-500">
-            <For each={Array.from({ length: lineCount() }, (_, index) => index + 1)}>
-              {(lineNumber) => <div class="select-none">{lineNumber}</div>}
-            </For>
-          </div>
-          <div class="min-w-0 flex-1 p-3 text-[13px] leading-6 [&_.cb-container]:!inline-block [&_.cb-container]:!min-w-full [&_.cb-container]:!w-max [&_.cb-container]:!max-w-none [&_.cb-container]:!bg-transparent [&_.cb-container_pre]:!m-0 [&_.cb-container_pre]:!inline-block [&_.cb-container_pre]:!min-w-full [&_.cb-container_pre]:!w-max [&_.cb-container_pre]:!max-w-none [&_.cb-container_pre]:!bg-transparent [&_.cb-container_pre]:!p-0 [&_.cb-container_pre]:!font-mono [&_.cb-container_pre]:!whitespace-pre">
-            <Codeblock lang="ts" textContent={props.code} />
-          </div>
-        </div>
-      </div>
-    </Show>
-  );
 };
 
 const VALID_FIELD_KIND_VALUES = new Set(Object.values(FieldKind));
@@ -295,10 +277,27 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
   >({});
   const [copied, setCopied] = createSignal(false);
   const [isPasteModalOpen, setIsPasteModalOpen] = createSignal(false);
+  const [codeView, setCodeView] = createSignal(readStoredCodeView());
   const serializedCode = createMemo(() => serializeFormSpecToTS(props.formSpec));
   const pasteValue = fromObservable(pasteSpecHandle.value$, "");
   const pasteErrors = fromObservable(pasteSpecHandle.errors$, []);
-  const activeTheme = createMemo(() => props.formSpec.theme ?? theme());
+  const activeTheme = createMemo(() => theme());
+  const designerCodeViews = createMemo<CodeViewerView[]>(() => [
+    {
+      id: "object",
+      label: "object",
+      code: serializedCode(),
+      lang: "ts",
+      theme: "github-dark",
+    },
+    {
+      id: "json",
+      label: "json",
+      code: JSON.stringify(props.formSpec, null, 2),
+      lang: "json",
+      theme: "night-owl",
+    },
+  ]);
   const fieldsById = createMemo(() => {
     const next = new Map<string, string>();
     props.formSpec.fields.forEach((field) =>
@@ -308,6 +307,11 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
   });
 
   const getFieldLabel = (fieldId: string) => fieldsById().get(fieldId) ?? fieldId;
+
+  const setCodeViewAndPersist = (next: string) => {
+    setCodeView(next);
+    writeStoredCodeView(next);
+  };
 
   const openPasteModal = () => {
     pasteSpecHandle.setValue("");
@@ -327,13 +331,39 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
   };
 
   let copiedTimer: number | undefined;
+  let codePreloadTimer: number | undefined;
+  let didPreloadInitialCode = false;
   onCleanup(() => {
     if (copiedTimer !== undefined) {
       window.clearTimeout(copiedTimer);
     }
+    if (codePreloadTimer !== undefined) {
+      window.clearTimeout(codePreloadTimer);
+    }
   });
 
   const rows = createMemo(() => groupFormSpecRows(props.formSpec));
+
+  createEffect(() => {
+    const views = designerCodeViews();
+    const preload = () => {
+      void preloadCodeViewerViews(views).catch((error) => {
+        console.error("Unable to preload designer code views", error);
+      });
+    };
+
+    if (!didPreloadInitialCode) {
+      didPreloadInitialCode = true;
+      preload();
+      return;
+    }
+
+    if (codePreloadTimer !== undefined) {
+      window.clearTimeout(codePreloadTimer);
+    }
+
+    codePreloadTimer = window.setTimeout(preload, 10_000);
+  });
 
   createEffect(() => {
     const rowIds = rows().map((row) => row.id);
@@ -385,19 +415,29 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
         textArea.remove();
       }
 
+      setCopied(false);
       setCopied(true);
       if (copiedTimer !== undefined) {
         window.clearTimeout(copiedTimer);
       }
-      copiedTimer = window.setTimeout(() => setCopied(false), 1000);
+      copiedTimer = window.setTimeout(() => setCopied(false), 10_000);
     } catch {
       setCopied(false);
     }
   };
 
+  createEffect(() => {
+    serializedCode();
+    setCopied(false);
+    if (copiedTimer !== undefined) {
+      window.clearTimeout(copiedTimer);
+      copiedTimer = undefined;
+    }
+  });
+
   return (
     <div class="relative z-10 isolate flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white p-3">
-      <div class="mb-3 flex items-center justify-between gap-2">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div class="inline-flex w-fit rounded-lg border border-slate-300 bg-slate-100 p-1">
           <button
             type="button"
@@ -421,7 +461,7 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
           </button>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
           <div class="w-36">
             <Select
               value={activeTheme()}
@@ -449,31 +489,33 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
       <Show
         when={activeTab() === ViewerTab.Tree}
         fallback={
-          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-          <div class="flex items-center justify-end gap-2">
-              <Show when={copied()}>
-                <span class="text-xs font-medium text-emerald-600">Copied</span>
-              </Show>
-              <button
-                type="button"
-                class="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                onClick={openPasteModal}
-              >
-                Paste form spec
-              </button>
-              <button
-                type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-slate-700 transition hover:bg-slate-100"
-                aria-label="Copy code"
-                onClick={copyCode}
-              >
-                📋
-              </button>
-            </div>
-
-            <CodeblockProvider opts={{ theme: "github-dark", langs: ["ts"] }}>
-              <CodeTabContent code={serializedCode()} />
-            </CodeblockProvider>
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+            <CodeViewer
+              views={designerCodeViews()}
+              defaultView="object"
+              activeViewId={codeView()}
+              onActiveViewIdChange={setCodeViewAndPersist}
+              minHeightClass="min-h-[180px]"
+              tabBarEnd={
+                <>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                    onClick={openPasteModal}
+                  >
+                    Paste form spec
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-slate-700 transition hover:bg-slate-100"
+                    aria-label="Copy code"
+                    onClick={copyCode}
+                  >
+                    {copied() ? "✅" : "📋"}
+                  </button>
+                </>
+              }
+            />
           </div>
         }
       >

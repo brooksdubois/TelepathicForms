@@ -7,9 +7,14 @@ const createDarkModeStore = () => {
 
   const initializeDarkMode = () => {
     if (isInitialized) return;
-    
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      isInitialized = true;
+      return;
+    }
+
     // Read from localStorage on initialization
-    const saved = localStorage.getItem('darkMode');
+    const saved = window.localStorage.getItem('darkMode');
     const darkModeValue = saved !== null ? JSON.parse(saved) : false;
     
     setIsDarkMode(darkModeValue);
@@ -19,6 +24,8 @@ const createDarkModeStore = () => {
   };
 
   const applyDarkMode = (isDark: boolean) => {
+    if (typeof document === 'undefined') return;
+
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -29,13 +36,17 @@ const createDarkModeStore = () => {
   const toggleDarkMode = () => {
     const newValue = !isDarkMode();
     setIsDarkMode(newValue);
-    localStorage.setItem('darkMode', JSON.stringify(newValue));
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('darkMode', JSON.stringify(newValue));
+    }
     applyDarkMode(newValue);
   };
 
   const setDarkMode = (value: boolean) => {
     setIsDarkMode(value);
-    localStorage.setItem('darkMode', JSON.stringify(value));
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('darkMode', JSON.stringify(value));
+    }
     applyDarkMode(value);
   };
 

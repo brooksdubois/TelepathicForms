@@ -301,12 +301,7 @@ const DesignerPage: Component = () => {
       onAddAfterField={(fieldId) => openAddFieldModal({ mode: "after-field", fieldId })}
       onRemoveRow={removeRow}
       onRemoveField={removeField}
-      onThemeChange={(next) =>
-        setFormSpec((previous) => ({
-          ...previous,
-          theme: next,
-        }))
-      }
+      onThemeChange={() => {}}
       showTriggers={showTriggers()}
       onPasteFormSpec={(next) => {
         setFormSpec(next);

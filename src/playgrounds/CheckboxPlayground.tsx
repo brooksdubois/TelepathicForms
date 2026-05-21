@@ -19,6 +19,64 @@ import {
   type PlaygroundControlSection,
 } from './shared/PlaygroundControls';
 import { cx } from '../utils/cx';
+import CodeViewer from '../components/CodeViewer';
+
+const DARK_MODE_STORAGE_KEY = 'darkMode';
+
+const readStoredDarkMode = (fallback: boolean) => {
+  if (typeof window === 'undefined') return fallback;
+  const stored = window.localStorage.getItem(DARK_MODE_STORAGE_KEY);
+
+  if (stored === null) return fallback;
+
+  try {
+    return Boolean(JSON.parse(stored));
+  } catch {
+    return fallback;
+  }
+};
+
+const writeStoredDarkMode = (next: boolean) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, JSON.stringify(next));
+  }
+};
+
+const INSPECTOR_AS_PROPS_STORAGE_KEY = 'tf-code-viewer-as-props';
+
+const readStoredInspectorAsProps = () => {
+  if (typeof window === 'undefined') return false;
+  const stored = window.localStorage.getItem(INSPECTOR_AS_PROPS_STORAGE_KEY);
+
+  if (stored === null) return false;
+
+  try {
+    return Boolean(JSON.parse(stored));
+  } catch {
+    return false;
+  }
+};
+
+const writeStoredInspectorAsProps = (next: boolean) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(INSPECTOR_AS_PROPS_STORAGE_KEY, JSON.stringify(next));
+  }
+};
+
+const INSPECTOR_CODE_VIEW_STORAGE_KEY = 'tf-code-viewer-object-json-view';
+
+const readStoredInspectorCodeView = () => {
+  if (typeof window === 'undefined') return 'object';
+  const stored = window.localStorage.getItem(INSPECTOR_CODE_VIEW_STORAGE_KEY);
+  return stored === 'json' || stored === 'object' ? stored : 'object';
+};
+
+const writeStoredInspectorCodeView = (next: string) => {
+  if (next !== 'json' && next !== 'object') return;
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(INSPECTOR_CODE_VIEW_STORAGE_KEY, next);
+  }
+};
 
 const variants: CheckboxVariant[] = ['outlined', 'filled', 'standard'];
 const sizes: CheckboxSize[] = ['sm', 'md', 'lg'];
@@ -74,7 +132,11 @@ const ExampleCard: Component<{
 };
 
 const CheckboxPlayground: Component = () => {
-  const [darkMode, setDarkMode] = createSignal(defaults.darkMode);
+  const [darkMode, setDarkMode] = createSignal(readStoredDarkMode(defaults.darkMode));
+  const setDarkModeAndPersist = (next: boolean) => {
+    setDarkMode(next);
+    writeStoredDarkMode(next);
+  };
   const [configChecked, setConfigChecked] = createSignal(defaults.checked);
   const [configIndeterminate, setConfigIndeterminate] = createSignal(
     defaults.indeterminate,
@@ -134,9 +196,99 @@ const CheckboxPlayground: Component = () => {
       2,
     ),
   );
+  const [inspectorCodeView, setInspectorCodeView] = createSignal(readStoredInspectorCodeView());
+  const [inspectorAsProps, setInspectorAsProps] = createSignal(readStoredInspectorAsProps());
+  const setInspectorAsPropsAndPersist = (next: boolean) => {
+    setInspectorAsProps(next);
+    writeStoredInspectorAsProps(next);
+  };
+  const setInspectorCodeViewAndPersist = (next: string) => {
+    setInspectorCodeView(next);
+    writeStoredInspectorCodeView(next);
+  };
+
+  const isInspectorIdentifierKey = (key: string) => /^[$A-Z_][0-9A-Z_$]*$/i.test(key);
+  const formatInspectorObjectKey = (key: string) =>
+    isInspectorIdentifierKey(key) ? key : JSON.stringify(key);
+
+  const serializeInspectorObjectValue = (value: unknown, level = 0): string => {
+    const indent = '  '.repeat(level);
+    const childIndent = '  '.repeat(level + 1);
+
+    if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+      return JSON.stringify(value);
+    }
+
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? String(value) : 'null';
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '[]';
+      const lines = value.map(
+        (item) => `${childIndent}${serializeInspectorObjectValue(item, level + 1)},`,
+      );
+      return '[\n' + lines.join('\n') + '\n' + indent + ']';
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const entries = Object.entries(value);
+      if (entries.length === 0) return '{}';
+      const lines = entries.map(
+        ([key, entryValue]) =>
+          `${childIndent}${formatInspectorObjectKey(key)}: ${serializeInspectorObjectValue(entryValue, level + 1)},`,
+      );
+      return '{\n' + lines.join('\n') + '\n' + indent + '}';
+    }
+
+    return 'null';
+  };
+
+  const inspectorObject = createMemo(() => {
+    try {
+      const parsed = JSON.parse(inspectorSnapshot()) as unknown;
+
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed) &&
+        'props' in parsed
+      ) {
+        return (parsed as { props?: unknown }).props ?? {};
+      }
+
+      return parsed;
+    } catch {
+      return {};
+    }
+  });
+
+  const inspectorCodeViews = createMemo(() => {
+    const rawObject = inspectorObject();
+    const objectValue = inspectorAsProps() ? { props: rawObject } : rawObject;
+    const dark = darkMode();
+
+    return [
+      {
+        id: 'object',
+        label: 'object',
+        code: serializeInspectorObjectValue(objectValue),
+        lang: 'js' as const,
+        theme: dark ? ('github-dark' as const) : ('snazzy-light' as const),
+      },
+      {
+        id: 'json',
+        label: 'json',
+        code: JSON.stringify(rawObject, null, 2),
+        lang: 'json' as const,
+        theme: dark ? ('night-owl' as const) : ('snazzy-light' as const),
+      },
+    ];
+  });
+
 
   const resetControls = () => {
-    setDarkMode(defaults.darkMode);
+    setDarkModeAndPersist(defaults.darkMode);
     setConfigChecked(defaults.checked);
     setConfigIndeterminate(defaults.indeterminate);
     setConfigDisabled(defaults.disabled);
@@ -409,13 +561,13 @@ const CheckboxPlayground: Component = () => {
                       type="checkbox"
                       class="h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400"
                       checked={darkMode()}
-                      onInput={(event) => setDarkMode(event.currentTarget.checked)}
+                      onInput={(event) => setDarkModeAndPersist(event.currentTarget.checked)}
                     />
                   </label>
                 </div>
               </div>
 
-              <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
+              <div class="mt-6 flex flex-col gap-6">
                 <div class="flex flex-col gap-3">
                   <div class={previewWrapperClass()}>
                     <Checkbox
@@ -446,7 +598,8 @@ const CheckboxPlayground: Component = () => {
                   </div>
                 </div>
 
-                  <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+                  <div class="h-full rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                   <PlaygroundControlPanel sections={controlSections()} />
                   <button
                     type="button"
@@ -456,11 +609,36 @@ const CheckboxPlayground: Component = () => {
                   >
                     Trigger ring
                   </button>
+                  </div>
+                  <section class="flex min-h-0 flex-col rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <CodeViewer
+                      views={inspectorCodeViews()}
+                      class="h-96 lg:h-auto"
+                      maxHeightClass="max-h-96 lg:max-h-none"
+                      defaultView="object"
+                      activeViewId={inspectorCodeView()}
+                      onActiveViewIdChange={setInspectorCodeViewAndPersist}
+                      tabBarEnd={
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          <input
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-slate-300 accent-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            checked={inspectorAsProps()}
+                            disabled={inspectorCodeView() === 'json'}
+                            onInput={(event) => setInspectorAsPropsAndPersist(event.currentTarget.checked)}
+                          />
+                          <span>as props</span>
+                        </label>
+                      }
+                      showCopyButton
+                      showLineNumbers={false}
+                    />
+                  </section>
                 </div>
               </div>
             </section>
 
-            <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
+              <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
               <h2 class="font-display text-lg font-semibold">Examples grid</h2>
               <div class="mt-5 grid gap-4 md:grid-cols-2">
                 <For each={examples}>
@@ -476,12 +654,6 @@ const CheckboxPlayground: Component = () => {
               </div>
             </section>
 
-            <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
-              <h2 class="font-display text-lg font-semibold">Inspector</h2>
-              <div class="mt-4 rounded-2xl bg-slate-950/95 p-4 text-xs text-slate-200">
-                <pre class="whitespace-pre-wrap">{inspectorSnapshot()}</pre>
-              </div>
-            </section>
           </main>
         </div>
       </div>

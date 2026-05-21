@@ -101,7 +101,6 @@ export const PlaygroundControlPanel: Component<PlaygroundControlPanelProps> = (
       <For each={props.sections}>
         {(section) => (
           <div class="grid gap-3">
-            <div class={controlLabelClass}>{section.heading}</div>
             <For each={section.controls}>
               {(control) => {
                 if (control.kind === 'text') {

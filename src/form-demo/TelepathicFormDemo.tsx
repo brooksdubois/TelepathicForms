@@ -15,7 +15,8 @@ import {
 } from "../engine/generators";
 import {FieldKind, type FieldHandle} from "../engine/types";
 import {registerWebMCPTool, getWebMCPFormAttributes} from "../engine/webmcp";
-import {AIFormAssistant} from "../components/AIFormAssistant";
+import Checkbox from "../components/Checkbox";
+import CodeViewer from "../components/CodeViewer";
 import PlaygroundNav from "../playgrounds/PlaygroundNav";
 import {cx} from "../utils/cx";
 import {SelectWrapper} from "../wrappers";
@@ -37,6 +38,27 @@ type DemoRuntimeState = {
   handlesById: ReturnType<typeof buildGraphFromFormSpec>["handlesById"];
 };
 
+const DARK_MODE_STORAGE_KEY = "darkMode";
+
+const readStoredDarkMode = (fallback: boolean) => {
+  if (typeof window === "undefined") return fallback;
+  const stored = window.localStorage.getItem(DARK_MODE_STORAGE_KEY);
+
+  if (stored === null) return fallback;
+
+  try {
+    return Boolean(JSON.parse(stored));
+  } catch {
+    return fallback;
+  }
+};
+
+const writeStoredDarkMode = (next: boolean) => {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, JSON.stringify(next));
+  }
+};
+
 const buildLegacySections = (initialValues?: Record<string, string>): DemoSection[] => {
   const hydrate = (field: FieldSpec) =>
     initialValues && Object.prototype.hasOwnProperty.call(initialValues, field.id)
@@ -46,10 +68,50 @@ const buildLegacySections = (initialValues?: Record<string, string>): DemoSectio
   return [
     {
       id: "legacy-demo",
-      title: "Legacy Contact Demo",
+      title: "Telepathic Contact Demo",
       fields: demoFormSpec.fields.map(hydrate),
     },
   ];
+};
+
+const formatCodeObjectKey = (key: string) => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key));
+
+const serializeCodeValue = (value: unknown, level = 0): string => {
+  const indent = "  ".repeat(level);
+  const childIndent = "  ".repeat(level + 1);
+
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
+    return JSON.stringify(value);
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "null";
+  }
+
+  if (typeof value === "undefined") {
+    return "undefined";
+  }
+
+  if (typeof value === "function") {
+    return `undefined /* ${value.name ? `function ${value.name}` : "function"} omitted from demo source */`;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    const lines = value.map((item) => `${childIndent}${serializeCodeValue(item, level + 1)},`);
+    return `[\n${lines.join("\n")}\n${indent}]`;
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return "{}";
+    const lines = entries.map(
+      ([key, entryValue]) => `${childIndent}${formatCodeObjectKey(key)}: ${serializeCodeValue(entryValue, level + 1)},`,
+    );
+    return `{\n${lines.join("\n")}\n${indent}}`;
+  }
+
+  return "null";
 };
 
 const collectValues = (
@@ -73,7 +135,6 @@ export const TelepathicFormDemo: Component = () => {
   const [previousAddressRows, setPreviousAddressRows] = createSignal(1);
   const [tradingExchange, setTradingExchange] = createSignal("");
   const [tradingMarket, setTradingMarket] = createSignal("");
-  const [webmcpActive, setWebmcpActive] = createSignal(false);
   const [lastRegisteredDemoState, setLastRegisteredDemoState] = createSignal("");
   const [formState, setFormState] = createSignal<DemoRuntimeState | null>(null);
   let previousState: DemoRuntimeState | null = null;
@@ -148,7 +209,7 @@ export const TelepathicFormDemo: Component = () => {
             ? "Borrower Intake Form"
             : key === "trading"
               ? "Trading System Config"
-              : "Contact Demo",
+              : "Telepathic Contact Demo",
       sections,
       spec,
       graph: built.graph,
@@ -257,8 +318,7 @@ export const TelepathicFormDemo: Component = () => {
     const nextStateKey = `${current.key}:${current.spec.fields.length}`;
     if (lastRegisteredDemoState() === nextStateKey) return;
 
-    const registered = registerWebMCPTool(current.spec, current.handlesById);
-    setWebmcpActive(registered);
+    registerWebMCPTool(current.spec, current.handlesById);
     setLastRegisteredDemoState(nextStateKey);
   });
 
@@ -298,7 +358,19 @@ export const TelepathicFormDemo: Component = () => {
   const controlCheckboxClass =
     "h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400";
 
-  const [darkMode, setDarkMode] = createSignal(false);
+  const [darkMode, setDarkMode] = createSignal(readStoredDarkMode(false));
+  const [showCode, setShowCode] = createSignal(false);
+  const setDarkModeAndPersist = (next: boolean) => {
+    setDarkMode(next);
+    writeStoredDarkMode(next);
+  };
+
+  const demoConfigCode = createMemo(() => {
+    const state = current();
+    if (!state) return "const formSpec = { fields: [] };";
+
+    return `const formSpec: FormSpec = ${serializeCodeValue(state.spec)};`;
+  });
 
   return (
     <div class={cx("min-h-screen", darkMode() ? "dark" : "")}>
@@ -317,21 +389,9 @@ export const TelepathicFormDemo: Component = () => {
                 <div class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">
                   Telepathic Form Demo
                 </div>
-                <h1 class="font-display text-3xl font-semibold sm:text-4xl">Spec-driven adaptive form flows</h1>
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <span
-                    class={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                      webmcpActive()
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                    }`}
-                  >
-                    {webmcpActive() ? "✓ WebMCP Active" : "⏳ WebMCP: Chrome 146+"}
-                  </span>
-                  <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                    ✓ AI Chatbot Ready
-                  </span>
-                </div>
+                <h1 class="font-display text-3xl font-semibold sm:text-4xl">
+                  Telepathic Forms, by Brooks DuBois
+                </h1>
               </div>
               <div class="flex flex-col items-end gap-2">
                 <PlaygroundNav />
@@ -341,16 +401,15 @@ export const TelepathicFormDemo: Component = () => {
                     type="checkbox"
                     class={controlCheckboxClass}
                     checked={darkMode()}
-                    onInput={(event) => setDarkMode(event.currentTarget.checked)}
+                    onInput={(event) => setDarkModeAndPersist(event.currentTarget.checked)}
                   />
                 </label>
               </div>
             </div>
             <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
               <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-                This demo renders a form from `formSpec` and applies runtime trigger wiring for visibility,
-                disabled state, and derived values. <strong class="text-emerald-600 dark:text-emerald-400">AI-ready</strong> via
-                WebMCP.
+                A live demo of spec-driven forms tied together "telepathically" with RxJS. Each form is driven by a
+                JSON/object definition directly from code in SDUI-style. With contributions from Haziq Azhar.
               </p>
               <div class="justify-self-end">{renderDemoOptions()}</div>
             </div>
@@ -361,78 +420,109 @@ export const TelepathicFormDemo: Component = () => {
               class="animate-rise rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50"
               {...webmcpAttrs()}
             >
-              <h2 class="font-display text-lg font-semibold">Live form</h2>
-              <div class="mt-6 flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="font-display text-lg font-semibold">Live Form</h2>
+                <div data-tf-theme="gray">
+                  <Checkbox
+                    label="Show Code"
+                    checked={showCode()}
+                    inline={true}
+                    size="sm"
+                    variant="outlined"
+                    ringVariant="expanse"
+                    rootClass="!pt-0"
+                    onChecked={setShowCode}
+                  />
+                </div>
+              </div>
+              <div class={cx("mt-6 grid gap-4", showCode() ? "lg:grid-cols-[minmax(0,55fr)_minmax(320px,45fr)]" : "")}>
                 <Show when={current()}>
                   {(state) => (
-                    <For each={state().sections}>
-                      {(section) => (
-                        <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/60">
-                          <div class="mb-4 flex items-center justify-between gap-2">
-                            <h3 class="font-semibold text-slate-800 dark:text-slate-100">{section.title}</h3>
-                            <Show when={section.id === "prescriptions"}>
-                              <Show when={isMedicalDemo()}>
-                                <div class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                  <span>Rows: {prescriptionRows()}</span>
-                                  <button
-                                    type="button"
-                                    class="rounded-full border border-emerald-200/70 bg-white px-2.5 py-0.5 text-emerald-700 transition hover:bg-white disabled:opacity-40 dark:border-emerald-500/60 dark:bg-slate-900 dark:text-emerald-200"
-                                    onClick={() =>
-                                      setPrescriptionRows((count) => Math.min(count + 1, MAX_PRESCRIPTIONS))
-                                    }
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </Show>
-                            </Show>
-                            <Show when={section.id === "previous-addresses"}>
-                              <Show when={isBorrowerDemo()}>
-                                <div class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                  <span>Rows: {previousAddressRows()}</span>
-                                  <button
-                                    type="button"
-                                    class="rounded-full border border-rose-200/70 bg-white px-2.5 py-0.5 text-rose-700 transition hover:bg-white disabled:opacity-40 dark:border-rose-500/60 dark:bg-slate-900 dark:text-rose-200"
-                                    disabled={previousAddressRows() <= 1}
-                                    onClick={() => {
-                                      const currentRows = previousAddressRows();
-                                      if (currentRows <= 1) return;
-                                      const confirmDelete = window.confirm(
-                                        `Confirm deleting address #${currentRows}`,
-                                      );
-                                      if (confirmDelete) {
-                                        setPreviousAddressRows((count) => Math.max(1, count - 1));
-                                      }
-                                    }}
-                                  >
-                                    -
-                                  </button>
-                                  <button
-                                    type="button"
-                                    class="rounded-full border border-emerald-200/70 bg-white px-2.5 py-0.5 text-emerald-700 transition hover:bg-white disabled:opacity-40 dark:border-emerald-500/60 dark:bg-slate-900 dark:text-emerald-200"
-                                    onClick={() =>
-                                      setPreviousAddressRows((count) => Math.min(count + 1, MAX_PREVIOUS_ADDRESSES))
-                                    }
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </Show>
-                            </Show>
-                            <Show when={section.id === "trading-system"}>
-                              <Show when={isTradingDemo()}>
-                                <div class="text-xs text-slate-500 dark:text-slate-400">
-                                  Exchange: {tradingExchange() || "Not set"}
-                                  <span class="mx-2">|</span>
-                                  Market: {tradingMarket() || "Not set"}
-                                </div>
-                              </Show>
-                            </Show>
-                          </div>
-                          <FormRenderer form={{id: state().spec.id, fields: section.fields}} handlesById={state().handlesById} />
-                        </div>
-                      )}
-                    </For>
+                    <>
+                      <div class="flex min-w-0 flex-col gap-4">
+                        <For each={state().sections}>
+                          {(section) => (
+                            <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/60">
+                              <div class="mb-4 flex items-center justify-between gap-2">
+                                <h3 class="font-semibold text-slate-800 dark:text-slate-100">{section.title}</h3>
+                                <Show when={section.id === "prescriptions"}>
+                                  <Show when={isMedicalDemo()}>
+                                    <div class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                      <span>Rows: {prescriptionRows()}</span>
+                                      <button
+                                        type="button"
+                                        class="rounded-full border border-emerald-200/70 bg-white px-2.5 py-0.5 text-emerald-700 transition hover:bg-white disabled:opacity-40 dark:border-emerald-500/60 dark:bg-slate-900 dark:text-emerald-200"
+                                        onClick={() =>
+                                          setPrescriptionRows((count) => Math.min(count + 1, MAX_PRESCRIPTIONS))
+                                        }
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </Show>
+                                </Show>
+                                <Show when={section.id === "previous-addresses"}>
+                                  <Show when={isBorrowerDemo()}>
+                                    <div class="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                      <span>Rows: {previousAddressRows()}</span>
+                                      <button
+                                        type="button"
+                                        class="rounded-full border border-rose-200/70 bg-white px-2.5 py-0.5 text-rose-700 transition hover:bg-white disabled:opacity-40 dark:border-rose-500/60 dark:bg-slate-900 dark:text-rose-200"
+                                        disabled={previousAddressRows() <= 1}
+                                        onClick={() => {
+                                          const currentRows = previousAddressRows();
+                                          if (currentRows <= 1) return;
+                                          const confirmDelete = window.confirm(
+                                            `Confirm deleting address #${currentRows}`,
+                                          );
+                                          if (confirmDelete) {
+                                            setPreviousAddressRows((count) => Math.max(1, count - 1));
+                                          }
+                                        }}
+                                      >
+                                        -
+                                      </button>
+                                      <button
+                                        type="button"
+                                        class="rounded-full border border-emerald-200/70 bg-white px-2.5 py-0.5 text-emerald-700 transition hover:bg-white disabled:opacity-40 dark:border-emerald-500/60 dark:bg-slate-900 dark:text-emerald-200"
+                                        onClick={() =>
+                                          setPreviousAddressRows((count) => Math.min(count + 1, MAX_PREVIOUS_ADDRESSES))
+                                        }
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </Show>
+                                </Show>
+                                <Show when={section.id === "trading-system"}>
+                                  <Show when={isTradingDemo()}>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                      Exchange: {tradingExchange() || "Not set"}
+                                      <span class="mx-2">|</span>
+                                      Market: {tradingMarket() || "Not set"}
+                                    </div>
+                                  </Show>
+                                </Show>
+                              </div>
+                              <FormRenderer form={{id: state().spec.id, fields: section.fields}} handlesById={state().handlesById} />
+                            </div>
+                          )}
+                        </For>
+                      </div>
+                      <Show when={showCode()}>
+                        <aside class="min-w-0">
+                          <CodeViewer
+                            code={demoConfigCode()}
+                            lang="ts"
+                            theme={darkMode() ? "github-dark" : "snazzy-light"}
+                            class="h-[520px] lg:h-full"
+                            minHeightClass="min-h-[360px]"
+                            maxHeightClass="max-h-[520px] lg:max-h-[720px]"
+                            showCopyButton={true}
+                          />
+                        </aside>
+                      </Show>
+                    </>
                   )}
                 </Show>
               </div>
@@ -464,10 +554,6 @@ export const TelepathicFormDemo: Component = () => {
           </main>
         </div>
       </div>
-
-      <Show when={current()}>
-        {(state) => <AIFormAssistant spec={state().spec} handlesById={state().handlesById} />}
-      </Show>
     </div>
   );
 };
