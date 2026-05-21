@@ -1,4 +1,4 @@
-import { Show, createEffect, createSignal, type Component } from "solid-js";
+import { Show, createEffect, createSignal, onCleanup, onMount, type Component } from "solid-js";
 import { FieldKind, type FieldSpec, type FormSpec } from "../engine/types";
 import {
   defaultPropsByTarget,
@@ -8,6 +8,7 @@ import {
 import { parseRowSelectionId } from "../designer/rowUtils";
 import { demoFormSpec } from "../form-demo/DemoFormSpec";
 import type { DesignerSelection } from "../designer/types";
+import { darkModeStore } from "../darkModeStore";
 import Select from "../primitives/Select";
 import FormDesignerLayout from "./FormDesignerLayout";
 import FormPreview from "./FormPreview";
@@ -158,6 +159,16 @@ const DesignerPage: Component = () => {
   );
   const [pendingAddFieldIntent, setPendingAddFieldIntent] = createSignal<AddFieldIntent>({
     mode: "new-row",
+  });
+
+  onMount(() => {
+    document.documentElement.classList.remove("dark");
+  });
+
+  onCleanup(() => {
+    if (darkModeStore.isDarkMode()) {
+      document.documentElement.classList.add("dark");
+    }
   });
 
   const openAddFieldModal = (
