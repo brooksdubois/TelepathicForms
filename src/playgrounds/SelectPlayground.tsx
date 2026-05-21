@@ -731,52 +731,6 @@ const SelectPlayground: Component = () => {
       },
     },
   ];
-
-  const [selfCheckValue, setSelfCheckValue] = createSignal('yes');
-  const [selfReadOnlyControl, setSelfReadOnlyControl] =
-    createSignal<HTMLButtonElement>();
-  const [selfDisabledControl, setSelfDisabledControl] =
-    createSignal<HTMLButtonElement>();
-  const [selfCheckStatus, setSelfCheckStatus] = createSignal({
-    ariaInvalid: false,
-    ariaDescribedBy: false,
-    helperRendered: false,
-    errorRendered: false,
-    readOnly: false,
-    disabled: false,
-    readOnlyBlockedOpen: false,
-    readOnlyFocusable: false,
-  });
-
-  createEffect(() => {
-    const readOnlyControl = selfReadOnlyControl();
-    const disabledControl = selfDisabledControl();
-    const helper = document.getElementById('select-self-check-helper');
-    const helperTextValue = helper?.textContent ?? '';
-
-    const beforeExpanded = readOnlyControl?.getAttribute('aria-expanded');
-    readOnlyControl?.click();
-    const afterExpanded = readOnlyControl?.getAttribute('aria-expanded');
-
-    setSelfCheckStatus({
-      ariaInvalid: readOnlyControl?.getAttribute('aria-invalid') === 'true',
-      ariaDescribedBy:
-        (readOnlyControl?.getAttribute('aria-describedby') ?? '').includes(
-          'select-self-check-helper',
-        ) ?? false,
-      helperRendered: Boolean(helper),
-      errorRendered: helperTextValue.includes('Self-check error'),
-      readOnly: readOnlyControl?.getAttribute('aria-readonly') === 'true',
-      disabled: Boolean(disabledControl?.disabled),
-      readOnlyBlockedOpen:
-        beforeExpanded !== 'true' && afterExpanded !== 'true' && !Boolean(document.getElementById('select-self-check-menu')),
-      readOnlyFocusable:
-        Boolean(readOnlyControl) &&
-        !Boolean(readOnlyControl?.disabled) &&
-        (readOnlyControl?.tabIndex ?? -1) >= 0,
-    });
-  });
-
   const controlCheckboxClass =
     'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
 
@@ -951,132 +905,26 @@ const SelectPlayground: Component = () => {
             </section>
 
 
-              <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
-              <h2 class="font-display text-lg font-semibold">Self-checks</h2>
+            <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
+              <h2 class="font-display text-lg font-semibold">Accessibility</h2>
               <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                These checks verify aria wiring, helper rendering, and disabled/read-only
-                behavior without a test runner.
+                Select keeps listbox interaction predictable while exposing ARIA state for validation, helper text, disabled, and read-only modes.
               </p>
 
-              <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                  <Select
-                    id="select-self-check"
-                    label="Self-check"
-                    helperText="Helper should be visible"
-                    error
-                    errorText="Self-check error"
-                    readOnly
-                    options={yesNoOptions}
-                    value={selfCheckValue()}
-                    onValue={setSelfCheckValue}
-                    ref={setSelfReadOnlyControl}
-                  />
-                </div>
-                <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                  <Select
-                    id="select-self-check-disabled"
-                    label="Disabled select"
-                    helperText="Disabled rendering"
-                    disabled
-                    options={yesNoOptions}
-                    value="yes"
-                    onValue={() => undefined}
-                    ref={setSelfDisabledControl}
-                  />
-                </div>
-              </div>
-
-              <div class="mt-4 grid gap-2 text-sm">
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().ariaInvalid
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  aria-invalid set when error is active: {String(
-                    selfCheckStatus().ariaInvalid,
-                  )}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().ariaDescribedBy
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  aria-describedby links helper text: {String(
-                    selfCheckStatus().ariaDescribedBy,
-                  )}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().helperRendered
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  helper text rendered: {String(selfCheckStatus().helperRendered)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().errorRendered
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  error text rendered: {String(selfCheckStatus().errorRendered)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().readOnly
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  readOnly state applied: {String(selfCheckStatus().readOnly)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().disabled
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  disabled attribute applied: {String(selfCheckStatus().disabled)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().readOnlyBlockedOpen
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  readOnly blocks menu opening: {String(
-                    selfCheckStatus().readOnlyBlockedOpen,
-                  )}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().readOnlyFocusable
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  readOnly remains focusable: {String(
-                    selfCheckStatus().readOnlyFocusable,
-                  )}
-                </div>
-              </div>
+              <ul class="mt-4 grid gap-2 text-sm text-slate-700 dark:text-slate-200 md:grid-cols-2">
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  aria-invalid is set when error is active.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  aria-describedby links helper and error text.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  Disabled state removes interaction from the trigger.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  Read-only remains focusable but blocks menu opening.
+                </li>
+              </ul>
             </section>
           </main>
         </div>

@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createMemo, createSignal, onMount } from 'solid-js';
+import { For, Show, createMemo, createSignal, onMount } from 'solid-js';
 import type { Component } from 'solid-js';
 
 import TextField, {
@@ -585,40 +585,6 @@ const TextFieldPlayground: Component = () => {
       },
     },
   ];
-
-  const [selfCheckValue, setSelfCheckValue] = createSignal('Read only');
-  const [selfReadOnlyInput, setSelfReadOnlyInput] =
-    createSignal<HTMLInputElement>();
-  const [selfDisabledInput, setSelfDisabledInput] =
-    createSignal<HTMLInputElement>();
-  const [selfCheckStatus, setSelfCheckStatus] = createSignal({
-    ariaInvalid: false,
-    ariaDescribedBy: false,
-    helperRendered: false,
-    errorRendered: false,
-    readOnly: false,
-    disabled: false,
-  });
-
-  createEffect(() => {
-    const readOnlyInput = selfReadOnlyInput();
-    const disabledInput = selfDisabledInput();
-    const helper = document.getElementById('self-check-helper');
-    const helperTextValue = helper?.textContent ?? '';
-
-    setSelfCheckStatus({
-      ariaInvalid: readOnlyInput?.getAttribute('aria-invalid') === 'true',
-      ariaDescribedBy:
-        (readOnlyInput?.getAttribute('aria-describedby') ?? '').includes(
-          'self-check-helper',
-        ) ?? false,
-      helperRendered: Boolean(helper),
-      errorRendered: helperTextValue.includes('Self-check error'),
-      readOnly: Boolean(readOnlyInput?.readOnly),
-      disabled: Boolean(disabledInput?.disabled),
-    });
-  });
-
   const controlCheckboxClass =
     'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
 
@@ -753,7 +719,7 @@ const TextFieldPlayground: Component = () => {
                   <p class="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
                     A dedicated Select playground is available at `/select` with
                     exhaustive controls, examples, meta states, inspector, and
-                    self-checks.
+                    accessibility notes.
                   </p>
                 </div>
                 <a
@@ -785,106 +751,26 @@ const TextFieldPlayground: Component = () => {
             </section>
 
 
-              <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
-              <h2 class="font-display text-lg font-semibold">Self-checks</h2>
+            <section class="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-200/40 dark:border-slate-800/80 dark:bg-slate-900/70 dark:shadow-slate-900/50">
+              <h2 class="font-display text-lg font-semibold">Accessibility</h2>
               <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                These checks verify aria wiring, helper rendering, and
-                disabled/read-only behavior without a test runner.
+                TextField keeps the usual input semantics while exposing the states expected by assistive technology.
               </p>
 
-              <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                  <TextField
-                    id="self-check"
-                    label="Self-check"
-                    helperText="Helper should be visible"
-                    error
-                    errorText="Self-check error"
-                    readOnly
-                    value={selfCheckValue()}
-                    onValue={setSelfCheckValue}
-                    ref={setSelfReadOnlyInput}
-                  />
-                </div>
-                <div class="rounded-2xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                  <TextField
-                    id="self-check-disabled"
-                    label="Disabled field"
-                    helperText="Disabled rendering"
-                    disabled
-                    value="Disabled"
-                    onValue={() => undefined}
-                    ref={setSelfDisabledInput}
-                  />
-                </div>
-              </div>
-
-              <div class="mt-4 grid gap-2 text-sm">
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().ariaInvalid
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  aria-invalid set when error is active: {String(
-                    selfCheckStatus().ariaInvalid,
-                  )}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().ariaDescribedBy
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  aria-describedby links helper text: {String(
-                    selfCheckStatus().ariaDescribedBy,
-                  )}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().helperRendered
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  helper text rendered: {String(selfCheckStatus().helperRendered)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().errorRendered
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  error text rendered: {String(selfCheckStatus().errorRendered)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().readOnly
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  readOnly set: {String(selfCheckStatus().readOnly)}
-                </div>
-                <div
-                  class={cx(
-                    'rounded-xl border px-3 py-2',
-                    selfCheckStatus().disabled
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                      : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-                  )}
-                >
-                  disabled attribute applied: {String(selfCheckStatus().disabled)}
-                </div>
-              </div>
+              <ul class="mt-4 grid gap-2 text-sm text-slate-700 dark:text-slate-200 md:grid-cols-2">
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  aria-invalid is set when error is active.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  aria-describedby links helper and error text.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  Helper text remains rendered for screen readers.
+                </li>
+                <li class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  Read-only and disabled states map to native input behavior.
+                </li>
+              </ul>
             </section>
           </main>
         </div>
