@@ -639,9 +639,6 @@ const SliderPlayground: Component = () => {
                       />
                     )}
                   </div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">
-                    Fully controlled slider with {configMode()} mode.
-                  </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">

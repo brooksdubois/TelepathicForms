@@ -573,9 +573,6 @@ const RadioGroupPlayground: Component = () => {
                       onValue={setConfigValue}
                     />
                   </div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">
-                    Native keyboard behavior works automatically because all radios share the same name.
-                  </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">

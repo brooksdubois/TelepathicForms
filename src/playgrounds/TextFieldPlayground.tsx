@@ -667,9 +667,6 @@ const TextFieldPlayground: Component = () => {
                       onValue={setPreviewValue}
                     />
                   </div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">
-                    Use the controls to explore how each prop affects the input.
-                  </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">

@@ -515,9 +515,6 @@ const SwitchPlayground: Component = () => {
                       onChecked={setConfigChecked}
                     />
                   </div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">
-                    Toggle state is fully controlled by the wrapper via `checked` and `onChecked`.
-                  </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">

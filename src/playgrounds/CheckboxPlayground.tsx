@@ -568,9 +568,6 @@ const CheckboxPlayground: Component = () => {
                       }}
                     />
                   </div>
-                  <div class="text-xs text-slate-500 dark:text-slate-400">
-                    Use the controls to explore checkbox states, variants, and layout.
-                  </div>
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
