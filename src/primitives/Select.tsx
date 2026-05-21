@@ -150,6 +150,16 @@ const VIEWPORT_MARGIN_PX = 8;
 const MAX_MENU_HEIGHT_PX = 240;
 const MIN_MENU_HEIGHT_PX = 80;
 
+const getVisualViewportMetrics = () => {
+  const visualViewport = window.visualViewport;
+  return {
+    left: visualViewport?.offsetLeft ?? 0,
+    top: visualViewport?.offsetTop ?? 0,
+    width: visualViewport?.width ?? window.innerWidth,
+    height: visualViewport?.height ?? window.innerHeight,
+  };
+};
+
 const Select = (props: SelectProps) => {
   const merged = mergeProps(
     {
@@ -227,8 +237,7 @@ const Select = (props: SelectProps) => {
     if (!anchor) return;
 
     const rect = anchor.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const viewport = getVisualViewportMetrics();
     const explicitMenuWidth =
       local.menuWidth == null
         ? NaN
@@ -237,14 +246,17 @@ const Select = (props: SelectProps) => {
           : Number.parseFloat(local.menuWidth);
 
     const width = Number.isFinite(explicitMenuWidth)
-      ? Math.min(Math.max(1, explicitMenuWidth), Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2))
+      ? Math.min(Math.max(1, explicitMenuWidth), Math.max(1, viewport.width - VIEWPORT_MARGIN_PX * 2))
       : Math.min(
           Math.max(1, rect.width),
-          Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2),
+          Math.max(1, viewport.width - VIEWPORT_MARGIN_PX * 2),
         );
     const left = Math.max(
-      VIEWPORT_MARGIN_PX,
-      Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+      viewport.left + VIEWPORT_MARGIN_PX,
+      Math.min(
+        rect.left + viewport.left,
+        viewport.left + viewport.width - VIEWPORT_MARGIN_PX - width,
+      ),
     );
 
     const measuredHeight = menuEl
@@ -254,7 +266,7 @@ const Select = (props: SelectProps) => {
 
     const availableBelow = Math.max(
       0,
-      viewportHeight - rect.bottom - MENU_GAP_PX - VIEWPORT_MARGIN_PX,
+      viewport.height - rect.bottom - MENU_GAP_PX - VIEWPORT_MARGIN_PX,
     );
     const availableAbove = Math.max(0, rect.top - MENU_GAP_PX - VIEWPORT_MARGIN_PX);
 
@@ -270,10 +282,13 @@ const Select = (props: SelectProps) => {
 
     const top =
       placement === 'top'
-        ? Math.max(VIEWPORT_MARGIN_PX, rect.top - MENU_GAP_PX - maxHeight)
+        ? Math.max(
+            viewport.top + VIEWPORT_MARGIN_PX,
+            rect.top + viewport.top - MENU_GAP_PX - maxHeight,
+          )
         : Math.min(
-            rect.bottom + MENU_GAP_PX,
-            viewportHeight - VIEWPORT_MARGIN_PX - maxHeight,
+            rect.bottom + viewport.top + MENU_GAP_PX,
+            viewport.top + viewport.height - VIEWPORT_MARGIN_PX - maxHeight,
           );
 
     setMenuPos({ top, left, width, maxHeight, placement });
@@ -789,11 +804,15 @@ const Select = (props: SelectProps) => {
     const onReposition = () => updateMenuPos();
     window.addEventListener('scroll', onReposition, true);
     window.addEventListener('resize', onReposition);
+    window.visualViewport?.addEventListener('scroll', onReposition);
+    window.visualViewport?.addEventListener('resize', onReposition);
     onCleanup(() => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('touchstart', onPointerDown);
       window.removeEventListener('scroll', onReposition, true);
       window.removeEventListener('resize', onReposition);
+      window.visualViewport?.removeEventListener('scroll', onReposition);
+      window.visualViewport?.removeEventListener('resize', onReposition);
     });
   });
 

@@ -133,6 +133,15 @@ const variantStyles: Record<MultiSelectVariant, string> = {
 const MENU_GAP_PX = 8;
 const VIEWPORT_MARGIN_PX = 8;
 
+const getVisualViewportMetrics = () => {
+  const visualViewport = window.visualViewport;
+  return {
+    left: visualViewport?.offsetLeft ?? 0,
+    top: visualViewport?.offsetTop ?? 0,
+    width: visualViewport?.width ?? window.innerWidth,
+  };
+};
+
 const MultiSelect = (props: MultiSelectProps) => {
   const merged = mergeProps(
     {
@@ -192,15 +201,18 @@ const MultiSelect = (props: MultiSelectProps) => {
     if (!anchor) return;
 
     const rect = anchor.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const maxWidth = Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2);
+    const viewport = getVisualViewportMetrics();
+    const maxWidth = Math.max(1, viewport.width - VIEWPORT_MARGIN_PX * 2);
     const width = Math.min(Math.max(1, rect.width), maxWidth);
     const left = Math.max(
-      VIEWPORT_MARGIN_PX,
-      Math.min(rect.left, viewportWidth - VIEWPORT_MARGIN_PX - width),
+      viewport.left + VIEWPORT_MARGIN_PX,
+      Math.min(
+        rect.left + viewport.left,
+        viewport.left + viewport.width - VIEWPORT_MARGIN_PX - width,
+      ),
     );
 
-    setMenuPos({ top: rect.bottom + MENU_GAP_PX, left, width });
+    setMenuPos({ top: rect.bottom + viewport.top + MENU_GAP_PX, left, width });
   };
 
   const [open, setOpen] = createSignal(false);
@@ -544,12 +556,16 @@ const MultiSelect = (props: MultiSelectProps) => {
     document.addEventListener('touchstart', onPointerDown);
     window.addEventListener('resize', onReposition);
     window.addEventListener('scroll', onReposition, true);
+    window.visualViewport?.addEventListener('resize', onReposition);
+    window.visualViewport?.addEventListener('scroll', onReposition);
 
     onCleanup(() => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('touchstart', onPointerDown);
       window.removeEventListener('resize', onReposition);
       window.removeEventListener('scroll', onReposition, true);
+      window.visualViewport?.removeEventListener('resize', onReposition);
+      window.visualViewport?.removeEventListener('scroll', onReposition);
     });
   });
 

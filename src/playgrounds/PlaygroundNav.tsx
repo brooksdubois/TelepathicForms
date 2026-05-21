@@ -8,6 +8,19 @@ import { cx } from "../utils/cx";
 
 type OpenMenu = "playgrounds" | "theme" | null;
 
+type MenuPosition = {
+  top: number;
+  left: number;
+  width: number;
+};
+
+const MENU_GAP_PX = 6;
+const VIEWPORT_MARGIN_PX = 8;
+const MENU_WIDTH_BY_KIND: Record<Exclude<OpenMenu, null>, number> = {
+  playgrounds: 256,
+  theme: 208,
+};
+
 const normalizePath = (p: string) => p.replace(/\/+$/, "") || "/";
 
 const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (props) => {
@@ -15,7 +28,14 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
   const isDesignerActive = () => activePath() === routePathByComponent.designer;
   const [openMenu, setOpenMenu] = createSignal<OpenMenu>(null);
   const [closeTimer, setCloseTimer] = createSignal<number | undefined>(undefined);
+  const [menuPosition, setMenuPosition] = createSignal<MenuPosition>({
+    top: 0,
+    left: VIEWPORT_MARGIN_PX,
+    width: MENU_WIDTH_BY_KIND.playgrounds,
+  });
   let menuRootRef: HTMLDivElement | undefined;
+  let playgroundsTriggerRef: HTMLDivElement | undefined;
+  let themeTriggerRef: HTMLDivElement | undefined;
 
   const isPlaygroundsOpen = () => openMenu() === "playgrounds";
   const isThemeOpen = () => openMenu() === "theme";
@@ -33,8 +53,29 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
     setCloseTimer(window.setTimeout(() => setOpenMenu(null), 120));
   };
 
+  const updateMenuPosition = (menu: Exclude<OpenMenu, null>) => {
+    const trigger = menu === "playgrounds" ? playgroundsTriggerRef : themeTriggerRef;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const maxWidth = Math.max(1, viewportWidth - VIEWPORT_MARGIN_PX * 2);
+    const width = Math.min(MENU_WIDTH_BY_KIND[menu], maxWidth);
+    const left = Math.max(
+      VIEWPORT_MARGIN_PX,
+      Math.min(rect.right - width, viewportWidth - VIEWPORT_MARGIN_PX - width),
+    );
+
+    setMenuPosition({
+      top: rect.bottom + MENU_GAP_PX,
+      left,
+      width,
+    });
+  };
+
   createEffect(() => {
-    if (!openMenu()) return;
+    const currentMenu = openMenu();
+    if (!currentMenu) return;
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node | null;
@@ -42,9 +83,15 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
       setOpenMenu(null);
     };
 
+    const handleReposition = () => updateMenuPosition(currentMenu);
+
     document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
     onCleanup(() => {
       document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
     });
   });
 
@@ -67,6 +114,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
 
   const openSpecificMenu = (menu: Exclude<OpenMenu, null>) => {
     clearCloseTimer();
+    updateMenuPosition(menu);
     setOpenMenu(menu);
   };
 
@@ -92,6 +140,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
     >
       <div class="relative">
         <div
+          ref={playgroundsTriggerRef}
           class={triggerClass(isPlaygroundsOpen())}
           onMouseEnter={() => openSpecificMenu("playgrounds")}
         >
@@ -127,8 +176,13 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
         </div>
 
         <div
+          style={{
+            top: `${menuPosition().top}px`,
+            left: `${menuPosition().left}px`,
+            width: `${menuPosition().width}px`,
+          }}
           class={cx(
-            "absolute right-0 top-full z-[81] mt-1 w-64 origin-top-right rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
+            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
             "dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-slate-950/60",
             isPlaygroundsOpen()
               ? "pointer-events-auto translate-y-0 opacity-100"
@@ -173,6 +227,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
 
       <div class="relative">
         <div
+          ref={themeTriggerRef}
           class={triggerClass(isThemeOpen())}
           onMouseEnter={() => openSpecificMenu("theme")}
         >
@@ -208,8 +263,13 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
         </div>
 
         <div
+          style={{
+            top: `${menuPosition().top}px`,
+            left: `${menuPosition().left}px`,
+            width: `${menuPosition().width}px`,
+          }}
           class={cx(
-            "absolute right-0 top-full z-[81] mt-1 w-52 origin-top-right rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
+            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
             "dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-slate-950/60",
             isThemeOpen()
               ? "pointer-events-auto translate-y-0 opacity-100"
