@@ -528,8 +528,8 @@ const TextAreaPlayground: Component = () => {
                   </div>
                 </div>
 
-                <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
-                  <div class="h-full rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:items-stretch">
+                  <div class="h-full min-w-0 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                   <PlaygroundControlPanel sections={controlSections()} />
                   <button
                     type="button"
@@ -540,18 +540,18 @@ const TextAreaPlayground: Component = () => {
                     Trigger ring
                   </button>
 
-                  <div class="mt-4 grid gap-3">
+                  <div class="mt-4 grid min-w-0 gap-3">
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Dimensions
                     </div>
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Min rows
                       </span>
                       <input
                         type="number"
                         min="1"
-                        class="w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                        class="min-w-0 max-w-full w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
                         value={configMinRows()}
                         onInput={(event) =>
                           setConfigMinRows(
@@ -560,7 +560,7 @@ const TextAreaPlayground: Component = () => {
                         }
                       />
                     </label>
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Max rows (optional)
                       </span>
@@ -569,7 +569,7 @@ const TextAreaPlayground: Component = () => {
                         min="1"
                         disabled={!configAutosize()}
                         class={cx(
-                          'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
+                          'min-w-0 max-w-full w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
                           !configAutosize() ? 'cursor-not-allowed opacity-60' : '',
                         )}
                         value={configMaxRowsInput()}
@@ -579,7 +579,7 @@ const TextAreaPlayground: Component = () => {
                         }
                       />
                     </label>
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Rows (autosize off)
                       </span>
@@ -588,7 +588,7 @@ const TextAreaPlayground: Component = () => {
                         min="1"
                         disabled={configAutosize()}
                         class={cx(
-                          'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
+                          'min-w-0 max-w-full w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
                           configAutosize() ? 'cursor-not-allowed opacity-60' : '',
                         )}
                         value={resolvedRows()}
@@ -599,19 +599,19 @@ const TextAreaPlayground: Component = () => {
                         }
                       />
                     </label>
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Value
                       </span>
                       <textarea
-                        class="min-h-28 w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 resize-y"
+                        class="min-h-28 min-w-0 max-w-full w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 resize-y"
                         value={previewValue()}
                         onInput={(event) => setPreviewValue(event.currentTarget.value)}
                       />
                     </label>
                   </div>
                   </div>
-                  <section class="flex min-h-0 flex-col rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                  <section class="flex min-h-0 min-w-0 flex-col rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                     <CodeViewer
                       views={inspectorCodeViews()}
                       class="h-96 lg:h-auto"

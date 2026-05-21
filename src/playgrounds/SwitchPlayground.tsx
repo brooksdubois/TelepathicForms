@@ -517,8 +517,8 @@ const SwitchPlayground: Component = () => {
                   </div>
                 </div>
 
-                <div class="grid gap-6 lg:grid-cols-2 lg:items-stretch">
-                  <div class="h-full rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="grid min-w-0 gap-6 lg:grid-cols-2 lg:items-stretch">
+                  <div class="h-full min-w-0 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                   <PlaygroundControlPanel sections={controlSections()} />
                   <button
                     type="button"
@@ -529,7 +529,7 @@ const SwitchPlayground: Component = () => {
                     Trigger ring
                   </button>
                   </div>
-                  <section class="flex min-h-0 flex-col rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                  <section class="flex min-h-0 min-w-0 flex-col rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                     <CodeViewer
                       views={inspectorCodeViews()}
                       class="h-96 lg:h-auto"

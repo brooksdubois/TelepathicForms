@@ -256,7 +256,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
           navigateTo(routePathByComponent.designer);
         }}
         class={cx(
-          "flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em]",
+          "hidden flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.12em] lg:inline-flex",
           "transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2",
           "dark:focus:ring-offset-slate-950",
           isDesignerActive()

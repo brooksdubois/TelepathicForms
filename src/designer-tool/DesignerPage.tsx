@@ -41,7 +41,7 @@ const FIELD_TYPE_OPTIONS = (Object.keys(editorPropsByTarget) as EditorTarget[])
     };
   });
 
-const DESIGNER_DESKTOP_QUERY = "(min-width: 1024px)";
+const DESIGNER_DESKTOP_QUERY = "(min-width: 768px)";
 
 const MobileDesignerBlocker: Component = () => (
   <main class="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-slate-100">

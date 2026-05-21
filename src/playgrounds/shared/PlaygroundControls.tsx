@@ -7,7 +7,7 @@ const controlLabelClass =
   'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
 
 const controlInputClass =
-  'w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
+  'min-w-0 max-w-full w-full rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/40 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
 
 const controlCheckboxClass =
   'h-4 w-4 rounded border-slate-300 accent-emerald-500 focus:ring-emerald-400';
@@ -97,15 +97,15 @@ export const PlaygroundControlPanel: Component<PlaygroundControlPanelProps> = (
   props,
 ) => {
   return (
-    <div class="flex flex-col gap-4">
+    <div class="flex min-w-0 flex-col gap-4">
       <For each={props.sections}>
         {(section) => (
-          <div class="grid gap-3">
+          <div class="grid min-w-0 gap-3">
             <For each={section.controls}>
               {(control) => {
                 if (control.kind === 'text') {
                   return (
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class={controlLabelClass}>{control.label}</span>
                       <input
                         class={controlInputClass}
@@ -126,7 +126,7 @@ export const PlaygroundControlPanel: Component<PlaygroundControlPanelProps> = (
 
                 if (control.kind === 'number') {
                   return (
-                    <label class="flex flex-col gap-2">
+                    <label class="flex min-w-0 flex-col gap-2">
                       <span class={controlLabelClass}>{control.label}</span>
                       <input
                         class={controlInputClass}
@@ -147,8 +147,8 @@ export const PlaygroundControlPanel: Component<PlaygroundControlPanelProps> = (
 
                 if (control.kind === 'checkbox') {
                   return (
-                    <label class="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
-                      <span>{control.label}</span>
+                    <label class="flex min-w-0 items-center justify-between gap-3 text-sm text-slate-700 dark:text-slate-200">
+                      <span class="min-w-0 break-words">{control.label}</span>
                       <input
                         type="checkbox"
                         class={controlCheckboxClass}
@@ -162,7 +162,7 @@ export const PlaygroundControlPanel: Component<PlaygroundControlPanelProps> = (
                 }
 
                 return (
-                  <label class="flex flex-col gap-2">
+                  <label class="flex min-w-0 flex-col gap-2">
                     <span class={controlLabelClass}>{control.label}</span>
                     <select
                       class={controlInputClass}
