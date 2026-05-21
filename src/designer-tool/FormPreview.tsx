@@ -551,13 +551,22 @@ const FormPreview: Component<FormPreviewProps> = (props) => {
         />
 
         <div ref={setFormContentElement} class="relative z-10">
-          <Show when={runtime()}>
-            {(safeRuntime) => (
-              <FormRenderer
-                form={safeRuntime().formSpec}
-                handlesById={safeRuntime().handlesById}
-              />
-            )}
+          <Show
+            when={props.formSpec.fields.length > 0}
+            fallback={
+              <div class="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm font-medium text-slate-500">
+                Click the plus button to add a component.
+              </div>
+            }
+          >
+            <Show when={runtime()}>
+              {(safeRuntime) => (
+                <FormRenderer
+                  form={safeRuntime().formSpec}
+                  handlesById={safeRuntime().handlesById}
+                />
+              )}
+            </Show>
           </Show>
         </div>
 

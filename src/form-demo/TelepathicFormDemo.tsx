@@ -388,7 +388,10 @@ export const TelepathicFormDemo: Component = () => {
                   Telepathic Form Demo
                 </div>
                 <h1 class="font-display text-3xl font-semibold sm:text-4xl">
-                  Telepathic Forms, by Brooks DuBois
+                  Telepathic Forms, by{" "}
+                  <span class="bg-gradient-to-r from-amber-500 via-yellow-300 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(245,158,11,0.38)] dark:from-amber-200 dark:via-yellow-300 dark:to-amber-500 dark:drop-shadow-[0_0_18px_rgba(252,211,77,0.35)]">
+                    Brooks DuBois
+                  </span>
                 </h1>
               </div>
               <div class="flex flex-col items-end gap-2">
@@ -407,7 +410,23 @@ export const TelepathicFormDemo: Component = () => {
             <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
               <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
                 A live demo of spec-driven forms tied together "telepathically" with RxJS. Each form is driven by a
-                JSON/object definition directly from code in SDUI-style. With contributions from Haziq Azhar.
+                JSON/object definition directly from code in SDUI-style.{" "}
+                <span class="text-slate-500 dark:text-slate-400">
+                  With contributions by{" "}
+                  <a
+                    href="https://chatgpt.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="rounded-sm font-medium text-emerald-600 no-underline drop-shadow-[0_0_8px_rgba(5,150,105,0.18)] transition duration-200 hover:text-emerald-500 hover:drop-shadow-[0_0_14px_rgba(16,185,129,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:text-emerald-300 dark:drop-shadow-[0_0_10px_rgba(110,231,183,0.18)] dark:hover:text-emerald-200 dark:hover:drop-shadow-[0_0_16px_rgba(110,231,183,0.38)]"
+                  >
+                    Codex
+                  </a>
+                  {" "}and{" "}
+                  <span class="font-medium text-amber-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.25)] dark:text-amber-300 dark:drop-shadow-[0_0_10px_rgba(252,211,77,0.22)]">
+                    Haziq Azhar
+                  </span>
+                  .
+                </span>
               </p>
               <div class="justify-self-end">{renderDemoOptions()}</div>
             </div>
