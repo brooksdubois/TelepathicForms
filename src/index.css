@@ -222,7 +222,7 @@ body {
     background-color: var(--tf-page-bg) !important;
 }
 
-.h-screen.w-full.overflow-auto.bg-slate-100 {
+.tf-designer-shell {
     background-color: var(--tf-designer-bg) !important;
 }
 

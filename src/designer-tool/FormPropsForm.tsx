@@ -517,12 +517,12 @@ const FormPropsForm: Component<FormPropsFormProps> = (props) => {
       <Show
         when={props.selected && editorSpec() && handlesById()}
         fallback={
-          <div class="flex min-h-0 flex-1 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-            Select a row or field in the tree to edit its properties.
+          <div class="flex min-h-0 flex-1 select-none items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-medium text-slate-500">
+            Select a row to view properties
           </div>
         }
       >
-        <div class="min-h-0 flex-1 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-4">
+        <div class="min-h-0 flex-1 overflow-auto overscroll-contain rounded-md border border-slate-200 bg-slate-50 p-4">
           <FormRenderer form={editorSpec()!} handlesById={handlesById()!} />
         </div>
       </Show>

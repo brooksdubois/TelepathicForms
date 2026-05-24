@@ -519,10 +519,10 @@ const TreeCodeViewer: Component<TreeCodeViewerProps> = (props) => {
           </div>
         }
       >
-        <div class="min-h-0 flex-1 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-2">
+        <div class="min-h-0 flex-1 overflow-auto overscroll-contain rounded-md border border-slate-200 bg-slate-50 p-2">
           <Show when={rows().length === 0}>
-            <div class="flex h-full min-h-[120px] items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm font-medium text-slate-500">
-              Click the plus button to add a component.
+            <div class="flex h-full min-h-[120px] select-none items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm font-medium text-slate-500">
+              Click the plus button to add a row.
             </div>
           </Show>
 

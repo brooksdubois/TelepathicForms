@@ -225,7 +225,7 @@ const DesignerPage: Component = () => {
       if (pendingIntent.mode === "new-row") {
         const nextRow = getNextRowNumber(previous);
         const nextField = createFieldForKind(previous, pendingKind, nextRow);
-        nextSelection = { kind: "row", id: `row-${nextRow}` };
+        nextSelection = { kind: "field", id: nextField.id };
         return {
           ...previous,
           fields: [...previous.fields, nextField],

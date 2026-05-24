@@ -539,7 +539,7 @@ const FormPreview: Component<FormPreviewProps> = (props) => {
     <div class="flex h-full min-h-0 flex-col rounded-lg border border-slate-300 bg-white p-3">
       <div
         ref={setViewportElement}
-        class="relative min-h-0 flex-1 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-4"
+        class="relative min-h-0 flex-1 overflow-auto overscroll-contain rounded-md border border-slate-200 bg-slate-50 p-4"
       >
         <canvas
           ref={setOverlayCanvasElement}
@@ -554,8 +554,8 @@ const FormPreview: Component<FormPreviewProps> = (props) => {
           <Show
             when={props.formSpec.fields.length > 0}
             fallback={
-              <div class="flex min-h-[220px] items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm font-medium text-slate-500">
-                Click the plus button to add a component.
+              <div class="flex min-h-[220px] select-none items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/70 px-4 text-center text-sm font-medium text-slate-500">
+                Interactive form preview
               </div>
             }
           >

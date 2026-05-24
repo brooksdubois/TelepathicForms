@@ -120,7 +120,7 @@ const FormDesignerLayout: Component<FormDesignerLayoutProps> = (props) => {
   });
 
   return (
-    <main class="h-screen w-full overflow-auto bg-slate-100 p-4">
+    <main class="tf-designer-shell h-dvh max-h-dvh min-h-0 w-full overflow-hidden overscroll-none bg-slate-100 p-4">
       <div
         ref={containerRef}
         class="grid h-full min-h-0 grid-rows-[minmax(0,1fr)]"
