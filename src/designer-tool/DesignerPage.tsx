@@ -185,6 +185,15 @@ const DesignerPage: Component = () => {
 
   onMount(() => {
     document.documentElement.classList.remove("dark");
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousHtmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscrollBehavior = document.body.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
 
     const mediaQuery = window.matchMedia(DESIGNER_DESKTOP_QUERY);
     const syncDesignerViewport = () => setIsDesktopDesignerViewport(mediaQuery.matches);
@@ -194,6 +203,10 @@ const DesignerPage: Component = () => {
 
     onCleanup(() => {
       mediaQuery.removeEventListener("change", syncDesignerViewport);
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscrollBehavior;
     });
   });
 

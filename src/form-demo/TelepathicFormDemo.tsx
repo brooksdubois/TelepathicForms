@@ -408,7 +408,7 @@ export const TelepathicFormDemo: Component = () => {
               </div>
             </div>
             <div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
-              <p class="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+              <p class="max-w-3xl text-[15px] leading-6 text-slate-600 dark:text-slate-300">
                 A live demo of spec-driven forms tied together "telepathically" with RxJS. Each form is driven by a
                 JSON/object definition directly from code in SDUI-style.{" "}
                 <span class="text-slate-500 dark:text-slate-400">
@@ -422,7 +422,7 @@ export const TelepathicFormDemo: Component = () => {
                     Codex
                   </a>
                   {" "}and{" "}
-                  <span class="font-medium text-amber-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.25)] dark:text-amber-300 dark:drop-shadow-[0_0_10px_rgba(252,211,77,0.22)]">
+                  <span class="font-bold text-amber-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.25)] dark:text-amber-300 dark:drop-shadow-[0_0_10px_rgba(252,211,77,0.22)]">
                     Haziq Azhar
                   </span>
                   .

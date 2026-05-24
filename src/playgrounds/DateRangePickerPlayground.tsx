@@ -543,6 +543,7 @@ const DateRangePickerPlayground: Component = () => {
                 <div class="flex flex-col gap-3">
                   <div class="tf-playground-preview-frame max-w-3xl">
                     <DateRangePicker
+                      class="w-full max-w-sm"
                       label="Travel dates"
                       helperText="Pick a start and end date from the calendar."
                       value={configValue()}

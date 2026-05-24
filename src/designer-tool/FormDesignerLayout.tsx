@@ -120,10 +120,10 @@ const FormDesignerLayout: Component<FormDesignerLayoutProps> = (props) => {
   });
 
   return (
-    <main class="tf-designer-shell h-dvh max-h-dvh min-h-0 w-full overflow-hidden overscroll-none bg-slate-100 p-4">
+    <main class="tf-designer-shell fixed inset-0 h-dvh max-h-dvh min-h-0 w-full overflow-hidden overscroll-none bg-slate-100 p-4">
       <div
         ref={containerRef}
-        class="grid h-full min-h-0 grid-rows-[minmax(0,1fr)]"
+        class="grid h-full min-h-0 overflow-hidden grid-rows-[minmax(0,1fr)]"
         classList={{ "select-none": dragMode() !== null }}
         style={{
           "min-width": `${LAYOUT_MIN_WIDTH_PX}px`,
@@ -132,12 +132,12 @@ const FormDesignerLayout: Component<FormDesignerLayoutProps> = (props) => {
       >
         <div
           ref={leftColumnRef}
-          class="grid h-full min-h-0 min-w-0 pr-2"
+          class="grid h-full min-h-0 min-w-0 overflow-hidden pr-2"
           style={{
             "grid-template-rows": `${aHeightPx()}px ${SPLITTER_SIZE_PX}px minmax(${B_MIN_HEIGHT_PX}px, 1fr)`,
           }}
         >
-          <section class="h-full min-h-0 min-w-0">
+          <section class="h-full min-h-0 min-w-0 overflow-hidden">
             <Dynamic component={props.leftTop} />
           </section>
 
@@ -153,7 +153,7 @@ const FormDesignerLayout: Component<FormDesignerLayoutProps> = (props) => {
             onDblClick={() => setAHeightPx(clampAHeight(DEFAULT_A_HEIGHT_PX))}
           />
 
-          <section class="h-full min-h-0 min-w-0">
+          <section class="h-full min-h-0 min-w-0 overflow-hidden">
             <Dynamic component={props.leftBottom} />
           </section>
         </div>
@@ -170,7 +170,7 @@ const FormDesignerLayout: Component<FormDesignerLayoutProps> = (props) => {
           onDblClick={() => setLeftWidthPx(clampLeftWidth(DEFAULT_LEFT_WIDTH_PX))}
         />
 
-        <section class="ml-2 h-full min-h-0 min-w-0">
+        <section class="ml-2 h-full min-h-0 min-w-0 overflow-hidden">
           <Dynamic component={props.right} />
         </section>
       </div>

@@ -182,7 +182,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
             width: `${menuPosition().width}px`,
           }}
           class={cx(
-            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
+            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-[opacity,transform] duration-150",
             "dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-slate-950/60",
             isPlaygroundsOpen()
               ? "pointer-events-auto translate-y-0 opacity-100"
@@ -269,7 +269,7 @@ const PlaygroundNav: Component<{ currentPath?: string; class?: string }> = (prop
             width: `${menuPosition().width}px`,
           }}
           class={cx(
-            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-all duration-150",
+            "fixed z-[81] origin-top rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xl shadow-slate-200/60 backdrop-blur-md transition-[opacity,transform] duration-150",
             "dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-slate-950/60",
             isThemeOpen()
               ? "pointer-events-auto translate-y-0 opacity-100"
