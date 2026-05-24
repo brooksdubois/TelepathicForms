@@ -1,4 +1,4 @@
-import {For, onCleanup, onMount, type Component} from "solid-js";
+import {For, Suspense, onCleanup, onMount, type Component} from "solid-js";
 import {Dynamic} from "solid-js/web";
 import {path, setPath, navigateTo, currentRoutePath, routeHref} from "./router";
 import {appRoutes, defaultRoutePath} from "./routes";
@@ -39,7 +39,9 @@ const App: Component = () => {
   });
 
   return (
-    <Dynamic component={routeComponentByPath[path()] ?? NotFound} />
+    <Suspense>
+      <Dynamic component={routeComponentByPath[path()] ?? NotFound} />
+    </Suspense>
   );
 };
 

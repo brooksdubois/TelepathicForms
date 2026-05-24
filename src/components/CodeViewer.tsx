@@ -8,7 +8,6 @@ import {
   type Component,
   type JSX,
 } from "solid-js";
-import { getHighlighter } from "../designer/shikiCompat";
 import { cx } from "../utils/cx";
 
 export type CodeViewerLanguage = "ts" | "typescript" | "js" | "javascript" | "json";
@@ -153,7 +152,8 @@ export const preloadCodeViewerHighlight = (options: HighlightOptions) => {
   const pending = pendingHighlights.get(key);
   if (pending) return pending;
 
-  const nextHighlight = getHighlighter({ theme, langs: [lang] })
+  const nextHighlight = import("../designer/shikiCompat")
+    .then(({ getHighlighter }) => getHighlighter({ theme, langs: [lang] }))
     .then((highlighter) => highlighter.codeToHtml(options.code, { lang, theme }))
     .then((html) => {
       highlightCache.set(key, html);

@@ -1,12 +1,3 @@
-import { createHighlighterCore } from "shiki/core";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import javascript from "shiki/dist/langs/javascript.mjs";
-import json from "shiki/dist/langs/json.mjs";
-import typescript from "shiki/dist/langs/typescript.mjs";
-import githubDark from "shiki/dist/themes/github-dark.mjs";
-import nightOwl from "shiki/dist/themes/night-owl.mjs";
-import snazzyLight from "shiki/dist/themes/snazzy-light.mjs";
-
 export type Lang = string;
 export type Theme = string;
 export type ILanguageRegistration = Record<string, unknown> | string;
@@ -22,23 +13,47 @@ type LegacyCodeToHtmlOptions = {
   theme?: Theme;
 };
 
-const bundledLanguages = [typescript, javascript, json];
-const bundledThemes = [githubDark, nightOwl, snazzyLight];
 const fallbackTheme: Theme = "snazzy-light";
 const supportedThemes = new Set<Theme>(["github-dark", "night-owl", fallbackTheme]);
 
 let defaultTheme: Theme = fallbackTheme;
-let highlighterPromise: ReturnType<typeof createHighlighterCore> | undefined;
+let highlighterPromise:
+  | Promise<{
+      loadLanguage: (lang: never) => Promise<void>;
+      codeToHtml: (code: string, options: { lang: never; theme: never }) => string;
+    }>
+  | undefined;
 
 const resolveTheme = (theme: Theme | undefined) =>
   theme && supportedThemes.has(theme) ? theme : fallbackTheme;
 
-const getBundledHighlighter = () => {
-  highlighterPromise ??= createHighlighterCore({
-    engine: createJavaScriptRegexEngine(),
-    langs: bundledLanguages,
-    themes: bundledThemes,
-  });
+const getBundledHighlighter = async () => {
+  highlighterPromise ??= Promise.all([
+    import("shiki/core"),
+    import("shiki/engine/javascript"),
+    import("shiki/dist/langs/typescript.mjs"),
+    import("shiki/dist/langs/javascript.mjs"),
+    import("shiki/dist/langs/json.mjs"),
+    import("shiki/dist/themes/github-dark.mjs"),
+    import("shiki/dist/themes/night-owl.mjs"),
+    import("shiki/dist/themes/snazzy-light.mjs"),
+  ]).then(
+    ([
+      { createHighlighterCore },
+      { createJavaScriptRegexEngine },
+      typescript,
+      javascript,
+      json,
+      githubDark,
+      nightOwl,
+      snazzyLight,
+    ]) =>
+      createHighlighterCore({
+        engine: createJavaScriptRegexEngine(),
+        langs: [typescript.default, javascript.default, json.default],
+        themes: [githubDark.default, nightOwl.default, snazzyLight.default],
+      }),
+  );
 
   return highlighterPromise;
 };

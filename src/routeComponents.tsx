@@ -1,33 +1,24 @@
-import type { Component } from "solid-js";
+import { lazy, type Component } from "solid-js";
 import { appRoutes, type AppRouteComponentKey } from "./routes";
-import { TelepathicFormDemo } from "./TelepathicForm";
-import CheckboxPlayground from "./playgrounds/CheckboxPlayground";
-import MultiSelectPlayground from "./playgrounds/MultiSelectPlayground";
-import RadioGroupPlayground from "./playgrounds/RadioGroupPlayground";
-import SelectPlayground from "./playgrounds/SelectPlayground";
-import SwitchPlayground from "./playgrounds/SwitchPlayground";
-import TextAreaPlayground from "./playgrounds/TextAreaPlayground";
-import TextFieldPlayground from "./playgrounds/TextFieldPlayground";
-import DatePickerPlayground from "./playgrounds/DatePickerPlayground";
-import SliderPlayground from "./playgrounds/SliderPlayground";
-import DateRangePickerPlayground from "./playgrounds/DateRangePickerPlayground";
-import TimePickerPlayground from "./playgrounds/TimePickerPlayground";
-import DesignerPage from "./designer-tool/DesignerPage";
 
 const componentByKey: Record<AppRouteComponentKey, Component> = {
-  formDemo: TelepathicFormDemo,
-  textField: TextFieldPlayground,
-  select: SelectPlayground,
-  multiSelect: MultiSelectPlayground,
-  checkbox: CheckboxPlayground,
-  radioGroup: RadioGroupPlayground,
-  switch: SwitchPlayground,
-  textArea: TextAreaPlayground,
-  date: DatePickerPlayground,
-  slider: SliderPlayground,
-  dateRange: DateRangePickerPlayground,
-  time: TimePickerPlayground,
-  designer: DesignerPage,
+  formDemo: lazy(() =>
+    import("./form-demo/TelepathicFormDemo").then((module) => ({
+      default: module.TelepathicFormDemo,
+    })),
+  ),
+  textField: lazy(() => import("./playgrounds/TextFieldPlayground")),
+  select: lazy(() => import("./playgrounds/SelectPlayground")),
+  multiSelect: lazy(() => import("./playgrounds/MultiSelectPlayground")),
+  checkbox: lazy(() => import("./playgrounds/CheckboxPlayground")),
+  radioGroup: lazy(() => import("./playgrounds/RadioGroupPlayground")),
+  switch: lazy(() => import("./playgrounds/SwitchPlayground")),
+  textArea: lazy(() => import("./playgrounds/TextAreaPlayground")),
+  date: lazy(() => import("./playgrounds/DatePickerPlayground")),
+  slider: lazy(() => import("./playgrounds/SliderPlayground")),
+  dateRange: lazy(() => import("./playgrounds/DateRangePickerPlayground")),
+  time: lazy(() => import("./playgrounds/TimePickerPlayground")),
+  designer: lazy(() => import("./designer-tool/DesignerPage")),
 };
 
 export const routeComponentByPath = Object.fromEntries(
