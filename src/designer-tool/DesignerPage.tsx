@@ -182,6 +182,7 @@ const DesignerPage: Component = () => {
   const [pendingAddFieldIntent, setPendingAddFieldIntent] = createSignal<AddFieldIntent>({
     mode: "new-row",
   });
+  let addFieldConfirmButtonRef: HTMLButtonElement | undefined;
 
   onMount(() => {
     document.documentElement.classList.remove("dark");
@@ -291,6 +292,36 @@ const DesignerPage: Component = () => {
     closeAddFieldModal();
   };
 
+  const handleAddFieldModalKeyDown = (
+    event: KeyboardEvent & { currentTarget: HTMLDivElement; target: Element },
+  ) => {
+    if (
+      event.key !== "Enter" ||
+      event.defaultPrevented ||
+      event.isComposing ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    const hasOpenSelect = Boolean(
+      event.currentTarget.querySelector('[role="combobox"][aria-expanded="true"]'),
+    );
+    if (hasOpenSelect) return;
+
+    const target = event.target as HTMLElement | null;
+    const targetButton = target?.closest("button");
+    const targetCombobox = target?.closest('[role="combobox"]');
+    if (targetButton && !targetCombobox) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    confirmAddField();
+  };
+
   const convertFieldKind = (fieldId: string) => {
     const field = formSpec().fields.find((candidate) => candidate.id === fieldId);
     const initialKind = field?.kind ?? FieldKind.text;
@@ -344,6 +375,12 @@ const DesignerPage: Component = () => {
         : currentSpec.fields.some((field) => typeof field.row !== "number");
 
     if (!exists) setSelected(null);
+  });
+
+  createEffect(() => {
+    if (!isDesktopDesignerViewport() || !isAddFieldModalOpen()) return;
+
+    queueMicrotask(() => addFieldConfirmButtonRef?.focus());
   });
 
   const TreePanel: Component = () => (
@@ -401,7 +438,10 @@ const DesignerPage: Component = () => {
             }
           }}
         >
-          <div class="w-full max-w-sm rounded-lg border border-slate-300 bg-white p-4 shadow-xl">
+          <div
+            class="w-full max-w-sm rounded-lg border border-slate-300 bg-white p-4 shadow-xl"
+            onKeyDownCapture={handleAddFieldModalKeyDown}
+          >
             <h2 class="text-base font-semibold text-slate-900">Which field type?</h2>
 
             <div class="mt-3">
@@ -417,20 +457,21 @@ const DesignerPage: Component = () => {
               />
             </div>
 
-            <div class="mt-4 flex items-center justify-end gap-2">
+            <div class="mt-4 flex flex-row-reverse items-center gap-2">
+              <button
+                ref={addFieldConfirmButtonRef}
+                type="button"
+                class="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-700"
+                onClick={confirmAddField}
+              >
+                Okay
+              </button>
               <button
                 type="button"
                 class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                 onClick={closeAddFieldModal}
               >
                 Cancel
-              </button>
-              <button
-                type="button"
-                class="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-700"
-                onClick={confirmAddField}
-              >
-                Okay
               </button>
             </div>
           </div>
