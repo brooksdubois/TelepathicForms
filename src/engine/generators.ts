@@ -59,6 +59,8 @@ function createNodeFromSpec(
     validationContext,
     validateDeps$:
       validateDeps && validateDeps.length > 0 ? validateDeps : undefined,
+    disabled$: of(Boolean(spec.disabled)),
+    hidden$: of(Boolean(spec.hidden)),
   };
 
   switch (spec.kind) {
@@ -384,6 +386,7 @@ export function buildGraphFromFormSpec(form: FormSpec) {
   });
 
   form.fields.forEach((f) => applyTriggersFromSpec(graph, f));
+  graph.settleInitialState();
 
   const handlesById = new Map<string, FieldHandle>();
   nodesById.forEach((node, id) => {

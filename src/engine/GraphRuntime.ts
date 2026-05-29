@@ -8,6 +8,7 @@ export class GraphRuntime {
   private subs = new Subscription();
   private pendingPatches = new Map<NodeId, NodePatch<any>>();
   private flushScheduled = false;
+  private isSettling = false;
 
   hasNode(id: NodeId) {
     return this.nodes.has(id);
@@ -17,15 +18,13 @@ export class GraphRuntime {
     const prev = this.pendingPatches.get(targetId) ?? {};
     this.pendingPatches.set(targetId, {...prev, ...patch});
 
-    if (!this.flushScheduled) {
+    if (!this.isSettling && !this.flushScheduled) {
       this.flushScheduled = true;
       queueMicrotask(() => this.flushPatches());
     }
   }
 
-  private flushPatches() {
-    this.flushScheduled = false;
-
+  private flushPendingPatches() {
     if (this.pendingPatches.size === 0) return;
 
     const toApply = Array.from(this.pendingPatches.entries());
@@ -36,6 +35,35 @@ export class GraphRuntime {
       if (!node) return;
       node.applyPatch(patch);
     });
+  }
+
+  private flushPatches() {
+    this.flushScheduled = false;
+    this.flushPendingPatches();
+  }
+
+  settleInitialState(maxIterations = 25) {
+    this.isSettling = true;
+    this.flushScheduled = false;
+
+    try {
+      let iterations = 0;
+
+      while (this.pendingPatches.size > 0) {
+        if (iterations >= maxIterations) {
+          const pendingIds = Array.from(this.pendingPatches.keys()).join(", ");
+          throw new Error(
+            `Graph trigger settling exceeded ${maxIterations} iterations. Pending fields: ${pendingIds}`,
+          );
+        }
+
+        iterations += 1;
+        this.flushPendingPatches();
+      }
+    } finally {
+      this.isSettling = false;
+      this.flushScheduled = false;
+    }
   }
 
   register<T>(node: FieldRuntimeNode<T>) {

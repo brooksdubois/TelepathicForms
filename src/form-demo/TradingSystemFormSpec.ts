@@ -3,6 +3,7 @@ import {
   type FieldSpec,
   type FormSpec,
   TriggerOperators,
+  type TriggerOperation,
   type TriggerSpec,
   WhenOperators,
 } from "../engine/types";
@@ -52,25 +53,29 @@ const applyInitialValues = (
   });
 };
 
-const marketGateTriggers = (fieldId: string, isComputed = false): TriggerSpec[] => [
-  {
-    when: {fieldIds: ["tradingMarket"], operator: WhenOperators.isEmpty},
-    operations: [
-      {fieldIds: [fieldId], operator: TriggerOperators.setHidden, value: true},
-      {fieldIds: [fieldId], operator: TriggerOperators.setDisabled, value: true},
-      {fieldIds: [fieldId], operator: TriggerOperators.setValue, value: ""},
-    ],
-  },
-  {
-    when: {fieldIds: ["tradingMarket"], operator: WhenOperators.notEquals, value: ""},
-    operations: [
-      {fieldIds: [fieldId], operator: TriggerOperators.setHidden, value: false},
-      ...(isComputed
-        ? [{fieldIds: [fieldId], operator: TriggerOperators.setDisabled, value: true}]
-        : [{fieldIds: [fieldId], operator: TriggerOperators.setDisabled, value: false}]),
-    ],
-  },
-];
+const marketGateTriggers = (fieldId: string, isComputed = false): TriggerSpec[] => {
+  const hideOperations: TriggerOperation[] = [
+    {fieldIds: [fieldId], operator: TriggerOperators.setHidden, value: true},
+    {fieldIds: [fieldId], operator: TriggerOperators.setDisabled, value: true},
+    {fieldIds: [fieldId], operator: TriggerOperators.setValue, value: ""},
+  ];
+
+  const showOperations: TriggerOperation[] = [
+    {fieldIds: [fieldId], operator: TriggerOperators.setHidden, value: false},
+    {fieldIds: [fieldId], operator: TriggerOperators.setDisabled, value: isComputed},
+  ];
+
+  return [
+    {
+      when: {fieldIds: ["tradingMarket"], operator: WhenOperators.isEmpty},
+      operations: hideOperations,
+    },
+    {
+      when: {fieldIds: ["tradingMarket"], operator: WhenOperators.notEquals, value: ""},
+      operations: showOperations,
+    },
+  ];
+};
 
 const exchangeOnlyTriggers = (fieldId: string, exchange: string): TriggerSpec[] => [
   {

@@ -93,6 +93,8 @@ export type FieldSpec = {
   showInput?: boolean;
   maxDigits?: number;
   required?: boolean;
+  disabled?: boolean;
+  hidden?: boolean;
   initialValue?: string;
   validate?: Validator<string>;
   validationDependencies?: string[];
