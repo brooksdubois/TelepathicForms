@@ -25,10 +25,11 @@ import {SelectWrapper} from "../wrappers";
 import {buildMedicalIntakeSections, type DemoSection} from "./MedicalIntakeFormSpec";
 import {buildTradingSystemSections} from "./TradingSystemFormSpec";
 import {buildBorrowerIntakeSections} from "./BorrowerIntakeFormSpec";
+import {buildNautropathicIntakeSections} from "./NautropathicIntakeFormSpec";
 import {demoFormSpec} from "./DemoFormSpec";
 import {BehaviorSubject, combineLatest} from "rxjs";
 
-type DemoKey = "legacy" | "medical" | "borrower" | "trading";
+type DemoKey = "legacy" | "medical" | "borrower" | "trading" | "nautropathic";
 
 type DemoRuntimeState = {
   key: DemoKey;
@@ -171,7 +172,9 @@ export const TelepathicFormDemo: Component = () => {
           ? buildBorrowerIntakeSections(previousAddressRows(), initialValues)
           : key === "trading"
             ? buildTradingSystemSections(tradingExchange(), initialValues)
-          : buildLegacySections(initialValues);
+            : key === "nautropathic"
+              ? buildNautropathicIntakeSections(initialValues)
+              : buildLegacySections(initialValues);
 
     const spec = {
       id:
@@ -181,7 +184,9 @@ export const TelepathicFormDemo: Component = () => {
             ? "borrower-intake"
             : key === "trading"
               ? "trading-system"
-              : "demo",
+              : key === "nautropathic"
+                ? "nautropathic-intake"
+                : "demo",
       fields: sections.flatMap((section) => section.fields),
     };
 
@@ -197,7 +202,9 @@ export const TelepathicFormDemo: Component = () => {
             ? "Borrower Intake Form"
             : key === "trading"
               ? "Trading System Config"
-              : "Telepathic Contact Demo",
+              : key === "nautropathic"
+                ? "Nautropathic Intake"
+                : "Telepathic Contact Demo",
       sections,
       spec,
       graph: built.graph,
@@ -344,6 +351,7 @@ export const TelepathicFormDemo: Component = () => {
             {label: "Demo 2: Medical Intake", value: "medical"},
             {label: "Demo 3: Borrower Intake", value: "borrower"},
             {label: "Demo 4: Trading System", value: "trading"},
+            {label: "Demo 5: Nautropathic Intake", value: "nautropathic"},
           ],
         }}
         field={demoSelectHandle}
